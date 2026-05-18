@@ -1,0 +1,53 @@
+import { describe, expect, it } from 'vitest';
+import { createHistoryService } from './history-service';
+import {
+	createFakeEvent,
+	createFakeUser,
+	createProfile,
+	createProfileRepositoryFake
+} from '$lib/server/test/fakes';
+import type {
+	SessionRepository,
+	DashboardSessionStats
+} from '$lib/server/db/repositories/session-repository';
+
+describe('history service', () => {
+	it('requests only the authenticated user history', async () => {
+		const profile = createProfile();
+		let requestedUserId = '';
+		const repository: SessionRepository = {
+			createSession: async () => {
+				throw new Error('not used');
+			},
+			addQuestions: async () => [],
+			addAnswer: async () => {
+				throw new Error('not used');
+			},
+			findSessionById: async () => null,
+			findOwnedSession: async () => null,
+			listHistory: async ({ userId }) => {
+				requestedUserId = userId;
+				return { items: [], total: 0 };
+			},
+			getDashboardStats: async (): Promise<DashboardSessionStats> => ({
+				totalCompleted: 0,
+				bestScore: 0,
+				averageAccuracy: 0,
+				averageSolveTimeSeconds: 0,
+				recentSessions: []
+			}),
+			markCompleted: async () => {
+				throw new Error('not used');
+			}
+		};
+
+		const service = createHistoryService(repository, createProfileRepositoryFake(profile));
+		const result = await service.listHistory(createFakeEvent(createFakeUser({ id: profile.id })), {
+			limit: 10,
+			offset: 0
+		});
+
+		expect(requestedUserId).toBe(profile.id);
+		expect(result.items).toEqual([]);
+	});
+});
