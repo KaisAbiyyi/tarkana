@@ -4,8 +4,7 @@ import { createAdminService } from '$lib/server/admin/admin-service';
 
 export const GET: RequestHandler = async (event) => {
 	try {
-		const adminService = createAdminService();
-		return jsonOk(await adminService.getOverview(event));
+		return jsonOk(await createAdminService().getOverview(event));
 	} catch (error) {
 		return jsonError(error);
 	}

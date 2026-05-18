@@ -29,6 +29,22 @@ export type AdminService = {
 		pagination: PaginationInput
 	): Promise<PaginatedResult<ChallengeConfigDto>>;
 	saveChallengeConfig(event: RequestEvent, input: unknown): Promise<ChallengeConfigDto>;
+	listSessions(
+		event: RequestEvent,
+		pagination: PaginationInput
+	): Promise<PaginatedResult<AdminSessionDto>>;
+};
+
+export type AdminSessionDto = {
+	id: string;
+	displayName: string;
+	challengeType: string;
+	status: string;
+	totalQuestions: number;
+	totalScore: number;
+	accuracy: number;
+	isSuspicious: boolean;
+	createdAt: string;
 };
 
 export function createAdminService(
@@ -93,6 +109,28 @@ export function createAdminService(
 			await requireAdmin(event, profileRepository);
 			const config = parseChallengeConfigInput(input);
 			return toChallengeConfigDto(await adminRepository.upsertChallengeConfig(config));
+		},
+
+		async listSessions(event, pagination) {
+			await requireAdmin(event, profileRepository);
+			const sessions = await adminRepository.listSessions(pagination);
+
+			return {
+				items: sessions.map((session) => ({
+					id: session.id,
+					displayName: session.displayName,
+					challengeType: session.challengeType,
+					status: session.status,
+					totalQuestions: session.totalQuestions,
+					totalScore: session.totalScore,
+					accuracy: session.accuracy,
+					isSuspicious: session.isSuspicious,
+					createdAt: session.createdAt.toISOString()
+				})),
+				limit: pagination.limit,
+				offset: pagination.offset,
+				total: null
+			};
 		}
 	};
 }

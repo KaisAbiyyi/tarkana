@@ -58,6 +58,30 @@ describe('admin service', () => {
 			})
 		).rejects.toThrow('difficultyMin');
 	});
+
+	it('allows admins to list monitored sessions without exposing email', async () => {
+		const adminProfile = createProfile({ role: 'admin' });
+		const service = createAdminService(
+			createAdminRepositoryFake(),
+			createProfileRepositoryFake(adminProfile)
+		);
+
+		const result = await service.listSessions(
+			createFakeEvent(createFakeUser({ id: adminProfile.id })),
+			{
+				limit: 20,
+				offset: 0
+			}
+		);
+
+		expect(result.items[0]).toMatchObject({
+			displayName: 'Nalar Player',
+			challengeType: 'standard',
+			totalScore: 320,
+			isSuspicious: false
+		});
+		expect(JSON.stringify(result.items)).not.toContain('@');
+	});
 });
 
 function createAdminRepositoryFake(): AdminRepository & { savedCategories: unknown[] } {
@@ -100,6 +124,21 @@ function createAdminRepositoryFake(): AdminRepository & { savedCategories: unkno
 				suspiciousSessionCount: 0,
 				userCount: 0
 			};
+		},
+		async listSessions() {
+			return [
+				{
+					id: '11111111-1111-4111-8111-111111111111',
+					displayName: 'Nalar Player',
+					challengeType: 'standard',
+					status: 'completed',
+					totalQuestions: 10,
+					totalScore: 320,
+					accuracy: 80,
+					isSuspicious: false,
+					createdAt: new Date('2026-01-02T03:04:05.000Z')
+				}
+			];
 		}
 	};
 }

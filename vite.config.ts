@@ -3,6 +3,8 @@ import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
 import { sveltekit } from '@sveltejs/kit/vite';
 
+process.env.PLAYWRIGHT_BROWSERS_PATH ??= '.playwright-browsers';
+
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	test: {

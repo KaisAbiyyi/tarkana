@@ -1,4 +1,7 @@
 node_modules
+.npm-cache
+.playwright-browsers
+*.tgz
 
 # Output
 .output

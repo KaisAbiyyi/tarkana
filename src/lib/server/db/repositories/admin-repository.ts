@@ -7,6 +7,7 @@ import {
 	questionRules,
 	usersProfile,
 	type Category,
+	type ChallengeSession,
 	type ChallengeConfig,
 	type NewCategory,
 	type NewChallengeConfig,
@@ -22,6 +23,7 @@ export type AdminRepository = {
 	listChallengeConfigs(input: PageInput): Promise<ChallengeConfig[]>;
 	upsertChallengeConfig(input: NewChallengeConfig): Promise<ChallengeConfig>;
 	getOverview(): Promise<AdminOverview>;
+	listSessions(input: PageInput): Promise<AdminSessionRow[]>;
 };
 
 export type PageInput = {
@@ -35,6 +37,18 @@ export type AdminOverview = {
 	challengeConfigCount: number;
 	suspiciousSessionCount: number;
 	userCount: number;
+};
+
+export type AdminSessionRow = {
+	id: string;
+	displayName: string;
+	challengeType: ChallengeSession['challengeType'];
+	status: ChallengeSession['status'];
+	totalQuestions: number;
+	totalScore: number;
+	accuracy: number;
+	isSuspicious: boolean;
+	createdAt: Date;
 };
 
 export function createAdminRepository(database: Database = getDb()): AdminRepository {
@@ -129,6 +143,26 @@ export function createAdminRepository(database: Database = getDb()): AdminReposi
 				suspiciousSessionCount: suspiciousRow?.value ?? 0,
 				userCount: userRow?.value ?? 0
 			};
+		},
+
+		async listSessions({ limit, offset }) {
+			return database
+				.select({
+					id: challengeSessions.id,
+					displayName: usersProfile.displayName,
+					challengeType: challengeSessions.challengeType,
+					status: challengeSessions.status,
+					totalQuestions: challengeSessions.totalQuestions,
+					totalScore: challengeSessions.totalScore,
+					accuracy: challengeSessions.accuracy,
+					isSuspicious: challengeSessions.isSuspicious,
+					createdAt: challengeSessions.createdAt
+				})
+				.from(challengeSessions)
+				.innerJoin(usersProfile, eq(challengeSessions.userId, usersProfile.id))
+				.orderBy(desc(challengeSessions.createdAt))
+				.limit(limit)
+				.offset(offset);
 		}
 	};
 }

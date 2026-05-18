@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
+import type { CookieOptions } from '@supabase/ssr';
 import type { Handle } from '@sveltejs/kit';
 import { loadServerEnv } from '$lib/server/config/env';
 
@@ -11,7 +12,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 		{
 			cookies: {
 				getAll: () => event.cookies.getAll(),
-				setAll: (cookiesToSet) => {
+				setAll: (cookiesToSet: { name: string; value: string; options: CookieOptions }[]) => {
 					for (const { name, value, options } of cookiesToSet) {
 						event.cookies.set(name, value, { ...options, path: options.path ?? '/' });
 					}
