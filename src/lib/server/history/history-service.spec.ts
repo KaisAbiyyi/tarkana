@@ -23,8 +23,15 @@ describe('history service', () => {
 			addAnswer: async () => {
 				throw new Error('not used');
 			},
+			listActiveCategories: async () => [],
+			listActiveQuestionRules: async () => [],
+			findActiveConfig: async () => null,
 			findSessionById: async () => null,
 			findOwnedSession: async () => null,
+			listSessionQuestions: async () => [],
+			listSessionAnswers: async () => [],
+			findQuestionById: async () => null,
+			findAnswerForQuestion: async () => null,
 			listHistory: async ({ userId }) => {
 				requestedUserId = userId;
 				return { items: [], total: 0 };
@@ -37,6 +44,9 @@ describe('history service', () => {
 				recentSessions: []
 			}),
 			markCompleted: async () => {
+				throw new Error('not used');
+			},
+			completeSessionAndUpdateProfile: async () => {
 				throw new Error('not used');
 			}
 		};

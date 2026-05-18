@@ -19,8 +19,15 @@ describe('dashboard service', () => {
 			addAnswer: async () => {
 				throw new Error('not used');
 			},
+			listActiveCategories: async () => [],
+			listActiveQuestionRules: async () => [],
+			findActiveConfig: async () => null,
 			findSessionById: async () => null,
 			findOwnedSession: async () => null,
+			listSessionQuestions: async () => [],
+			listSessionAnswers: async () => [],
+			findQuestionById: async () => null,
+			findAnswerForQuestion: async () => null,
 			listHistory: async () => ({ items: [], total: 0 }),
 			getDashboardStats: async () => ({
 				totalCompleted: 0,
@@ -30,6 +37,9 @@ describe('dashboard service', () => {
 				recentSessions: []
 			}),
 			markCompleted: async () => {
+				throw new Error('not used');
+			},
+			completeSessionAndUpdateProfile: async () => {
 				throw new Error('not used');
 			}
 		};
