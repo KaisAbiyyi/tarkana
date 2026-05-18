@@ -4,125 +4,125 @@ Use this checklist as the implementation tracker for Workstream 2.
 
 ## Setup
 
-- [ ] Read `docs/prd.md`.
-- [ ] Read `docs/implementation-master-plan.md`.
-- [ ] Read `docs/quality-security-standards.md`.
-- [ ] Read this folder's `README.md`.
-- [ ] Confirm this work is web-only and does not add Android code.
-- [ ] Confirm server-only generated question type is separate from client-safe DTO.
+- [x] Read `docs/prd.md`.
+- [x] Read `docs/implementation-master-plan.md`.
+- [x] Read `docs/quality-security-standards.md`.
+- [x] Read this folder's `README.md`.
+- [x] Confirm this work is web-only and does not add Android code.
+- [x] Confirm server-only generated question type is separate from client-safe DTO.
 
 ## Generator Foundation
 
-- [ ] Add challenge domain types.
-- [ ] Add active question DTO without correct answer.
-- [ ] Add deterministic seeded RNG.
-- [ ] Add RNG tests.
-- [ ] Add answer normalization helpers.
-- [ ] Add choice generator.
-- [ ] Test correct answer inclusion.
-- [ ] Test duplicate choice rejection.
-- [ ] Add RuleValidator.
-- [ ] Test ambiguous question rejection.
-- [ ] Test missing explanation rejection.
-- [ ] Test missing seed rejection.
+- [x] Add challenge domain types.
+- [x] Add active question DTO without correct answer.
+- [x] Add deterministic seeded RNG.
+- [x] Add RNG tests.
+- [x] Add answer normalization helpers.
+- [x] Add choice generator.
+- [x] Test correct answer inclusion.
+- [x] Test duplicate choice rejection.
+- [x] Add RuleValidator.
+- [x] Test ambiguous question rejection.
+- [x] Test missing explanation rejection.
+- [x] Test missing seed rejection.
 
 ## Question Generators
 
-- [ ] Add number sequence generator.
-- [ ] Test arithmetic sequence.
-- [ ] Test geometric sequence.
-- [ ] Test square number sequence.
-- [ ] Test Fibonacci-like sequence.
-- [ ] Test alternating sequence.
-- [ ] Test increasing difference sequence.
-- [ ] Add symbol pattern generator.
-- [ ] Test symbol rotation.
-- [ ] Test alternating symbol.
-- [ ] Test repeating cycle.
-- [ ] Test shape order.
-- [ ] Test growing count.
-- [ ] Test mirrored sequence.
-- [ ] Add mini deduction generator.
-- [ ] Test comparison chain.
-- [ ] Test object ordering.
-- [ ] Test simple elimination.
-- [ ] Test true/false clue.
-- [ ] Test position reasoning.
-- [ ] Add memory pattern generator.
-- [ ] Test symbol recall.
-- [ ] Test position recall.
-- [ ] Test sequence recall.
-- [ ] Test missing element recall.
-- [ ] Test reverse sequence recall.
+- [x] Add number sequence generator.
+- [x] Test arithmetic sequence.
+- [x] Test geometric sequence.
+- [x] Test square number sequence.
+- [x] Test Fibonacci-like sequence.
+- [x] Test alternating sequence.
+- [x] Test increasing difference sequence.
+- [x] Add symbol pattern generator.
+- [x] Test symbol rotation.
+- [x] Test alternating symbol.
+- [x] Test repeating cycle.
+- [x] Test shape order.
+- [x] Test growing count.
+- [x] Test mirrored sequence.
+- [x] Add mini deduction generator.
+- [x] Test comparison chain.
+- [x] Test object ordering.
+- [x] Test simple elimination.
+- [x] Test true/false clue.
+- [x] Test position reasoning.
+- [x] Add memory pattern generator.
+- [x] Test symbol recall.
+- [x] Test position recall.
+- [x] Test sequence recall.
+- [x] Test missing element recall.
+- [x] Test reverse sequence recall.
 
 ## Challenge Assembly
 
-- [ ] Add DifficultyResolver.
-- [ ] Test rating boundary 0.
-- [ ] Test rating boundary 499.
-- [ ] Test rating boundary 500.
-- [ ] Test rating boundary 999.
-- [ ] Test rating boundary 1000.
-- [ ] Test rating boundary 1499.
-- [ ] Test rating boundary 1500.
-- [ ] Test rating boundary 1999.
-- [ ] Test rating boundary 2000.
-- [ ] Add ChallengeBuilder.
-- [ ] Test configured question count.
-- [ ] Test active mode filtering.
-- [ ] Test inactive rule exclusion.
-- [ ] Test mixed challenge distribution.
-- [ ] Test fallback failure when not enough valid rules exist.
+- [x] Add DifficultyResolver.
+- [x] Test rating boundary 0.
+- [x] Test rating boundary 499.
+- [x] Test rating boundary 500.
+- [x] Test rating boundary 999.
+- [x] Test rating boundary 1000.
+- [x] Test rating boundary 1499.
+- [x] Test rating boundary 1500.
+- [x] Test rating boundary 1999.
+- [x] Test rating boundary 2000.
+- [x] Add ChallengeBuilder.
+- [x] Test configured question count.
+- [x] Test active mode filtering.
+- [x] Test inactive rule exclusion.
+- [x] Test mixed challenge distribution.
+- [x] Test fallback failure when not enough valid rules exist.
 
 ## Scoring and Rating
 
-- [ ] Add question scoring.
-- [ ] Test correct answer multiplier.
-- [ ] Test wrong answer multiplier.
-- [ ] Test time expired multiplier.
-- [ ] Test 75-100 percent time band.
-- [ ] Test 50-74 percent time band.
-- [ ] Test 25-49 percent time band.
-- [ ] Test 1-24 percent time band.
-- [ ] Add session score.
-- [ ] Test 100 percent accuracy bonus.
-- [ ] Test 90-99 percent accuracy bonus.
-- [ ] Test 80-89 percent accuracy bonus.
-- [ ] Test 70-79 percent accuracy bonus.
-- [ ] Test below 70 percent accuracy bonus.
-- [ ] Test streak bonus at 3.
-- [ ] Test streak bonus at 5.
-- [ ] Test streak bonus at 10.
-- [ ] Add rating update.
-- [ ] Test every rating delta band.
-- [ ] Add rank resolver.
-- [ ] Test every rank threshold.
-- [ ] Test promotion detection.
+- [x] Add question scoring.
+- [x] Test correct answer multiplier.
+- [x] Test wrong answer multiplier.
+- [x] Test time expired multiplier.
+- [x] Test 75-100 percent time band.
+- [x] Test 50-74 percent time band.
+- [x] Test 25-49 percent time band.
+- [x] Test 1-24 percent time band.
+- [x] Add session score.
+- [x] Test 100 percent accuracy bonus.
+- [x] Test 90-99 percent accuracy bonus.
+- [x] Test 80-89 percent accuracy bonus.
+- [x] Test 70-79 percent accuracy bonus.
+- [x] Test below 70 percent accuracy bonus.
+- [x] Test streak bonus at 3.
+- [x] Test streak bonus at 5.
+- [x] Test streak bonus at 10.
+- [x] Add rating update.
+- [x] Test every rating delta band.
+- [x] Add rank resolver.
+- [x] Test every rank threshold.
+- [x] Test promotion detection.
 
 ## Anti-Cheat and Session Flow
 
-- [ ] Add suspicious session detection.
-- [ ] Test negative time rejection.
-- [ ] Test too-long time rejection.
-- [ ] Test impossible response time flag.
-- [ ] Test duplicate answer rejection.
-- [ ] Test out-of-order answer rejection.
-- [ ] Add start challenge service.
-- [ ] Add submit answer service.
-- [ ] Add finish challenge service.
-- [ ] Make finish idempotent.
-- [ ] Ensure correct answer is hidden until finish or submitted review.
+- [x] Add suspicious session detection.
+- [x] Test negative time rejection.
+- [x] Test too-long time rejection.
+- [x] Test impossible response time flag.
+- [x] Test duplicate answer rejection.
+- [x] Test out-of-order answer rejection.
+- [x] Add start challenge service.
+- [x] Add submit answer service.
+- [x] Add finish challenge service.
+- [x] Make finish idempotent.
+- [x] Ensure correct answer is hidden until finish or submitted review.
 
 ## API and Verification
 
-- [ ] Add `/api/challenge/start`.
-- [ ] Add `/api/challenge/submit`.
-- [ ] Add `/api/challenge/finish`.
-- [ ] Test unauthenticated start rejection.
-- [ ] Test submit ignores client-provided correctness.
-- [ ] Test finish updates rating server-side.
-- [ ] Run `npm.cmd run check`.
-- [ ] Run `npm.cmd run lint`.
-- [ ] Run focused unit tests.
-- [ ] Run `npm.cmd run build`.
+- [x] Add `/api/challenge/start`.
+- [x] Add `/api/challenge/submit`.
+- [x] Add `/api/challenge/finish`.
+- [x] Test unauthenticated start rejection.
+- [x] Test submit ignores client-provided correctness.
+- [x] Test finish updates rating server-side.
+- [x] Run `npm.cmd run check`.
+- [x] Run `npm.cmd run lint`.
+- [x] Run focused unit tests.
+- [x] Run `npm.cmd run build`.
 
