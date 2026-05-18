@@ -4,7 +4,7 @@ import * as schema from './schema';
 import { loadDatabaseUrl } from '$lib/server/config/env';
 
 export function createDb(databaseUrl = loadDatabaseUrl()) {
-	const client = postgres(databaseUrl);
+	const client = postgres(databaseUrl, { prepare: false });
 	return drizzle(client, { schema });
 }
 

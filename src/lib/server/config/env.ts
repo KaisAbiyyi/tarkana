@@ -4,7 +4,7 @@ import { env as publicEnv } from '$env/dynamic/public';
 export type ServerEnv = {
 	DATABASE_URL: string;
 	PUBLIC_SUPABASE_URL: string;
-	PUBLIC_SUPABASE_ANON_KEY: string;
+	PUBLIC_SUPABASE_PUBLISHABLE_KEY: string;
 };
 
 function requireEnvValue(source: Record<string, string | undefined>, key: keyof ServerEnv): string {
@@ -17,7 +17,7 @@ export function loadServerEnv(): ServerEnv {
 	return {
 		DATABASE_URL: requireEnvValue(privateEnv, 'DATABASE_URL'),
 		PUBLIC_SUPABASE_URL: requireEnvValue(publicEnv, 'PUBLIC_SUPABASE_URL'),
-		PUBLIC_SUPABASE_ANON_KEY: requireEnvValue(publicEnv, 'PUBLIC_SUPABASE_ANON_KEY')
+		PUBLIC_SUPABASE_PUBLISHABLE_KEY: requireEnvValue(publicEnv, 'PUBLIC_SUPABASE_PUBLISHABLE_KEY')
 	};
 }
 
