@@ -56,12 +56,18 @@ Use this checklist as the implementation tracker for Workstream 3.
 - [x] Add history page.
 - [x] Add leaderboard page.
 - [x] Add profile page.
-- [ ] Browser-check dashboard desktop/mobile.
-- [ ] Browser-check challenge desktop/mobile.
-- [ ] Browser-check result desktop/mobile.
-- [ ] Browser-check history desktop/mobile.
-- [ ] Browser-check leaderboard desktop/mobile.
-- [ ] Browser-check profile desktop/mobile.
+- [x] Browser-check dashboard desktop.
+- [ ] Browser-check dashboard mobile.
+- [x] Browser-check challenge desktop.
+- [x] Browser-check challenge mobile.
+- [x] Browser-check result desktop.
+- [ ] Browser-check result mobile.
+- [x] Browser-check history desktop.
+- [ ] Browser-check history mobile.
+- [x] Browser-check leaderboard desktop.
+- [ ] Browser-check leaderboard mobile.
+- [x] Browser-check profile desktop.
+- [ ] Browser-check profile mobile.
 
 ## Admin Pages
 
@@ -113,5 +119,9 @@ Use this checklist as the implementation tracker for Workstream 3.
 
 - Browser screenshots captured for landing desktop/mobile and auth desktop/mobile with no console errors.
 - Protected dashboard/admin redirects were verified for unauthenticated access.
-- Authenticated dashboard, challenge, result, history, leaderboard, profile, and admin visual QA still requires a Supabase test user/admin account and seeded active categories/question rules/configs. A test registration attempt returned the safe UI error state from Supabase, so private route screenshots could not be completed in this environment.
+- On June 6, 2026, Google OAuth login and the authenticated dashboard, quick challenge, result, history, leaderboard, and profile flows were verified in Chrome with seeded active categories, rules, and configs.
+- A normal user opening `/admin` now receives a verified `403 Admin access is required` response instead of a generic 500.
+- On June 6, 2026, symbol challenges were upgraded to accessible SVG primitives for directional triangles, circle, square, triangle, diamond, and star. Live Chrome verification covered correct/incorrect feedback, streak reset/increment, and accumulated session score.
+- The challenge UI was visually checked at 1440x900, 768x1024, and 390x844. No horizontal overflow or console errors were found; selected, feedback, timer, and reduced-motion states are covered by component and Playwright tests.
+- Authenticated dashboard/result/history/leaderboard/profile mobile screenshots and live admin management pages still require a dedicated pass and an admin account.
 

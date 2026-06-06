@@ -33,7 +33,8 @@ export type SubmitAnswerService = {
 
 export function createSubmitAnswerService(
 	sessionRepository: SessionRepository = createSessionRepository(),
-	profileRepository: ProfileRepository = createProfileRepository()
+	profileRepository: ProfileRepository = createProfileRepository(),
+	now: () => Date = () => new Date()
 ): SubmitAnswerService {
 	return {
 		async submit(event, input) {
@@ -65,19 +66,23 @@ export function createSubmitAnswerService(
 				throw conflict('Question must be answered in order');
 			}
 
-			if (input.timeSpentSeconds > question.timeLimitSeconds + 2) {
-				throw badRequest('timeSpentSeconds exceeds the question time limit');
-			}
+			const timeSpentSeconds = resolveServerElapsedSeconds({
+				session,
+				question,
+				questions,
+				answers,
+				now: now()
+			});
 
 			const isCorrect =
-				input.timeSpentSeconds < question.timeLimitSeconds &&
+				timeSpentSeconds < question.timeLimitSeconds &&
 				answersMatch(input.selectedAnswer, question.correctAnswer, {
 					exactSymbols: question.questionType === 'symbol_pattern'
 				});
 			const scoreEarned = calculateQuestionScore({
 				isCorrect,
 				difficultyScore: question.difficultyScore,
-				timeSpentSeconds: input.timeSpentSeconds,
+				timeSpentSeconds,
 				timeLimitSeconds: question.timeLimitSeconds
 			});
 
@@ -86,7 +91,7 @@ export function createSubmitAnswerService(
 				userId: profile.id,
 				selectedAnswer: input.selectedAnswer.trim(),
 				isCorrect,
-				timeSpentSeconds: input.timeSpentSeconds,
+				timeSpentSeconds,
 				scoreEarned
 			});
 
@@ -100,6 +105,25 @@ export function createSubmitAnswerService(
 			};
 		}
 	};
+}
+
+function resolveServerElapsedSeconds(input: {
+	session: { createdAt: Date };
+	question: { orderIndex: number; timeLimitSeconds: number };
+	questions: { id: string; orderIndex: number }[];
+	answers: { sessionQuestionId: string; createdAt: Date }[];
+	now: Date;
+}): number {
+	const previousQuestion = input.questions.find(
+		(question) => question.orderIndex === input.question.orderIndex - 1
+	);
+	const previousAnswer = previousQuestion
+		? input.answers.find((answer) => answer.sessionQuestionId === previousQuestion.id)
+		: null;
+	const startedAt = previousAnswer?.createdAt ?? input.session.createdAt;
+	const elapsedSeconds = Math.max(0, Math.ceil((input.now.getTime() - startedAt.getTime()) / 1000));
+
+	return Math.min(elapsedSeconds, input.question.timeLimitSeconds);
 }
 
 function validateInput(input: SubmitAnswerInput): void {

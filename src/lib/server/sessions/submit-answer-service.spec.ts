@@ -26,7 +26,11 @@ describe('submit answer service', () => {
 			session,
 			questions: [firstQuestion, secondQuestion]
 		});
-		const service = createSubmitAnswerService(repository, createProfileRepositoryFake(profile));
+		const service = createSubmitAnswerService(
+			repository,
+			createProfileRepositoryFake(profile),
+			() => new Date('2026-01-01T00:00:05.000Z')
+		);
 
 		const result = await service.submit(createFakeEvent(createFakeUser({ id: profile.id })), {
 			sessionId: session.id,
@@ -59,7 +63,11 @@ describe('submit answer service', () => {
 				}
 			]
 		});
-		const service = createSubmitAnswerService(repository, createProfileRepositoryFake(profile));
+		const service = createSubmitAnswerService(
+			repository,
+			createProfileRepositoryFake(profile),
+			() => new Date('2026-01-01T00:00:05.000Z')
+		);
 
 		await expect(
 			service.submit(createFakeEvent(createFakeUser({ id: profile.id })), {
@@ -79,7 +87,11 @@ describe('submit answer service', () => {
 			session,
 			questions: [question]
 		});
-		const service = createSubmitAnswerService(repository, createProfileRepositoryFake(profile));
+		const service = createSubmitAnswerService(
+			repository,
+			createProfileRepositoryFake(profile),
+			() => new Date('2026-01-01T00:00:05.000Z')
+		);
 
 		const result = await service.submit(createFakeEvent(createFakeUser({ id: profile.id })), {
 			sessionId: session.id,
@@ -90,5 +102,38 @@ describe('submit answer service', () => {
 
 		expect(result.isCorrect).toBe(false);
 		expect(result.scoreEarned).toBe(0);
+	});
+
+	it('computes elapsed time from server timestamps instead of trusting the client', async () => {
+		const profile = createProfile();
+		const session = createChallengeSession({
+			userId: profile.id,
+			createdAt: new Date('2026-01-01T00:00:00.000Z')
+		});
+		const question = createSessionQuestion({
+			sessionId: session.id,
+			timeLimitSeconds: 20
+		});
+		const repository = createSessionRepositoryFake({
+			session,
+			questions: [question]
+		});
+		const service = createSubmitAnswerService(
+			repository,
+			createProfileRepositoryFake(profile),
+			() => new Date('2026-01-01T00:00:15.000Z')
+		);
+
+		const result = await service.submit(createFakeEvent(createFakeUser({ id: profile.id })), {
+			sessionId: session.id,
+			sessionQuestionId: question.id,
+			selectedAnswer: question.correctAnswer,
+			timeSpentSeconds: 0
+		});
+
+		expect(result.scoreEarned).toBe(110);
+		expect(await repository.findAnswerForQuestion(question.id, profile.id)).toMatchObject({
+			timeSpentSeconds: 15
+		});
 	});
 });

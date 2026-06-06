@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import type { CookieOptions } from '@supabase/ssr';
 import type { Handle } from '@sveltejs/kit';
+import { createRequestAuthAccessors } from '$lib/server/auth/request-auth';
 import { loadServerEnv } from '$lib/server/config/env';
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -21,16 +22,9 @@ export const handle: Handle = async ({ event, resolve }) => {
 		}
 	);
 
-	event.locals.getSession = async () => {
-		const { data } = await event.locals.supabase.auth.getSession();
-		return data.session;
-	};
-
-	event.locals.getUser = async () => {
-		const { data, error } = await event.locals.supabase.auth.getUser();
-		if (error) return null;
-		return data.user;
-	};
+	const auth = createRequestAuthAccessors(event.locals.supabase);
+	event.locals.getSession = auth.getSession;
+	event.locals.getUser = auth.getUser;
 
 	event.locals.profile = null;
 
