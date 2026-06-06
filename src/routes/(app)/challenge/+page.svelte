@@ -8,10 +8,14 @@
 	import Badge from '$lib/components/primitives/Badge.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
 	import Card from '$lib/components/primitives/Card.svelte';
+	import AnswerFeedback, {
+		type FeedbackStatus
+	} from '$lib/components/challenge/AnswerFeedback.svelte';
 	import ChallengeTimer from '$lib/components/challenge/ChallengeTimer.svelte';
 	import ChoiceList from '$lib/components/challenge/ChoiceList.svelte';
 	import MemoryRevealPanel from '$lib/components/challenge/MemoryRevealPanel.svelte';
 	import QuestionPanel from '$lib/components/challenge/QuestionPanel.svelte';
+	import SessionMomentum from '$lib/components/challenge/SessionMomentum.svelte';
 	import { labelQuestionType } from '$lib/shared/presentation/format';
 
 	type ActiveQuestionDto = {
@@ -54,8 +58,12 @@
 	let remainingSeconds = $state(0);
 	let startedAtMs = $state<number | null>(null);
 	let loading = $state(false);
+	let transitioning = $state(false);
 	let errorMessage = $state<string | null>(null);
-	let feedback = $state<string | null>(null);
+	let feedbackStatus = $state<FeedbackStatus | null>(null);
+	let feedbackScore = $state(0);
+	let streak = $state(0);
+	let sessionScore = $state(0);
 	let revealVisible = $state(false);
 	let tabSwitchCount = 0;
 
@@ -76,7 +84,8 @@
 		if (!activeQuestion) return;
 
 		selectedAnswer = '';
-		feedback = null;
+		feedbackStatus = null;
+		feedbackScore = 0;
 		errorMessage = null;
 		remainingSeconds = activeQuestion.timeLimitSeconds;
 		startedAtMs = Date.now();
@@ -105,13 +114,20 @@
 	});
 
 	let canSubmit = $derived(
-		Boolean(currentQuestion) && !loading && (selectedAnswer.length > 0 || remainingSeconds <= 0)
+		Boolean(currentQuestion) &&
+			!loading &&
+			!transitioning &&
+			feedbackStatus === null &&
+			(selectedAnswer.length > 0 || remainingSeconds <= 0)
 	);
 
 	async function startChallenge(): Promise<void> {
 		loading = true;
 		errorMessage = null;
-		feedback = null;
+		feedbackStatus = null;
+		feedbackScore = 0;
+		streak = 0;
+		sessionScore = 0;
 
 		const response = await fetch('/api/challenge/start', {
 			method: 'POST',
@@ -166,32 +182,46 @@
 			return;
 		}
 
-		feedback = payload.data.isCorrect
-			? `Correct. Reasoning Score +${payload.data.scoreEarned}`
-			: 'Not correct. Continue to the next question.';
+		feedbackStatus = payload.data.isCorrect ? 'correct' : 'incorrect';
+		feedbackScore = payload.data.scoreEarned;
+		sessionScore += payload.data.scoreEarned;
+		streak = payload.data.isCorrect ? streak + 1 : 0;
+		transitioning = true;
 
 		if (payload.data.isComplete) {
+			feedbackStatus = 'complete';
+			await waitForFeedback();
 			await finishChallenge();
 			return;
 		}
 
+		await waitForFeedback();
 		currentQuestion = payload.data.nextQuestion;
+		transitioning = false;
 	}
 
 	async function finishChallenge(): Promise<void> {
+		loading = true;
 		const response = await fetch('/api/challenge/finish', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ sessionId, tabSwitchCount })
 		});
 		const payload = (await response.json()) as ApiResponse<{ sessionId: string }>;
+		loading = false;
 
 		if (!payload.ok) {
 			errorMessage = payload.error.message;
+			transitioning = false;
 			return;
 		}
 
 		await goto(resolve(`/result/${sessionId}`));
+	}
+
+	function waitForFeedback(): Promise<void> {
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		return new Promise((resolveDelay) => window.setTimeout(resolveDelay, reducedMotion ? 0 : 650));
 	}
 </script>
 
@@ -257,6 +287,12 @@
 	{:else}
 		<div class="grid gap-5 lg:grid-cols-[1fr_320px]">
 			<div class="grid gap-5">
+				<SessionMomentum
+					currentQuestion={currentQuestion.orderIndex + 1}
+					{totalQuestions}
+					{streak}
+					{sessionScore}
+				/>
 				<QuestionPanel question={currentQuestion} {totalQuestions} />
 
 				{#if currentQuestion.questionType === 'memory_pattern'}
@@ -266,14 +302,15 @@
 				<ChoiceList
 					choices={currentQuestion.choices}
 					{selectedAnswer}
-					disabled={loading}
-					onSelect={(choice) => (selectedAnswer = choice)}
+					questionType={currentQuestion.questionType}
+					disabled={loading || transitioning}
+					onSelect={(choice) => {
+						selectedAnswer = choice;
+					}}
 				/>
 
-				{#if feedback}
-					<p class="border-2 border-[var(--color-border)] bg-[var(--color-info)] p-3 font-bold">
-						{feedback}
-					</p>
+				{#if feedbackStatus}
+					<AnswerFeedback status={feedbackStatus} scoreEarned={feedbackScore} />
 				{/if}
 				{#if errorMessage}
 					<p
@@ -284,7 +321,13 @@
 				{/if}
 
 				<Button onclick={submitAnswer} disabled={!canSubmit} {loading}>
-					{remainingSeconds <= 0 && !selectedAnswer ? 'Submit Expired Answer' : 'Submit Answer'}
+					{transitioning
+						? feedbackStatus === 'complete'
+							? 'Finishing Challenge'
+							: 'Next Question'
+						: remainingSeconds <= 0 && !selectedAnswer
+							? 'Submit Expired Answer'
+							: 'Submit Answer'}
 				</Button>
 			</div>
 
