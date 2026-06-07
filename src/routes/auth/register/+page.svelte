@@ -12,11 +12,16 @@
 	let { form }: Props = $props();
 </script>
 
+<svelte:head>
+	<title>Daftar | Tarkana</title>
+</svelte:head>
+
 <PublicShell>
 	<section class="page-shell grid min-h-[calc(100vh-88px)] place-items-center py-10">
 		<Card
 			class="w-full max-w-xl"
 			title="Buat akun Tarkana"
+			headingLevel="h1"
 			description="Mulai dari Unranked, naik lewat performa challenge."
 		>
 			<form class="grid gap-5" method="POST" action="?/register">

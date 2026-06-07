@@ -16,10 +16,14 @@
 	let { data }: Props = $props();
 </script>
 
+<svelte:head>
+	<title>Session Monitoring | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<h1 class="text-4xl font-black sm:text-5xl">Session Monitoring</h1>
-		<p class="mt-2 font-semibold text-[var(--color-muted)]">
+		<h1 class="page-title">Session Monitoring</h1>
+		<p class="mt-3 text-lg font-semibold text-[var(--color-muted)]">
 			Monitoring operasional web-only. Leaderboard tetap tidak menampilkan email.
 		</p>
 	</header>

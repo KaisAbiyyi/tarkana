@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import type { ProfileSummary } from '$lib/shared/types/auth';
 	import Badge from '$lib/components/primitives/Badge.svelte';
@@ -30,13 +31,26 @@
 	] as const;
 
 	let links = $derived(section === 'admin' ? adminLinks : appLinks);
+	let activePath = $derived(page.url.pathname);
 </script>
 
 <div class="min-h-screen pb-10">
-	<header class="border-b-[3px] border-[var(--color-border)] bg-white">
-		<div class="page-shell grid gap-4 py-4 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+	<a class="sr-only focus:not-sr-only" href="#main-content">Skip to main content</a>
+	<header
+		class="sticky top-0 z-30 border-b-[3px] border-[var(--color-border)] bg-white/95 backdrop-blur"
+	>
+		<div class="page-shell grid gap-4 py-3 lg:grid-cols-[auto_1fr_auto] lg:items-center">
 			<div class="flex items-center gap-3">
-				<a class="text-2xl font-black no-underline" href={resolve('/dashboard')}>Tarkana</a>
+				<a
+					class="flex items-center gap-2 text-2xl font-black no-underline"
+					href={resolve('/dashboard')}
+				>
+					<span
+						class="grid h-9 w-9 place-items-center border-[3px] border-[var(--color-border)] bg-[var(--color-primary)] shadow-[var(--shadow-hard-sm)]"
+						aria-hidden="true">T</span
+					>
+					Tarkana
+				</a>
 				<Badge tone={section === 'admin' ? 'warning' : 'accent'}>
 					{section === 'admin' ? 'Admin' : profile.rank}
 				</Badge>
@@ -47,9 +61,17 @@
 				aria-label={section === 'admin' ? 'Admin navigation' : 'App navigation'}
 			>
 				{#each links as link (link.href)}
+					{@const isActive =
+						activePath === link.href ||
+						(link.href !== '/dashboard' && activePath.startsWith(link.href))}
 					<a
-						class="border-2 border-[var(--color-border)] bg-[var(--color-paper)] px-3 py-2 text-sm font-black no-underline hover:bg-[var(--color-primary)]"
+						class={`border-2 border-[var(--color-border)] px-3 py-2 text-sm font-black no-underline transition-transform hover:-translate-y-0.5 ${
+							isActive
+								? 'bg-[var(--color-primary)] shadow-[var(--shadow-hard-sm)]'
+								: 'bg-[var(--color-paper)]'
+						}`}
 						href={resolve(link.href)}
+						aria-current={isActive ? 'page' : undefined}
 					>
 						{link.label}
 					</a>
@@ -64,8 +86,11 @@
 				{/if}
 			</nav>
 
-			<div class="flex items-center gap-3">
-				<div class="min-w-0">
+			<div class="flex flex-wrap items-center gap-3 lg:justify-end">
+				<div
+					class="min-w-0 border-l-[3px] border-[var(--color-border)] pl-3 leading-tight"
+					aria-label="Current profile summary"
+				>
 					<p class="truncate text-sm font-black">{profile.displayName}</p>
 					<p class="text-xs font-bold text-[var(--color-muted)]">Logic Rating {profile.rating}</p>
 				</div>
@@ -76,7 +101,7 @@
 		</div>
 	</header>
 
-	<main class="page-shell mt-8">
+	<main id="main-content" class="page-shell py-8 md:py-10">
 		{@render children?.()}
 	</main>
 </div>

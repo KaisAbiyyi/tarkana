@@ -18,8 +18,39 @@
 		</p>
 	</div>
 {:else}
+	<div class="grid gap-3 md:hidden">
+		{#each entries as entry (entry.position)}
+			<article
+				class="border-[3px] border-[var(--color-border)] bg-white p-4 shadow-[var(--shadow-hard-sm)]"
+			>
+				<div class="flex items-start justify-between gap-3">
+					<div>
+						<p class="text-sm font-black text-[var(--color-muted)] uppercase">
+							Rank #{entry.position}
+						</p>
+						<h3 class="text-xl font-black">{entry.displayName}</h3>
+					</div>
+					<Badge tone="accent">{entry.rank}</Badge>
+				</div>
+				<dl class="mt-4 grid grid-cols-3 gap-2 text-sm">
+					<div class="border-2 border-[var(--color-border)] bg-[var(--color-primary)] p-2">
+						<dt class="font-black uppercase">Rating</dt>
+						<dd class="font-black">{entry.logicRating}</dd>
+					</div>
+					<div class="border-2 border-[var(--color-border)] bg-[var(--color-accent)] p-2">
+						<dt class="font-black uppercase">Accuracy</dt>
+						<dd class="font-black">{formatPercent(entry.averageAccuracy)}</dd>
+					</div>
+					<div class="border-2 border-[var(--color-border)] bg-white p-2">
+						<dt class="font-black uppercase">Done</dt>
+						<dd class="font-black">{entry.totalCompleted}</dd>
+					</div>
+				</dl>
+			</article>
+		{/each}
+	</div>
 	<div
-		class="overflow-x-auto border-[3px] border-[var(--color-border)] bg-white shadow-[var(--shadow-hard)]"
+		class="hidden overflow-x-auto border-[3px] border-[var(--color-border)] bg-white shadow-[var(--shadow-hard)] md:block"
 	>
 		<table class="w-full min-w-[720px] border-collapse text-left">
 			<thead class="bg-[var(--color-primary)]">

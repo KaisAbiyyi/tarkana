@@ -15,10 +15,14 @@
 	let provider = $derived(data.user?.app_metadata?.provider ?? 'email');
 </script>
 
+<svelte:head>
+	<title>Profile | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<p class="font-black text-[var(--color-muted)] uppercase">Account settings</p>
-		<h1 class="text-4xl font-black sm:text-5xl">Profile</h1>
+		<p class="page-kicker">Account settings</p>
+		<h1 class="page-title">Profile</h1>
 	</header>
 
 	<div class="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">

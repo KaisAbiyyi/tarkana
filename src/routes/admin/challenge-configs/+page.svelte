@@ -13,10 +13,14 @@
 	let { data, form }: Props = $props();
 </script>
 
+<svelte:head>
+	<title>Challenge Configs | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<h1 class="text-4xl font-black sm:text-5xl">Challenge Config Management</h1>
-		<p class="mt-2 font-semibold text-[var(--color-muted)]">
+		<h1 class="page-title">Challenge Config Management</h1>
+		<p class="mt-3 text-lg font-semibold text-[var(--color-muted)]">
 			Jumlah soal dan distribusi mode/difficulty dikonfigurasi di sini, bukan hardcoded di UI.
 		</p>
 	</header>

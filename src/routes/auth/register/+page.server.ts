@@ -46,7 +46,7 @@ export const actions: Actions = {
 		return {
 			displayName,
 			email,
-			message: 'Akun dibuat. Cek email kamu jika Supabase meminta konfirmasi.'
+			message: 'Akun dibuat. Cek email kamu untuk menyelesaikan konfirmasi akun.'
 		};
 	},
 

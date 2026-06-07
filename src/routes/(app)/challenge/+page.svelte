@@ -225,65 +225,106 @@
 	}
 </script>
 
+<svelte:head>
+	<title>Challenge | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
-	<header>
-		<p class="font-black text-[var(--color-muted)] uppercase">Ranked flow</p>
-		<h1 class="text-4xl font-black sm:text-5xl">Challenge Session</h1>
-		<p class="mt-2 max-w-2xl font-semibold text-[var(--color-muted)]">
-			Jawab satu per satu. Ranked mode tidak menyediakan navigasi kembali ke soal sebelumnya.
-		</p>
+	<header class="grid gap-4 lg:grid-cols-[1fr_340px] lg:items-end">
+		<div>
+			<p class="page-kicker">Ranked flow</p>
+			<h1 class="page-title">Challenge Session</h1>
+			<p class="mt-3 max-w-2xl text-lg font-semibold text-[var(--color-muted)]">
+				Jawab satu per satu. Ranked mode tidak menyediakan navigasi kembali ke soal sebelumnya.
+			</p>
+		</div>
+		<div
+			class="border-[3px] border-[var(--color-border)] bg-[var(--color-primary)] p-4 shadow-[var(--shadow-hard-sm)]"
+		>
+			<p class="text-sm font-black uppercase">Server trust boundary</p>
+			<p class="mt-1 text-sm font-bold">
+				Score, correctness, elapsed time, rating, and rank are validated server-side.
+			</p>
+		</div>
 	</header>
 
 	{#if !currentQuestion}
-		<Card title="Start Challenge" description="Pilih tipe session dan mode opsional.">
-			<div class="grid gap-5">
-				<label class="grid gap-2 font-black">
-					Challenge type
-					<select
-						class="min-h-12 border-[3px] border-[var(--color-border)] bg-white px-4 font-bold shadow-[var(--shadow-hard-sm)]"
-						bind:value={challengeType}
-						disabled={Boolean(selectedMode)}
-					>
-						<option value="quick">Quick Challenge</option>
-						<option value="standard">Standard Challenge</option>
-						<option value="long">Long Challenge</option>
-						<option value="mixed">Mixed Challenge</option>
-					</select>
-				</label>
-
-				<div class="grid gap-3">
-					<p class="font-black uppercase">Mode selection</p>
-					<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-						<button
-							type="button"
-							class={`border-[3px] border-[var(--color-border)] p-4 text-left font-black shadow-[var(--shadow-hard-sm)] ${selectedMode === '' ? 'bg-[var(--color-accent)]' : 'bg-white'}`}
-							onclick={() => (selectedMode = '')}
+		<div class="grid gap-5 lg:grid-cols-[1fr_320px]">
+			<Card title="Start Challenge" description="Pilih tipe session dan mode opsional.">
+				<div class="grid gap-5">
+					<label class="grid gap-2 font-black">
+						Challenge type
+						<select
+							class="min-h-12 border-[3px] border-[var(--color-border)] bg-white px-4 font-bold shadow-[var(--shadow-hard-sm)]"
+							bind:value={challengeType}
+							disabled={Boolean(selectedMode)}
 						>
-							Mixed modes
-						</button>
-						{#each data.questionTypes as mode (mode)}
+							<option value="quick">Quick Challenge</option>
+							<option value="standard">Standard Challenge</option>
+							<option value="long">Long Challenge</option>
+							<option value="mixed">Mixed Challenge</option>
+						</select>
+					</label>
+
+					<div class="grid gap-3">
+						<p class="font-black uppercase">Mode selection</p>
+						<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 							<button
 								type="button"
-								class={`border-[3px] border-[var(--color-border)] p-4 text-left font-black shadow-[var(--shadow-hard-sm)] ${selectedMode === mode ? 'bg-[var(--color-accent)]' : 'bg-white'}`}
-								onclick={() => (selectedMode = mode)}
+								class={`choice-surface min-h-20 p-4 text-left font-black ${selectedMode === '' ? 'bg-[var(--color-accent)]' : 'bg-white'}`}
+								onclick={() => (selectedMode = '')}
 							>
-								{labelQuestionType(mode)}
+								<span class="block text-lg">Mixed modes</span>
+								<span class="block text-sm font-bold text-[var(--color-muted)]"
+									>All active categories</span
+								>
 							</button>
-						{/each}
+							{#each data.questionTypes as mode (mode)}
+								<button
+									type="button"
+									class={`choice-surface min-h-20 p-4 text-left font-black ${selectedMode === mode ? 'bg-[var(--color-accent)]' : 'bg-white'}`}
+									onclick={() => (selectedMode = mode)}
+								>
+									<span class="block text-lg">{labelQuestionType(mode)}</span>
+									<span class="block text-sm font-bold text-[var(--color-muted)]"
+										>Focused session</span
+									>
+								</button>
+							{/each}
+						</div>
 					</div>
+
+					{#if errorMessage}
+						<p
+							class="border-2 border-[var(--color-border)] bg-[var(--color-danger)] p-3 font-bold text-white"
+						>
+							{errorMessage}
+						</p>
+					{/if}
+
+					<Button onclick={startChallenge} {loading}>Start Challenge</Button>
 				</div>
+			</Card>
 
-				{#if errorMessage}
-					<p
-						class="border-2 border-[var(--color-border)] bg-[var(--color-danger)] p-3 font-bold text-white"
-					>
-						{errorMessage}
-					</p>
-				{/if}
-
-				<Button onclick={startChallenge} {loading}>Start Challenge</Button>
-			</div>
-		</Card>
+			<aside class="grid content-start gap-4">
+				<div
+					class="border-[3px] border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-hard)]"
+				>
+					<p class="text-sm font-black uppercase">Ranked rules</p>
+					<ul class="mt-4 grid gap-3 text-sm font-bold">
+						<li class="border-l-[5px] border-[var(--color-accent)] bg-[var(--color-paper)] p-3">
+							One answer per question.
+						</li>
+						<li class="border-l-[5px] border-[var(--color-primary)] bg-[var(--color-paper)] p-3">
+							Timer remains visible while solving.
+						</li>
+						<li class="border-l-[5px] border-[var(--color-danger)] bg-[var(--color-paper)] p-3">
+							Correct answers unlock only after result review.
+						</li>
+					</ul>
+				</div>
+			</aside>
+		</div>
 	{:else}
 		<div class="grid gap-5 lg:grid-cols-[1fr_320px]">
 			<div class="grid gap-5">

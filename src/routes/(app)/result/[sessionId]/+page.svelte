@@ -13,11 +13,15 @@
 	let result = $derived(data.result);
 </script>
 
+<svelte:head>
+	<title>Result Review | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
 		<div>
-			<p class="font-black text-[var(--color-muted)] uppercase">Completed session</p>
-			<h1 class="text-4xl font-black sm:text-5xl">Result Review</h1>
+			<p class="page-kicker">Completed session</p>
+			<h1 class="page-title">Result Review</h1>
 		</div>
 		<div class="flex flex-wrap gap-3">
 			<Button href="/challenge">Retry</Button>

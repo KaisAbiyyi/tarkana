@@ -13,11 +13,16 @@
 	let { form }: Props = $props();
 </script>
 
+<svelte:head>
+	<title>Masuk | Tarkana</title>
+</svelte:head>
+
 <PublicShell>
 	<section class="page-shell grid min-h-[calc(100vh-88px)] place-items-center py-10">
 		<Card
 			class="w-full max-w-xl"
 			title="Masuk ke Tarkana"
+			headingLevel="h1"
 			description="Lanjutkan challenge dan pantau Logic Rating kamu."
 		>
 			<form class="grid gap-5" method="POST" action="?/login">

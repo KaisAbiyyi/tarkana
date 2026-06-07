@@ -12,11 +12,15 @@
 	let overview = $derived(data.overview);
 </script>
 
+<svelte:head>
+	<title>Admin Overview | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<p class="font-black text-[var(--color-muted)] uppercase">Web-only admin</p>
-		<h1 class="text-4xl font-black sm:text-5xl">Admin Overview</h1>
-		<p class="mt-2 max-w-2xl font-semibold text-[var(--color-muted)]">
+		<p class="page-kicker">Web-only admin</p>
+		<h1 class="page-title">Admin Overview</h1>
+		<p class="mt-3 max-w-2xl text-lg font-semibold text-[var(--color-muted)]">
 			Admin panel mengelola kategori, rule generator, konfigurasi challenge, dan monitoring session.
 		</p>
 	</header>

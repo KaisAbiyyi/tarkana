@@ -31,7 +31,7 @@
 	}: Props = $props();
 
 	const baseClass =
-		'inline-flex items-center justify-center gap-2 border-[3px] border-[var(--color-border)] font-black uppercase no-underline transition-transform duration-150 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-55';
+		'inline-flex cursor-pointer items-center justify-center gap-2 border-[3px] border-[var(--color-border)] font-black uppercase no-underline transition-transform duration-150 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:bg-[#d7d0c4] disabled:text-[var(--color-muted)] disabled:shadow-none';
 	const variantClass: Record<ButtonVariant, string> = {
 		primary: 'bg-[var(--color-primary)] text-[var(--color-ink)] shadow-[var(--shadow-hard-sm)]',
 		secondary: 'bg-[var(--color-accent)] text-[var(--color-ink)] shadow-[var(--shadow-hard-sm)]',
@@ -54,14 +54,22 @@
 		href={disabled ? undefined : href}
 		aria-disabled={disabled || loading}
 		aria-label={label}
+		aria-busy={loading}
 	>
-		{#if loading}<span aria-hidden="true">...</span>{/if}
+		{#if loading}<span aria-hidden="true">Loading</span>{/if}
 		{@render children?.()}
 	</a>
 	<!-- eslint-enable svelte/no-navigation-without-resolve -->
 {:else}
-	<button class={classes} {type} disabled={disabled || loading} aria-label={label} {onclick}>
-		{#if loading}<span aria-hidden="true">...</span>{/if}
+	<button
+		class={classes}
+		{type}
+		disabled={disabled || loading}
+		aria-label={label}
+		aria-busy={loading}
+		{onclick}
+	>
+		{#if loading}<span aria-hidden="true">Loading</span>{/if}
 		{@render children?.()}
 	</button>
 {/if}

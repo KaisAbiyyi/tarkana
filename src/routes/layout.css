@@ -10,14 +10,18 @@
 	--color-primary-strong: #f59e0b;
 	--color-accent: #35d0ba;
 	--color-accent-strong: #0f9f8d;
+	--color-blue: #74c0fc;
+	--color-lime: #b7f35f;
 	--color-danger: #ff5a5f;
 	--color-success: #54d66a;
 	--color-info: #7cc7ff;
 	--shadow-hard: 6px 6px 0 var(--color-border);
 	--shadow-hard-sm: 3px 3px 0 var(--color-border);
+	--shadow-hard-lg: 10px 10px 0 var(--color-border);
 	--radius-tight: 0.35rem;
 	font-family:
-		Inter,
+		Aptos,
+		'Trebuchet MS',
 		ui-sans-serif,
 		system-ui,
 		-apple-system,
@@ -37,8 +41,9 @@ body {
 	min-width: 320px;
 	min-height: 100vh;
 	background:
-		linear-gradient(rgba(23, 18, 13, 0.045) 1px, transparent 1px),
-		linear-gradient(90deg, rgba(23, 18, 13, 0.045) 1px, transparent 1px), var(--color-paper);
+		linear-gradient(rgba(23, 18, 13, 0.05) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(23, 18, 13, 0.05) 1px, transparent 1px),
+		linear-gradient(180deg, #fffaf0 0%, var(--color-paper) 48%, #fff3d1 100%);
 	background-size: 28px 28px;
 	color: var(--color-ink);
 }
@@ -61,8 +66,43 @@ a {
 }
 
 .page-shell {
-	width: min(1180px, calc(100vw - 32px));
+	width: min(1320px, calc(100vw - 32px));
 	margin-inline: auto;
+}
+
+.page-kicker {
+	font-size: 0.875rem;
+	font-weight: 900;
+	text-transform: uppercase;
+	color: var(--color-muted);
+}
+
+.page-title {
+	max-width: 840px;
+	font-size: 2.75rem;
+	line-height: 0.95;
+	font-weight: 900;
+}
+
+.ink-panel {
+	border: 3px solid var(--color-border);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-hard);
+}
+
+.choice-surface {
+	border: 3px solid var(--color-border);
+	background: var(--color-surface);
+	box-shadow: var(--shadow-hard-sm);
+	transition:
+		transform 140ms ease,
+		box-shadow 140ms ease,
+		background-color 140ms ease;
+}
+
+.choice-surface:hover {
+	transform: translateY(-2px);
+	box-shadow: 5px 6px 0 var(--color-border);
 }
 
 .brutal-border {
@@ -252,6 +292,18 @@ a {
 	}
 }
 
+@media (min-width: 640px) {
+	.page-title {
+		font-size: 4rem;
+	}
+}
+
+@media (min-width: 1024px) {
+	.page-title {
+		font-size: 5rem;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
 	*,
 	*::before,
@@ -264,7 +316,8 @@ a {
 	}
 
 	.choice-card:not(:disabled):hover,
-	.choice-card:not(:disabled):active {
+	.choice-card:not(:disabled):active,
+	.choice-surface:hover {
 		transform: none;
 	}
 }

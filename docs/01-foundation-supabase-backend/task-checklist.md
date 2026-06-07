@@ -91,6 +91,7 @@ Use this checklist as the implementation tracker for Workstream 1.
 
 ## Handoff Notes
 
-- Live Supabase RLS validation with real user/admin seeded accounts was not run because the local `.env` contains placeholder Supabase values.
-- Apply `docs/01-foundation-supabase-backend/rls-policies.sql` after running the generated Drizzle migration against the real Supabase database.
-- Replace placeholder `.env` values with real `DATABASE_URL`, `PUBLIC_SUPABASE_URL`, and `PUBLIC_SUPABASE_ANON_KEY` before using auth or database-backed routes.
+- Base schema, hardened RLS policies, and `seed-mvp.sql` were applied to the configured Supabase database on June 6, 2026.
+- Live Google OAuth login and profile provisioning were verified through Chrome against the configured Supabase project.
+- Sensitive challenge tables are revoked from browser-facing `anon` and `authenticated` Data API roles so `correct_answer` cannot be queried directly.
+- A real admin account is still required for live visual verification of admin management pages.

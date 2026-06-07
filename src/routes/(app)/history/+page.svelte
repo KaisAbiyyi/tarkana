@@ -20,11 +20,15 @@
 	let history = $derived(data.history);
 </script>
 
+<svelte:head>
+	<title>History | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<p class="font-black text-[var(--color-muted)] uppercase">Private history</p>
-		<h1 class="text-4xl font-black sm:text-5xl">Challenge History</h1>
-		<p class="mt-2 max-w-2xl font-semibold text-[var(--color-muted)]">
+		<p class="page-kicker">Private history</p>
+		<h1 class="page-title">Challenge History</h1>
+		<p class="mt-3 max-w-2xl text-lg font-semibold text-[var(--color-muted)]">
 			Hanya session milik akun ini yang dimuat dari server.
 		</p>
 	</header>
@@ -42,7 +46,7 @@
 			<div class="grid gap-4">
 				{#each history.items as session (session.id)}
 					<article
-						class="grid gap-4 border-[3px] border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-hard-sm)] lg:grid-cols-[1fr_auto] lg:items-center"
+						class="grid gap-4 border-[3px] border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-hard-sm)] transition-transform hover:-translate-y-1 hover:shadow-[var(--shadow-hard)] lg:grid-cols-[1fr_auto] lg:items-center"
 					>
 						<div>
 							<div class="mb-2 flex flex-wrap gap-2">

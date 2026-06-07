@@ -7,11 +7,19 @@
 		children?: Snippet;
 		title?: string;
 		description?: string;
+		headingLevel?: 'h1' | 'h2' | 'h3';
 		tone?: CardTone;
 		class?: string;
 	};
 
-	let { children, title, description, tone = 'default', class: className = '' }: Props = $props();
+	let {
+		children,
+		title,
+		description,
+		headingLevel = 'h2',
+		tone = 'default',
+		class: className = ''
+	}: Props = $props();
 
 	const toneClass: Record<CardTone, string> = {
 		default: 'bg-white',
@@ -26,7 +34,9 @@
 >
 	{#if title || description}
 		<header class="mb-4 space-y-1">
-			{#if title}<h2 class="text-xl font-black">{title}</h2>{/if}
+			{#if title}<svelte:element this={headingLevel} class="text-xl font-black"
+					>{title}</svelte:element
+				>{/if}
 			{#if description}<p class="text-sm font-semibold opacity-80">{description}</p>{/if}
 		</header>
 	{/if}

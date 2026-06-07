@@ -15,10 +15,14 @@
 	);
 </script>
 
+<svelte:head>
+	<title>Question Rules | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<h1 class="text-4xl font-black sm:text-5xl">Question Rule Management</h1>
-		<p class="mt-2 font-semibold text-[var(--color-muted)]">
+		<h1 class="page-title">Question Rule Management</h1>
+		<p class="mt-3 text-lg font-semibold text-[var(--color-muted)]">
 			Rule aktif harus punya difficulty range valid, time limit, dan config JSON yang bisa
 			divalidasi.
 		</p>

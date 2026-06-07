@@ -10,11 +10,15 @@
 	let { data }: Props = $props();
 </script>
 
+<svelte:head>
+	<title>Leaderboard | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<p class="font-black text-[var(--color-muted)] uppercase">Global ranking</p>
-		<h1 class="text-4xl font-black sm:text-5xl">Leaderboard</h1>
-		<p class="mt-2 max-w-2xl font-semibold text-[var(--color-muted)]">
+		<p class="page-kicker">Global ranking</p>
+		<h1 class="page-title">Leaderboard</h1>
+		<p class="mt-3 max-w-2xl text-lg font-semibold text-[var(--color-muted)]">
 			Ranking berdasarkan Logic Rating. Email tidak ditampilkan dan suspicious session dikecualikan
 			dari perhitungan server-side.
 		</p>

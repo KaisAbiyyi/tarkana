@@ -14,10 +14,14 @@
 	let { data, form }: Props = $props();
 </script>
 
+<svelte:head>
+	<title>Category Management | Tarkana</title>
+</svelte:head>
+
 <section class="grid gap-8">
 	<header>
-		<h1 class="text-4xl font-black sm:text-5xl">Category Management</h1>
-		<p class="mt-2 font-semibold text-[var(--color-muted)]">
+		<h1 class="page-title">Category Management</h1>
+		<p class="mt-3 text-lg font-semibold text-[var(--color-muted)]">
 			Inactive categories tidak dipakai oleh ChallengeBuilder.
 		</p>
 	</header>
