@@ -1,5 +1,5 @@
 const TRIANGLE_DIRECTIONS = ['up', 'right', 'down', 'left'] as const;
-const SIMPLE_VISUAL_SYMBOLS = ['circle', 'square', 'triangle', 'diamond', 'star'] as const;
+const SIMPLE_VISUAL_SYMBOLS = ['circle', 'square', 'diamond', 'star'] as const;
 
 type TriangleDirection = (typeof TRIANGLE_DIRECTIONS)[number];
 type TriangleToken = `triangle-${TriangleDirection}`;

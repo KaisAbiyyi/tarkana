@@ -14,7 +14,7 @@
 		orderIndex: 1
 	};
 
-	const choices = ['triangle-up', 'circle', 'square', 'diamond'];
+	const choices = ['triangle-up', 'triangle-right', 'triangle-down', 'triangle-left'];
 	let selectedAnswer = $state('');
 	let showFeedback = $state(false);
 </script>

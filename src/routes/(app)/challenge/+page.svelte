@@ -70,7 +70,10 @@
 	onMount(() => {
 		const params = new URLSearchParams(window.location.search);
 		const mode = params.get('mode');
-		if (data.questionTypes.includes(mode as QuestionType)) selectedMode = mode as QuestionType;
+		if (data.questionTypes.includes(mode as QuestionType)) {
+			selectedMode = mode as QuestionType;
+			challengeType = 'mode';
+		}
 
 		const onVisibilityChange = () => {
 			if (document.hidden && currentQuestion) tabSwitchCount += 1;
@@ -128,12 +131,17 @@
 		feedbackScore = 0;
 		streak = 0;
 		sessionScore = 0;
+		const effectiveChallengeType = selectedMode
+			? 'mode'
+			: challengeType === 'mode'
+				? 'mixed'
+				: challengeType;
 
 		const response = await fetch('/api/challenge/start', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({
-				challengeType: selectedMode ? 'mode' : challengeType,
+				challengeType: effectiveChallengeType,
 				selectedMode: selectedMode || undefined
 			})
 		});
@@ -223,6 +231,18 @@
 		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 		return new Promise((resolveDelay) => window.setTimeout(resolveDelay, reducedMotion ? 0 : 650));
 	}
+
+	function selectChallengeType(event: Event): void {
+		const nextType = (event.currentTarget as HTMLSelectElement).value as ChallengeType;
+		challengeType = nextType;
+		if (nextType === 'mode' && !selectedMode) selectedMode = data.questionTypes[0] ?? '';
+		if (nextType !== 'mode') selectedMode = '';
+	}
+
+	function selectMode(mode: QuestionType | ''): void {
+		selectedMode = mode;
+		challengeType = mode ? 'mode' : 'mixed';
+	}
 </script>
 
 <svelte:head>
@@ -257,12 +277,13 @@
 						<select
 							class="min-h-12 border-[3px] border-[var(--color-border)] bg-white px-4 font-bold shadow-[var(--shadow-hard-sm)]"
 							bind:value={challengeType}
-							disabled={Boolean(selectedMode)}
+							onchange={selectChallengeType}
 						>
 							<option value="quick">Quick Challenge</option>
 							<option value="standard">Standard Challenge</option>
 							<option value="long">Long Challenge</option>
 							<option value="mixed">Mixed Challenge</option>
+							<option value="mode">Mode Challenge</option>
 						</select>
 					</label>
 
@@ -272,7 +293,7 @@
 							<button
 								type="button"
 								class={`choice-surface min-h-20 p-4 text-left font-black ${selectedMode === '' ? 'bg-[var(--color-accent)]' : 'bg-white'}`}
-								onclick={() => (selectedMode = '')}
+								onclick={() => selectMode('')}
 							>
 								<span class="block text-lg">Mixed modes</span>
 								<span class="block text-sm font-bold text-[var(--color-muted)]"
@@ -283,7 +304,7 @@
 								<button
 									type="button"
 									class={`choice-surface min-h-20 p-4 text-left font-black ${selectedMode === mode ? 'bg-[var(--color-accent)]' : 'bg-white'}`}
-									onclick={() => (selectedMode = mode)}
+									onclick={() => selectMode(mode)}
 								>
 									<span class="block text-lg">{labelQuestionType(mode)}</span>
 									<span class="block text-sm font-bold text-[var(--color-muted)]"
