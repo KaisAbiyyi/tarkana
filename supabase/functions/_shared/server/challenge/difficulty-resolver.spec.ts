@@ -3,8 +3,8 @@ import { expandDifficultyPlan, resolveDifficultyDistribution } from './difficult
 
 describe('difficulty resolver', () => {
 	it.each([
-		[0, { easy: 60, medium: 40, hard: 0 }],
-		[499, { easy: 60, medium: 40, hard: 0 }],
+		[0, { easy: 30, medium: 60, hard: 10 }],
+		[499, { easy: 30, medium: 60, hard: 10 }],
 		[500, { easy: 40, medium: 50, hard: 10 }],
 		[999, { easy: 40, medium: 50, hard: 10 }],
 		[1000, { easy: 20, medium: 60, hard: 20 }],

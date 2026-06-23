@@ -22,6 +22,10 @@ export class SeededRng {
 		return Math.floor(this.next() * (max - min + 1)) + min;
 	}
 
+	boolean(): boolean {
+		return this.next() >= 0.5;
+	}
+
 	pick<T>(items: readonly T[]): T {
 		if (items.length === 0) throw new Error('Cannot pick from an empty list');
 		return items[this.intBetween(0, items.length - 1)] as T;

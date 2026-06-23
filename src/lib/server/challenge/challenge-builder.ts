@@ -47,6 +47,14 @@ export function buildChallengeQuestions(input: ChallengeBuildInput): BuiltChalle
 	const activeRules = input.rules.filter((rule) => rule.isActive);
 	const questions: BuiltChallengeQuestion[] = [];
 
+	const seenFingerprints = new Set<string>();
+	const usedRuleIds = new Map<string, Set<string>>();
+	let lastRuleId: string | null = null;
+
+	for (const category of activeCategories) {
+		usedRuleIds.set(category.id, new Set());
+	}
+
 	for (let orderIndex = 0; orderIndex < input.config.questionCount; orderIndex += 1) {
 		const questionType = requestedTypes[orderIndex] as QuestionType;
 		const difficulty = difficulties[orderIndex] as DifficultyBand;
@@ -62,17 +70,25 @@ export function buildChallengeQuestions(input: ChallengeBuildInput): BuiltChalle
 			throw new Error(`No active ${difficulty} ${questionType} rules are available`);
 		}
 
-		questions.push(
-			generateWithRetries({
-				locale: input.locale,
-				rules,
-				questionType,
-				categoryId: category.id,
-				difficulty,
-				seed: `${input.seed}:${orderIndex}`,
-				rng
-			})
-		);
+		const categoryUsedRuleIds = usedRuleIds.get(category.id) ?? new Set();
+
+		const question = generateWithRetries({
+			locale: input.locale,
+			rules,
+			questionType,
+			categoryId: category.id,
+			difficulty,
+			seed: `${input.seed}:${orderIndex}`,
+			rng,
+			seenFingerprints,
+			usedRuleIds: categoryUsedRuleIds,
+			lastRuleId
+		});
+
+		questions.push(question);
+		seenFingerprints.add(question.metadata.fingerprint as string);
+		categoryUsedRuleIds.add(question.metadata.ruleId as string);
+		lastRuleId = question.metadata.ruleId as string;
 	}
 
 	return questions;
@@ -102,12 +118,29 @@ function generateWithRetries(input: {
 	difficulty: DifficultyBand;
 	seed: string;
 	rng: ReturnType<typeof createSeededRng>;
+	seenFingerprints: Set<string>;
+	usedRuleIds: Set<string>;
+	lastRuleId: string | null;
 }): BuiltChallengeQuestion {
 	const generator = getGeneratorForQuestionType(input.questionType);
 	let lastError: unknown = null;
 
 	for (let attempt = 0; attempt < MAX_GENERATION_ATTEMPTS_PER_QUESTION; attempt += 1) {
-		const rule = input.rng.pick(input.rules);
+		// Filter rules to avoid consecutive duplicates and ensure all are used before reuse
+		let availableRules = input.rules.filter(
+			(r) => r.id !== input.lastRuleId && !input.usedRuleIds.has(r.id)
+		);
+
+		if (availableRules.length === 0) {
+			input.usedRuleIds.clear();
+			availableRules = input.rules.filter((r) => r.id !== input.lastRuleId);
+			if (availableRules.length === 0) {
+				availableRules = input.rules; // Fallback if only 1 rule exists
+			}
+		}
+
+		const rule = input.rng.pick(availableRules);
+
 		try {
 			const question = validateGeneratedQuestion(
 				generator({
@@ -123,7 +156,29 @@ function generateWithRetries(input: {
 					}
 				})
 			);
-			return { ...question, categoryId: input.categoryId };
+
+			const fingerprint = JSON.stringify({
+				questionType: input.questionType,
+				ruleType: rule.ruleType,
+				prompt: question.prompt,
+				correctAnswer: question.correctAnswer,
+				metadata: {
+					sequence: question.metadata.sequence,
+					pattern: question.metadata.pattern,
+					memorize: question.metadata.memorize
+				}
+			});
+
+			if (input.seenFingerprints.has(fingerprint)) {
+				lastError = new Error('Duplicate question generated');
+				continue;
+			}
+
+			return {
+				...question,
+				categoryId: input.categoryId,
+				metadata: { ...question.metadata, fingerprint, ruleId: rule.id }
+			};
 		} catch (error) {
 			lastError = error;
 		}

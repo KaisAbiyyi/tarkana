@@ -95,4 +95,20 @@ describe('challenge builder', () => {
 			})
 		).toThrow('No active');
 	});
+
+	it('ensures questions have unique fingerprints across the session', () => {
+		const questions = buildChallengeQuestions({
+			config: { ...config, questionCount: 10 },
+			categories,
+			rules,
+			userRating: 0,
+			seed: 'builder-unique'
+		});
+
+		const fingerprints = questions.map((q) => q.metadata.fingerprint);
+		const uniqueFingerprints = new Set(fingerprints);
+
+		expect(questions).toHaveLength(10);
+		expect(uniqueFingerprints.size).toBe(10); // Should be strictly unique
+	});
 });

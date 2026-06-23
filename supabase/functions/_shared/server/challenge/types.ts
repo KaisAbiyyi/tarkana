@@ -1,8 +1,4 @@
-import type {
-	ChallengeType,
-	DifficultyBand,
-	QuestionType
-} from '../../shared/constants/challenge.ts';
+import type { ChallengeType, DifficultyBand, QuestionType } from '../../shared/constants/challenge.ts';
 import type { Locale } from '../../i18n/index.ts';
 
 export type JsonRecord = Record<string, unknown>;

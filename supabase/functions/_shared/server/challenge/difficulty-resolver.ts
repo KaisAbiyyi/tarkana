@@ -6,7 +6,7 @@ export const DEFAULT_DIFFICULTY_DISTRIBUTIONS: readonly {
 	maxRating: number | null;
 	distribution: DifficultyDistribution;
 }[] = [
-	{ minRating: 0, maxRating: 499, distribution: { easy: 60, medium: 40, hard: 0 } },
+	{ minRating: 0, maxRating: 499, distribution: { easy: 30, medium: 60, hard: 10 } },
 	{ minRating: 500, maxRating: 999, distribution: { easy: 40, medium: 50, hard: 10 } },
 	{ minRating: 1000, maxRating: 1499, distribution: { easy: 20, medium: 60, hard: 20 } },
 	{ minRating: 1500, maxRating: 1999, distribution: { easy: 10, medium: 50, hard: 40 } },

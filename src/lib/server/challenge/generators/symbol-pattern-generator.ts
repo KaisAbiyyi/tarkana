@@ -14,7 +14,9 @@ export const SYMBOL_PATTERN_RULES = [
 	'mirrored_sequence'
 ] as const;
 
-const SHAPES = ['triangle-up', 'triangle-right', 'triangle-down', 'triangle-left'];
+const ALL_SHAPES = ['circle', 'square', 'diamond', 'star', 'triangle-up', 'triangle-right', 'triangle-down', 'triangle-left'];
+const SIMPLE_SHAPES = ['circle', 'square', 'diamond', 'star'];
+const TRIANGLES = ['triangle-up', 'triangle-right', 'triangle-down', 'triangle-left'];
 
 type SymbolRule = (typeof SYMBOL_PATTERN_RULES)[number];
 
@@ -25,10 +27,10 @@ export function generateSymbolPatternQuestion(input: GenerateQuestionInput): Gen
 
 	const rng = createSeededRng(`${input.seed}:symbol`);
 	const t = createTranslator(resolveLocale(input.locale));
-	const pattern = buildPattern(input.ruleType as SymbolRule, rng, t);
+	const pattern = buildPattern(input.ruleType as SymbolRule, rng, t, input.difficulty);
 	const choices = createChoices({
 		correctAnswer: pattern.answer,
-		distractors: SHAPES,
+		distractors: pattern.distractors,
 		rng,
 		exactSymbols: true
 	});
@@ -52,77 +54,109 @@ export function generateSymbolPatternQuestion(input: GenerateQuestionInput): Gen
 function buildPattern(
 	rule: SymbolRule,
 	rng: ReturnType<typeof createSeededRng>,
-	t: import('$lib/i18n').Translator
+	t: import('$lib/i18n').Translator,
+	difficulty: 'easy' | 'medium' | 'hard'
 ) {
+	const useComplexShapes = difficulty === 'hard' || (difficulty === 'medium' && rng.boolean());
+	const shapePool = useComplexShapes ? ALL_SHAPES : SIMPLE_SHAPES;
+
 	switch (rule) {
 		case 'symbol_rotation': {
-			const start = rng.intBetween(0, SHAPES.length - 1);
+			// Instead of just triangles, rotate through a sequence of shapes
+			const pool = difficulty === 'easy' ? TRIANGLES : rng.shuffle(shapePool).slice(0, difficulty === 'hard' ? 5 : 4);
+			const start = rng.intBetween(0, pool.length - 1);
+			const step = difficulty === 'hard' ? 2 : 1; // Hard skips one
+			
 			const values = Array.from(
 				{ length: 6 },
-				(_, index) => SHAPES[(start + index) % SHAPES.length] as string
+				(_, index) => pool[(start + index * step) % pool.length] as string
 			);
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
-				distractors: SHAPES,
+				distractors: pool,
 				explanation: t('explain.rotation')
 			};
 		}
 		case 'alternating_symbol': {
-			const first = rng.pick(SHAPES);
-			const second = rng.pick(SHAPES.filter((shape) => shape !== first));
-			const values = Array.from({ length: 6 }, (_, index) => (index % 2 === 0 ? first : second));
+			const first = rng.pick(shapePool);
+			const second = rng.pick(shapePool.filter((shape) => shape !== first));
+			let values: string[];
+			
+			if (difficulty === 'hard') {
+				// A B A B C D -> wait, alternating could be A B C A B C
+				const third = rng.pick(shapePool.filter((shape) => shape !== first && shape !== second));
+				values = Array.from({ length: 6 }, (_, index) => [first, second, third][index % 3] as string);
+			} else {
+				values = Array.from({ length: 6 }, (_, index) => (index % 2 === 0 ? first : second));
+			}
+			
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
-				distractors: SHAPES,
+				distractors: shapePool,
 				explanation: t('explain.symbolAlternate', { first, second })
 			};
 		}
 		case 'repeating_cycle': {
-			const cycle = rng.shuffle(SHAPES).slice(0, 3);
+			const cycleLength = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 3 : 4;
+			const cycle = rng.shuffle(shapePool).slice(0, cycleLength);
 			const values = Array.from({ length: 6 }, (_, index) => cycle[index % cycle.length] as string);
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
-				distractors: SHAPES,
+				distractors: shapePool,
 				explanation: t('explain.cycle')
 			};
 		}
 		case 'shape_order': {
-			const start = rng.intBetween(0, SHAPES.length - 1);
+			const cycle = rng.shuffle(shapePool).slice(0, 4);
 			const values = Array.from(
 				{ length: 6 },
-				(_, index) => SHAPES[(start + index) % SHAPES.length] as string
+				(_, index) => cycle[index % cycle.length] as string
 			);
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
-				distractors: SHAPES,
+				distractors: shapePool,
 				explanation: t('explain.shapeOrder')
 			};
 		}
 		case 'growing_count': {
-			const start = rng.intBetween(0, SHAPES.length - 1);
-			const ordered = Array.from(
-				{ length: SHAPES.length },
-				(_, index) => SHAPES[(start + index) % SHAPES.length] as string
-			);
-			const values = [ordered[0], ordered[1], ordered[1], ordered[2], ordered[2], ordered[2]];
+			const startShape = rng.pick(shapePool);
+			const secondShape = rng.pick(shapePool.filter(s => s !== startShape));
+			
+			// Easy: A, B, B, C, C, C -> represented by shapes
+			// Medium: A, A, B, B, B, C, C, C, C -> we only have 6 slots
+			let values: string[];
+			if (difficulty === 'easy') {
+				values = [startShape, secondShape, secondShape, startShape, startShape, startShape];
+			} else {
+				const thirdShape = rng.pick(shapePool.filter(s => s !== startShape && s !== secondShape));
+				values = [startShape, secondShape, secondShape, thirdShape, thirdShape, thirdShape];
+			}
+			
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
-				distractors: SHAPES,
+				distractors: shapePool,
 				explanation: t('explain.growing')
 			};
 		}
 		case 'mirrored_sequence': {
-			const left = rng.shuffle(SHAPES).slice(0, 3);
-			const values = [...left, left[1], left[0], left[1]] as string[];
+			const left = rng.shuffle(shapePool).slice(0, difficulty === 'hard' ? 4 : 3);
+			let values: string[];
+			if (difficulty === 'hard') {
+				// A B C D C B (mirrored around D)
+				values = [left[0], left[1], left[2], left[3], left[2], left[1]] as string[];
+			} else {
+				// A B C C B A
+				values = [left[0], left[1], left[2], left[2], left[1], left[0]] as string[];
+			}
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
-				distractors: SHAPES,
+				distractors: shapePool,
 				explanation: t('explain.mirrored')
 			};
 		}

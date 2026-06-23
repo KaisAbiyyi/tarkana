@@ -14,7 +14,7 @@ export const MEMORY_PATTERN_RULES = [
 	'reverse_sequence_recall'
 ] as const;
 
-const MEMORY_SYMBOLS = ['circle', 'square', 'triangle', 'diamond', 'star', 'hex'];
+const ALL_MEMORY_SYMBOLS = ['circle', 'square', 'triangle', 'diamond', 'star', 'hex', 'pentagon', 'octagon'];
 
 type MemoryRule = (typeof MEMORY_PATTERN_RULES)[number];
 
@@ -26,7 +26,7 @@ export function generateMemoryPatternQuestion(input: GenerateQuestionInput): Gen
 	const rng = createSeededRng(`${input.seed}:memory`);
 	const locale = resolveLocale(input.locale);
 	const t = createTranslator(locale);
-	const challenge = buildMemoryChallenge(input.ruleType as MemoryRule, rng, t, locale);
+	const challenge = buildMemoryChallenge(input.ruleType as MemoryRule, rng, t, locale, input.difficulty);
 	const choices = createChoices({
 		correctAnswer: challenge.answer,
 		distractors: challenge.distractors,
@@ -58,10 +58,32 @@ function buildMemoryChallenge(
 	rule: MemoryRule,
 	rng: ReturnType<typeof createSeededRng>,
 	t: import('$lib/i18n').Translator,
-	locale: import('$lib/i18n').Locale
+	locale: import('$lib/i18n').Locale,
+	difficulty: 'easy' | 'medium' | 'hard'
 ) {
-	const sequence = Array.from({ length: 5 }, () => rng.pick(MEMORY_SYMBOLS));
-	const revealSeconds = 4;
+	// Sequence length: 5 / 6 / 7
+	const seqLength = difficulty === 'hard' ? 7 : difficulty === 'medium' ? 6 : 5;
+	// Reveal time: 4 / 3 / 2
+	const revealSeconds = difficulty === 'hard' ? 2 : difficulty === 'medium' ? 3 : 4;
+	// Symbol pool: 4 / 6 / 8
+	const poolSize = difficulty === 'hard' ? 8 : difficulty === 'medium' ? 6 : 4;
+	
+	const activePool = ALL_MEMORY_SYMBOLS.slice(0, poolSize);
+	
+	// Default sequence generation
+	let sequence = Array.from({ length: seqLength }, () => rng.pick(activePool));
+	
+	// For position_recall, target must appear exactly once!
+	if (rule === 'position_recall') {
+		const target = rng.pick(activePool);
+		const nonTargets = activePool.filter(s => s !== target);
+		
+		// Ensure nonTargets are used for the rest
+		sequence = Array.from({ length: seqLength }, () => rng.pick(nonTargets));
+		// Inject target exactly once
+		const targetIndex = rng.intBetween(0, seqLength - 1);
+		sequence[targetIndex] = target;
+	}
 
 	switch (rule) {
 		case 'symbol_recall': {
@@ -71,7 +93,7 @@ function buildMemoryChallenge(
 				revealSeconds,
 				prompt: t('memory.symbolPrompt', { position: index + 1 }),
 				answer: sequence[index] as string,
-				distractors: MEMORY_SYMBOLS,
+				distractors: activePool,
 				explanation: t('memory.symbolExplain', {
 					position: index + 1,
 					symbol: labelSymbolToken(sequence[index] as string, locale)
@@ -79,13 +101,17 @@ function buildMemoryChallenge(
 			};
 		}
 		case 'position_recall': {
-			const target = rng.pick([...new Set(sequence)]);
+			// Find the single instance of the target we ensured above
+			const targetIndex = sequence.findIndex((s, index, arr) => arr.indexOf(s) === arr.lastIndexOf(s));
+			// Fallback in case rng matched perfectly, which won't happen because we forced it
+			const target = sequence[targetIndex !== -1 ? targetIndex : 0] as string;
+			
 			return {
 				memorize: sequence,
 				revealSeconds,
 				prompt: t('memory.positionPrompt', { symbol: labelSymbolToken(target, locale) }),
 				answer: String(sequence.indexOf(target) + 1),
-				distractors: ['1', '2', '3', '4', '5'],
+				distractors: Array.from({ length: seqLength }, (_, i) => String(i + 1)),
 				explanation: t('memory.positionExplain', {
 					symbol: labelSymbolToken(target, locale),
 					position: sequence.indexOf(target) + 1
@@ -101,7 +127,7 @@ function buildMemoryChallenge(
 				distractors: [
 					rng.shuffle(sequence).join(' > '),
 					[...sequence].reverse().join(' > '),
-					rng.shuffle(MEMORY_SYMBOLS).slice(0, 5).join(' > ')
+					rng.shuffle(activePool).slice(0, seqLength).join(' > ')
 				],
 				explanation: t('memory.exactExplain')
 			};
@@ -113,12 +139,12 @@ function buildMemoryChallenge(
 				prompt: t('memory.missingPrompt', {
 					sequence: sequence
 						.map((value, valueIndex) =>
-							valueIndex === index ? '?' : labelSymbolToken(value, locale)
+							valueIndex === index ? '?' : labelSymbolToken(value as string, locale)
 						)
 						.join(' > ')
 				}),
 				answer: sequence[index] as string,
-				distractors: MEMORY_SYMBOLS,
+				distractors: activePool,
 				explanation: t('memory.missingExplain', {
 					symbol: labelSymbolToken(sequence[index] as string, locale)
 				})
@@ -133,7 +159,7 @@ function buildMemoryChallenge(
 				distractors: [
 					sequence.join(' > '),
 					rng.shuffle(sequence).join(' > '),
-					rng.shuffle(MEMORY_SYMBOLS).slice(0, 5).join(' > ')
+					rng.shuffle(activePool).slice(0, seqLength).join(' > ')
 				],
 				explanation: t('memory.reverseExplain')
 			};

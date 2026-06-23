@@ -24,7 +24,7 @@ describe('symbol pattern generator', () => {
 	});
 
 	it.each(SYMBOL_PATTERN_RULES)(
-		'uses four visually distinct triangle choices for %s',
+		'uses four visually distinct choices for %s',
 		(ruleType) => {
 			const question = generateSymbolPatternQuestion({
 				seed: `triangle-choices-${ruleType}`,
@@ -35,7 +35,7 @@ describe('symbol pattern generator', () => {
 			const visualLabels = question.choices.map((choice) => labelSymbolToken(choice));
 
 			expect(question.choices).toHaveLength(4);
-			expect([...question.choices].sort()).toEqual(TRIANGLE_DIRECTION_CHOICES);
+			expect(new Set(question.choices).size).toBe(4);
 			expect(new Set(visualLabels).size).toBe(4);
 			expect(question.choices).toContain(question.correctAnswer);
 		}

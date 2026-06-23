@@ -11,11 +11,7 @@ import {
 } from '../../server/db/repositories/session-repository.ts';
 import type { ChallengeSession, SessionAnswer, SessionQuestion } from '../../server/db/schema.ts';
 import { calculateRatingDelta, applyRatingDelta } from '../../server/scoring/rating.ts';
-import {
-	resolveCompletedRank,
-	isRankPromotion,
-	getRankProgress
-} from '../../server/scoring/rank.ts';
+import { resolveCompletedRank, isRankPromotion, getRankProgress } from '../../server/scoring/rank.ts';
 import { calculateSessionScore } from '../../server/scoring/scoring.ts';
 import { detectSuspiciousSession } from '../../server/scoring/suspicious-session.ts';
 import { toResultQuestionReviewDto } from '../../server/sessions/dto.ts';
