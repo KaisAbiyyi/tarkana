@@ -1,0 +1,149 @@
+import {
+	createChoices,
+	createNumericDistractors
+} from '../../../server/challenge/choice-generator.ts';
+import { resolveDifficultyScore } from '../../../server/challenge/difficulty-resolver.ts';
+import { createSeededRng } from '../../../server/challenge/random/seeded-rng.ts';
+import { validateGeneratedQuestion } from '../../../server/challenge/rule-validator.ts';
+import type { GeneratedQuestion, GenerateQuestionInput } from '../../../server/challenge/types.ts';
+import { createTranslator, resolveLocale } from '../../../i18n/index.ts';
+
+export const NUMBER_SEQUENCE_RULES = [
+	'arithmetic_sequence',
+	'geometric_sequence',
+	'square_number',
+	'fibonacci_like',
+	'alternating_sequence',
+	'increasing_difference'
+] as const;
+
+type NumberRule = (typeof NUMBER_SEQUENCE_RULES)[number];
+
+export function generateNumberSequenceQuestion(input: GenerateQuestionInput): GeneratedQuestion {
+	if (!NUMBER_SEQUENCE_RULES.includes(input.ruleType as NumberRule)) {
+		throw new Error(`Unsupported number sequence rule: ${input.ruleType}`);
+	}
+
+	const rng = createSeededRng(`${input.seed}:number`);
+	const t = createTranslator(resolveLocale(input.locale));
+	const sequence = buildSequence(input.ruleType as NumberRule, rng, t);
+	const correctAnswer = sequence.answer;
+	const choices = createChoices({
+		correctAnswer: String(correctAnswer),
+		distractors: createNumericDistractors({
+			correctAnswer,
+			rng,
+			excluded: sequence.visible,
+			spread: sequence.spread
+		}),
+		rng
+	});
+
+	return validateGeneratedQuestion({
+		questionType: 'number_sequence',
+		prompt: t('question.nextNumber', { sequence: `${sequence.visible.join(', ')}, ?` }),
+		choices,
+		correctAnswer: String(correctAnswer),
+		explanation: sequence.explanation,
+		difficultyScore: resolveDifficultyScore({
+			difficulty: input.difficulty,
+			min: Number(input.config?.difficultyMin),
+			max: Number(input.config?.difficultyMax),
+			offset: rng.intBetween(0, 40)
+		}),
+		timeLimitSeconds: input.timeLimitSeconds,
+		metadata: {
+			ruleType: input.ruleType,
+			sequence: sequence.visible,
+			difficulty: input.difficulty
+		},
+		generatedSeed: input.seed
+	});
+}
+
+function buildSequence(
+	rule: NumberRule,
+	rng: ReturnType<typeof createSeededRng>,
+	t: import('$lib/i18n').Translator
+) {
+	switch (rule) {
+		case 'arithmetic_sequence': {
+			const start = rng.intBetween(1, 12);
+			const step = rng.intBetween(2, 9);
+			const visible = Array.from({ length: 5 }, (_, index) => start + step * index);
+			return {
+				visible,
+				answer: start + step * 5,
+				spread: step * 3,
+				explanation: t('explain.arithmetic', { step })
+			};
+		}
+		case 'geometric_sequence': {
+			const start = rng.intBetween(1, 5);
+			const factor = rng.intBetween(2, 4);
+			const visible = Array.from({ length: 5 }, (_, index) => start * factor ** index);
+			return {
+				visible,
+				answer: start * factor ** 5,
+				spread: factor * 10,
+				explanation: t('explain.geometric', { factor })
+			};
+		}
+		case 'square_number': {
+			const start = rng.intBetween(1, 5);
+			const visible = Array.from({ length: 5 }, (_, index) => (start + index) ** 2);
+			return {
+				visible,
+				answer: (start + 5) ** 2,
+				spread: 20,
+				explanation: t('explain.square')
+			};
+		}
+		case 'fibonacci_like': {
+			const first = rng.intBetween(1, 7);
+			const second = rng.intBetween(2, 9);
+			const values = [first, second];
+			while (values.length < 6) {
+				values.push((values.at(-1) ?? 0) + (values.at(-2) ?? 0));
+			}
+			return {
+				visible: values.slice(0, 5),
+				answer: values[5] as number,
+				spread: 12,
+				explanation: t('explain.fibonacci')
+			};
+		}
+		case 'alternating_sequence': {
+			const start = rng.intBetween(2, 12);
+			const add = rng.intBetween(3, 8);
+			const subtract = rng.intBetween(1, 4);
+			const visible = [start];
+			for (let index = 1; index < 6; index += 1) {
+				const previous = visible[index - 1] as number;
+				visible.push(index % 2 === 1 ? previous + add : previous - subtract);
+			}
+			return {
+				visible: visible.slice(0, 5),
+				answer: visible[5] as number,
+				spread: add + subtract + 5,
+				explanation: t('explain.alternating', { add, subtract })
+			};
+		}
+		case 'increasing_difference': {
+			const start = rng.intBetween(1, 8);
+			const firstStep = rng.intBetween(1, 4);
+			const visible = [start];
+			let step = firstStep;
+			for (let index = 1; index < 6; index += 1) {
+				visible.push((visible[index - 1] as number) + step);
+				step += 1;
+			}
+			return {
+				visible: visible.slice(0, 5),
+				answer: visible[5] as number,
+				spread: 12,
+				explanation: t('explain.increasing', { step: firstStep })
+			};
+		}
+	}
+}

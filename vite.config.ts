@@ -7,6 +7,9 @@ process.env.PLAYWRIGHT_BROWSERS_PATH ??= '.playwright-browsers';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
+	ssr: {
+		noExternal: ['gsap']
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
