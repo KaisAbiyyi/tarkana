@@ -3,6 +3,7 @@ import { resolveDifficultyScore } from '$lib/server/challenge/difficulty-resolve
 import { createSeededRng } from '$lib/server/challenge/random/seeded-rng';
 import { validateGeneratedQuestion } from '$lib/server/challenge/rule-validator';
 import type { GeneratedQuestion, GenerateQuestionInput } from '$lib/server/challenge/types';
+import { createTranslator, resolveLocale } from '$lib/i18n';
 
 export const MINI_DEDUCTION_RULES = [
 	'comparison_chain',
@@ -13,8 +14,6 @@ export const MINI_DEDUCTION_RULES = [
 ] as const;
 
 const PEOPLE = ['Ari', 'Bima', 'Citra', 'Deni'];
-const OBJECTS = ['red cube', 'blue cube', 'green cube', 'yellow cube'];
-
 type DeductionRule = (typeof MINI_DEDUCTION_RULES)[number];
 
 export function generateMiniDeductionQuestion(input: GenerateQuestionInput): GeneratedQuestion {
@@ -23,7 +22,8 @@ export function generateMiniDeductionQuestion(input: GenerateQuestionInput): Gen
 	}
 
 	const rng = createSeededRng(`${input.seed}:deduction`);
-	const puzzle = buildPuzzle(input.ruleType as DeductionRule, rng);
+	const t = createTranslator(resolveLocale(input.locale));
+	const puzzle = buildPuzzle(input.ruleType as DeductionRule, rng, t);
 	const choices = createChoices({
 		correctAnswer: puzzle.answer,
 		distractors: puzzle.distractors,
@@ -46,51 +46,61 @@ export function generateMiniDeductionQuestion(input: GenerateQuestionInput): Gen
 	});
 }
 
-function buildPuzzle(rule: DeductionRule, rng: ReturnType<typeof createSeededRng>) {
+function buildPuzzle(
+	rule: DeductionRule,
+	rng: ReturnType<typeof createSeededRng>,
+	t: import('$lib/i18n').Translator
+) {
+	const objects = [
+		t('object.redCube'),
+		t('object.blueCube'),
+		t('object.greenCube'),
+		t('object.yellowCube')
+	];
 	switch (rule) {
 		case 'comparison_chain': {
 			const [first, second, third] = rng.shuffle(PEOPLE).slice(0, 3) as [string, string, string];
 			return {
-				prompt: `${first} solved more puzzles than ${second}. ${second} solved more puzzles than ${third}. Who solved the most?`,
+				prompt: t('deduction.comparisonPrompt', { first, second, third }),
 				answer: first,
-				distractors: [second, third, 'Cannot be determined'],
-				explanation: `Comparison chain: ${first} is above ${second}, and ${second} is above ${third}.`
+				distractors: [second, third, t('arena.cannotDetermine')],
+				explanation: t('deduction.comparisonExplain', { first, second, third })
 			};
 		}
 		case 'object_ordering': {
-			const [first, second, third] = rng.shuffle(OBJECTS).slice(0, 3) as [string, string, string];
+			const [first, second, third] = rng.shuffle(objects).slice(0, 3) as [string, string, string];
 			return {
-				prompt: `The ${first} is left of the ${second}. The ${second} is left of the ${third}. Which cube is in the middle?`,
+				prompt: t('deduction.orderPrompt', { first, second, third }),
 				answer: second,
-				distractors: [first, third, 'Cannot be determined'],
-				explanation: `Object ordering: the order is ${first}, ${second}, then ${third}.`
+				distractors: [first, third, t('arena.cannotDetermine')],
+				explanation: t('deduction.orderExplain', { first, second, third })
 			};
 		}
 		case 'simple_elimination': {
 			const [correct, wrongA, wrongB] = rng.shuffle(PEOPLE).slice(0, 3) as [string, string, string];
 			return {
-				prompt: `${wrongA} did not take the key. ${wrongB} did not take the key. Only ${correct}, ${wrongA}, and ${wrongB} were in the room. Who took the key?`,
+				prompt: t('deduction.eliminationPrompt', { correct, wrongA, wrongB }),
 				answer: correct,
-				distractors: [wrongA, wrongB, 'Cannot be determined'],
-				explanation: `Simple elimination: the two named alternatives are ruled out, leaving ${correct}.`
+				distractors: [wrongA, wrongB, t('arena.cannotDetermine')],
+				explanation: t('deduction.eliminationExplain', { correct })
 			};
 		}
 		case 'true_false_clue': {
 			const [truth, falsehood] = rng.shuffle(PEOPLE).slice(0, 2) as [string, string];
 			return {
-				prompt: `${truth} says "the switch is on." ${falsehood} says "the switch is off." Exactly one statement is true, and the switch is on. Who told the truth?`,
+				prompt: t('deduction.truthPrompt', { truth, falsehood }),
 				answer: truth,
-				distractors: [falsehood, 'Both', 'Neither'],
-				explanation: `True or false clue: the switch is on, so ${truth}'s statement is true.`
+				distractors: [falsehood, t('deduction.both'), t('deduction.neither')],
+				explanation: t('deduction.truthExplain', { truth })
 			};
 		}
 		case 'position_reasoning': {
 			const [left, middle, right] = rng.shuffle(PEOPLE).slice(0, 3) as [string, string, string];
 			return {
-				prompt: `${left} stands immediately left of ${middle}. ${right} stands immediately right of ${middle}. Who stands in the center?`,
+				prompt: t('deduction.positionPrompt', { left, middle, right }),
 				answer: middle,
-				distractors: [left, right, 'Cannot be determined'],
-				explanation: `Position reasoning: ${middle} has one person immediately on each side.`
+				distractors: [left, right, t('arena.cannotDetermine')],
+				explanation: t('deduction.positionExplain', { middle })
 			};
 		}
 	}

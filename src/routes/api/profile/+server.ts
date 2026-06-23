@@ -7,7 +7,7 @@ export const GET: RequestHandler = async (event) => {
 		const profileService = createProfileService();
 		return jsonOk(await profileService.getProfile(event));
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };
 
@@ -21,6 +21,6 @@ export const PATCH: RequestHandler = async (event) => {
 
 		return jsonOk(result);
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };

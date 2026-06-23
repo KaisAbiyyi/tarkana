@@ -1,0 +1,1 @@
+ALTER TABLE "users_profile" ADD COLUMN "public_discriminator" varchar(4) DEFAULT '0000' NOT NULL;

@@ -1,5 +1,8 @@
 <script lang="ts">
-	export type FeedbackStatus = 'correct' | 'incorrect' | 'complete';
+	import { createArenaLabels } from '$lib/shared/presentation/arena-labels';
+	import { getI18nContext } from '$lib/i18n/context';
+
+	export type FeedbackStatus = 'correct' | 'incorrect' | 'complete' | 'timeout';
 
 	type Props = {
 		status: FeedbackStatus;
@@ -7,31 +10,40 @@
 	};
 
 	let { status, scoreEarned = 0 }: Props = $props();
+	const { locale } = getI18nContext();
+	const ARENA_LABELS = createArenaLabels(locale);
 
 	const content: Record<FeedbackStatus, { title: string; message: string; icon: string }> = {
 		correct: {
-			title: 'Correct!',
-			message: 'Sharp reasoning. Keep the streak alive.',
+			title: ARENA_LABELS.correctTitle,
+			message: ARENA_LABELS.correctMessage,
 			icon: '✓'
 		},
 		incorrect: {
-			title: 'Keep going!',
-			message: 'One miss does not end the run. Reset and solve the next one.',
-			icon: '↻'
+			title: ARENA_LABELS.incorrectTitle,
+			message: ARENA_LABELS.incorrectMessage,
+			icon: '✕'
+		},
+		timeout: {
+			title: ARENA_LABELS.timeoutTitle,
+			message: ARENA_LABELS.timeoutMessage,
+			icon: '◷'
 		},
 		complete: {
-			title: 'Challenge complete!',
-			message: 'Calculating your Reasoning Score and Rank Progress.',
+			title: ARENA_LABELS.completeTitle,
+			message: ARENA_LABELS.completeMessage,
 			icon: '★'
 		}
 	};
-	const burstPieces = [0, 1, 2, 3, 4, 5, 6, 7];
 
 	let current = $derived(content[status]);
+
+	const burstPieces = [0, 1, 2, 3, 4, 5, 6, 7];
+
 	let toneClass = $derived(
 		status === 'correct'
 			? 'bg-[var(--color-success)]'
-			: status === 'incorrect'
+			: status === 'incorrect' || status === 'timeout'
 				? 'bg-[var(--color-primary)]'
 				: 'bg-[var(--color-info)]'
 	);
@@ -60,7 +72,7 @@
 			<p class="text-xl font-black">{current.title}</p>
 			<p class="font-bold">{current.message}</p>
 			{#if status === 'correct'}
-				<p class="score-float mt-1 font-black">+{scoreEarned} Reasoning Score</p>
+				<p class="score-float mt-1 font-black">{ARENA_LABELS.scoreEarned(scoreEarned)}</p>
 			{/if}
 		</div>
 	</div>

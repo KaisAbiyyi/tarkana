@@ -28,6 +28,7 @@ export function createProfileService(
 			return {
 				id: updatedProfile.id,
 				displayName: updatedProfile.displayName,
+				publicDiscriminator: updatedProfile.publicDiscriminator,
 				role: updatedProfile.role,
 				rating: updatedProfile.rating,
 				rank: updatedProfile.rank

@@ -4,8 +4,11 @@ import { createLeaderboardService } from '$lib/server/leaderboard/leaderboard-se
 export const load: PageServerLoad = async (event) => {
 	const limit = 50;
 	const offset = Number(event.url.searchParams.get('offset') ?? 0);
+	const service = createLeaderboardService();
 
 	return {
-		leaderboard: await createLeaderboardService().listLeaderboard(event, { limit, offset })
+		leaderboard: await service.listLeaderboard(event, { limit, offset }),
+		currentUserEntry: await service.getCurrentUserEntry(event),
+		currentUserId: event.locals.profile?.id
 	};
 };

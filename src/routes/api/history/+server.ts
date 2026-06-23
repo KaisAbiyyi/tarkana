@@ -8,6 +8,6 @@ export const GET: RequestHandler = async (event) => {
 		const historyService = createHistoryService();
 		return jsonOk(await historyService.listHistory(event, parsePagination(event.url.searchParams)));
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };

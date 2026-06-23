@@ -9,12 +9,13 @@ describe('SessionMomentum', () => {
 			currentQuestion: 3,
 			totalQuestions: 5,
 			streak: 2,
-			sessionScore: 180
+			sessionScore: 180,
+			remainingSeconds: 60,
+			totalSeconds: 120
 		});
 
-		await expect.element(page.getByText('3 of 5')).toBeInTheDocument();
-		await expect.element(page.getByText('2 streak')).toBeInTheDocument();
-		await expect.element(page.getByText('180 pts')).toBeInTheDocument();
-		await expect.element(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '3');
+		await expect.element(page.getByText('Question 3 of 5')).toBeInTheDocument();
+		await expect.element(page.getByText('2')).toBeInTheDocument();
+		await expect.element(page.getByText('180')).toBeInTheDocument();
 	});
 });

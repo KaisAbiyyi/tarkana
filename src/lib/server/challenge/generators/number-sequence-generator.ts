@@ -3,6 +3,7 @@ import { resolveDifficultyScore } from '$lib/server/challenge/difficulty-resolve
 import { createSeededRng } from '$lib/server/challenge/random/seeded-rng';
 import { validateGeneratedQuestion } from '$lib/server/challenge/rule-validator';
 import type { GeneratedQuestion, GenerateQuestionInput } from '$lib/server/challenge/types';
+import { createTranslator, resolveLocale } from '$lib/i18n';
 
 export const NUMBER_SEQUENCE_RULES = [
 	'arithmetic_sequence',
@@ -21,7 +22,8 @@ export function generateNumberSequenceQuestion(input: GenerateQuestionInput): Ge
 	}
 
 	const rng = createSeededRng(`${input.seed}:number`);
-	const sequence = buildSequence(input.ruleType as NumberRule, rng);
+	const t = createTranslator(resolveLocale(input.locale));
+	const sequence = buildSequence(input.ruleType as NumberRule, rng, t);
 	const correctAnswer = sequence.answer;
 	const choices = createChoices({
 		correctAnswer: String(correctAnswer),
@@ -36,7 +38,7 @@ export function generateNumberSequenceQuestion(input: GenerateQuestionInput): Ge
 
 	return validateGeneratedQuestion({
 		questionType: 'number_sequence',
-		prompt: `Find the next number: ${sequence.visible.join(', ')}, ?`,
+		prompt: t('question.nextNumber', { sequence: `${sequence.visible.join(', ')}, ?` }),
 		choices,
 		correctAnswer: String(correctAnswer),
 		explanation: sequence.explanation,
@@ -56,7 +58,11 @@ export function generateNumberSequenceQuestion(input: GenerateQuestionInput): Ge
 	});
 }
 
-function buildSequence(rule: NumberRule, rng: ReturnType<typeof createSeededRng>) {
+function buildSequence(
+	rule: NumberRule,
+	rng: ReturnType<typeof createSeededRng>,
+	t: import('$lib/i18n').Translator
+) {
 	switch (rule) {
 		case 'arithmetic_sequence': {
 			const start = rng.intBetween(1, 12);
@@ -66,7 +72,7 @@ function buildSequence(rule: NumberRule, rng: ReturnType<typeof createSeededRng>
 				visible,
 				answer: start + step * 5,
 				spread: step * 3,
-				explanation: `Arithmetic sequence: add ${step} each time.`
+				explanation: t('explain.arithmetic', { step })
 			};
 		}
 		case 'geometric_sequence': {
@@ -77,7 +83,7 @@ function buildSequence(rule: NumberRule, rng: ReturnType<typeof createSeededRng>
 				visible,
 				answer: start * factor ** 5,
 				spread: factor * 10,
-				explanation: `Geometric sequence: multiply by ${factor} each time.`
+				explanation: t('explain.geometric', { factor })
 			};
 		}
 		case 'square_number': {
@@ -87,7 +93,7 @@ function buildSequence(rule: NumberRule, rng: ReturnType<typeof createSeededRng>
 				visible,
 				answer: (start + 5) ** 2,
 				spread: 20,
-				explanation: `Square number sequence: each value is a consecutive square.`
+				explanation: t('explain.square')
 			};
 		}
 		case 'fibonacci_like': {
@@ -101,7 +107,7 @@ function buildSequence(rule: NumberRule, rng: ReturnType<typeof createSeededRng>
 				visible: values.slice(0, 5),
 				answer: values[5] as number,
 				spread: 12,
-				explanation: 'Fibonacci-like sequence: each value is the sum of the previous two values.'
+				explanation: t('explain.fibonacci')
 			};
 		}
 		case 'alternating_sequence': {
@@ -117,7 +123,7 @@ function buildSequence(rule: NumberRule, rng: ReturnType<typeof createSeededRng>
 				visible: visible.slice(0, 5),
 				answer: visible[5] as number,
 				spread: add + subtract + 5,
-				explanation: `Alternating sequence: add ${add}, then subtract ${subtract}, and repeat.`
+				explanation: t('explain.alternating', { add, subtract })
 			};
 		}
 		case 'increasing_difference': {
@@ -133,7 +139,7 @@ function buildSequence(rule: NumberRule, rng: ReturnType<typeof createSeededRng>
 				visible: visible.slice(0, 5),
 				answer: visible[5] as number,
 				spread: 12,
-				explanation: `Increasing difference sequence: the added amount starts at ${firstStep} and increases by 1.`
+				explanation: t('explain.increasing', { step: firstStep })
 			};
 		}
 	}

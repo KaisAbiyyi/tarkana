@@ -26,6 +26,7 @@ export function createDashboardService(
 				totalCompleted: stats.totalCompleted,
 				bestScore: stats.bestScore,
 				averageAccuracy: roundMetric(stats.averageAccuracy),
+				totalRatingDelta: stats.totalRatingDelta,
 				averageSolveTimeSeconds: roundMetric(stats.averageSolveTimeSeconds),
 				strongestCategory: null,
 				weakestCategory: null,

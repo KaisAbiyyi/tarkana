@@ -3,6 +3,8 @@ import { resolveDifficultyScore } from '$lib/server/challenge/difficulty-resolve
 import { createSeededRng } from '$lib/server/challenge/random/seeded-rng';
 import { validateGeneratedQuestion } from '$lib/server/challenge/rule-validator';
 import type { GeneratedQuestion, GenerateQuestionInput } from '$lib/server/challenge/types';
+import { createTranslator, resolveLocale } from '$lib/i18n';
+import { labelSymbolToken } from '$lib/shared/presentation/symbols';
 
 export const MEMORY_PATTERN_RULES = [
 	'symbol_recall',
@@ -22,7 +24,9 @@ export function generateMemoryPatternQuestion(input: GenerateQuestionInput): Gen
 	}
 
 	const rng = createSeededRng(`${input.seed}:memory`);
-	const challenge = buildMemoryChallenge(input.ruleType as MemoryRule, rng);
+	const locale = resolveLocale(input.locale);
+	const t = createTranslator(locale);
+	const challenge = buildMemoryChallenge(input.ruleType as MemoryRule, rng, t, locale);
 	const choices = createChoices({
 		correctAnswer: challenge.answer,
 		distractors: challenge.distractors,
@@ -50,7 +54,12 @@ export function generateMemoryPatternQuestion(input: GenerateQuestionInput): Gen
 	});
 }
 
-function buildMemoryChallenge(rule: MemoryRule, rng: ReturnType<typeof createSeededRng>) {
+function buildMemoryChallenge(
+	rule: MemoryRule,
+	rng: ReturnType<typeof createSeededRng>,
+	t: import('$lib/i18n').Translator,
+	locale: import('$lib/i18n').Locale
+) {
 	const sequence = Array.from({ length: 5 }, () => rng.pick(MEMORY_SYMBOLS));
 	const revealSeconds = 4;
 
@@ -60,10 +69,13 @@ function buildMemoryChallenge(rule: MemoryRule, rng: ReturnType<typeof createSee
 			return {
 				memorize: sequence,
 				revealSeconds,
-				prompt: `Memorize the sequence, then answer: what was symbol ${index + 1}?`,
+				prompt: t('memory.symbolPrompt', { position: index + 1 }),
 				answer: sequence[index] as string,
 				distractors: MEMORY_SYMBOLS,
-				explanation: `Symbol recall: symbol ${index + 1} was ${sequence[index]}.`
+				explanation: t('memory.symbolExplain', {
+					position: index + 1,
+					symbol: labelSymbolToken(sequence[index] as string, locale)
+				})
 			};
 		}
 		case 'position_recall': {
@@ -71,50 +83,59 @@ function buildMemoryChallenge(rule: MemoryRule, rng: ReturnType<typeof createSee
 			return {
 				memorize: sequence,
 				revealSeconds,
-				prompt: `Memorize the sequence, then answer: what is the first position of ${target}?`,
+				prompt: t('memory.positionPrompt', { symbol: labelSymbolToken(target, locale) }),
 				answer: String(sequence.indexOf(target) + 1),
 				distractors: ['1', '2', '3', '4', '5'],
-				explanation: `Position recall: ${target} first appeared at position ${sequence.indexOf(target) + 1}.`
+				explanation: t('memory.positionExplain', {
+					symbol: labelSymbolToken(target, locale),
+					position: sequence.indexOf(target) + 1
+				})
 			};
 		}
 		case 'sequence_recall':
 			return {
 				memorize: sequence,
 				revealSeconds,
-				prompt: 'Memorize the sequence, then choose the exact sequence.',
+				prompt: t('memory.exactPrompt'),
 				answer: sequence.join(' > '),
 				distractors: [
 					rng.shuffle(sequence).join(' > '),
 					[...sequence].reverse().join(' > '),
 					rng.shuffle(MEMORY_SYMBOLS).slice(0, 5).join(' > ')
 				],
-				explanation: 'Sequence recall: the selected answer matches the original order.'
+				explanation: t('memory.exactExplain')
 			};
 		case 'missing_element_recall': {
 			const index = rng.intBetween(0, sequence.length - 1);
 			return {
 				memorize: sequence,
 				revealSeconds,
-				prompt: `Memorize the sequence. Hidden sequence: ${sequence
-					.map((value, valueIndex) => (valueIndex === index ? '?' : value))
-					.join(' > ')}. What is missing?`,
+				prompt: t('memory.missingPrompt', {
+					sequence: sequence
+						.map((value, valueIndex) =>
+							valueIndex === index ? '?' : labelSymbolToken(value, locale)
+						)
+						.join(' > ')
+				}),
 				answer: sequence[index] as string,
 				distractors: MEMORY_SYMBOLS,
-				explanation: `Missing element recall: the hidden position contained ${sequence[index]}.`
+				explanation: t('memory.missingExplain', {
+					symbol: labelSymbolToken(sequence[index] as string, locale)
+				})
 			};
 		}
 		case 'reverse_sequence_recall':
 			return {
 				memorize: sequence,
 				revealSeconds,
-				prompt: 'Memorize the sequence, then choose it in reverse order.',
+				prompt: t('memory.reversePrompt'),
 				answer: [...sequence].reverse().join(' > '),
 				distractors: [
 					sequence.join(' > '),
 					rng.shuffle(sequence).join(' > '),
 					rng.shuffle(MEMORY_SYMBOLS).slice(0, 5).join(' > ')
 				],
-				explanation: 'Reverse sequence recall: the answer reverses the original order.'
+				explanation: t('memory.reverseExplain')
 			};
 	}
 }

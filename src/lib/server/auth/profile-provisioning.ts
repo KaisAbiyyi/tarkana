@@ -20,10 +20,14 @@ export async function provisionProfile({
 	if (existingProfile) return toProfileSummary(existingProfile);
 
 	const displayName = buildDefaultDisplayName(user);
+	const publicDiscriminator = Math.floor(Math.random() * 65536)
+		.toString(16)
+		.padStart(4, '0');
 	const createdProfile = await repository.create({
 		id: user.id,
 		name: displayName,
 		displayName,
+		publicDiscriminator,
 		role: DEFAULT_USER_ROLE,
 		rating: 0,
 		rank: UNRANKED
@@ -57,6 +61,7 @@ export function sanitizeDisplayName(value: string): string {
 function toProfileSummary(profile: {
 	id: string;
 	displayName: string;
+	publicDiscriminator: string;
 	role: ProfileSummary['role'];
 	rating: number;
 	rank: ProfileSummary['rank'];
@@ -64,6 +69,7 @@ function toProfileSummary(profile: {
 	return {
 		id: profile.id,
 		displayName: profile.displayName,
+		publicDiscriminator: profile.publicDiscriminator,
 		role: profile.role,
 		rating: profile.rating,
 		rank: profile.rank

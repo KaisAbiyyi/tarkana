@@ -10,6 +10,6 @@ export const GET: RequestHandler = async (event) => {
 			await leaderboardService.listLeaderboard(event, parsePagination(event.url.searchParams))
 		);
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };

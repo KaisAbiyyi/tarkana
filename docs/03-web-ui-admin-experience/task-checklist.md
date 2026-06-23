@@ -117,6 +117,9 @@ Use this checklist as the implementation tracker for Workstream 3.
 
 ## Verification Notes
 
+- On June 20, 2026, the authenticated round-preparation experience was refined into a three-step arena loadout flow. Focused Vitest and Playwright coverage verifies the 5/10/20-question session contract, every mode, rapid release/selection changes, native radio keyboard behavior, Enter activation, loading lockout, duplicate-submission prevention, retry-safe creation failure, route/API synchronization, and reduced motion. Final screenshots were captured at all 11 requested viewports from 320x568 through 1920x1080 with no horizontal overflow or clipped selected cards.
+
+- On June 19, 2026, the landing page received a final structural layout repair. Playwright verified the pre-start, running, correct, incorrect, timeout, reset, keyboard, mobile-menu, and reduced-motion states at 11 viewports from 320×568 through 1920×1080. The final sweep found no horizontal overflow, connector/text collision, start-card/answer collision, clipped focal shadows, container-edge drift, unequal category-card heights, or stale GSAP transforms.
 - Browser screenshots captured for landing desktop/mobile and auth desktop/mobile with no console errors.
 - Protected dashboard/admin redirects were verified for unauthenticated access.
 - On June 6, 2026, Google OAuth login and the authenticated dashboard, quick challenge, result, history, leaderboard, and profile flows were verified in Chrome with seeded active categories, rules, and configs.

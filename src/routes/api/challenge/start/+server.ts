@@ -17,7 +17,7 @@ export const POST: RequestHandler = async (event) => {
 		});
 		return jsonOk(await createStartChallengeService().start(event, input));
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };
 

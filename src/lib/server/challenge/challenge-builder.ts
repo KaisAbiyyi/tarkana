@@ -64,6 +64,7 @@ export function buildChallengeQuestions(input: ChallengeBuildInput): BuiltChalle
 
 		questions.push(
 			generateWithRetries({
+				locale: input.locale,
 				rules,
 				questionType,
 				categoryId: category.id,
@@ -94,6 +95,7 @@ export function toRuleDefinition(input: {
 }
 
 function generateWithRetries(input: {
+	locale?: import('$lib/i18n').Locale;
 	rules: QuestionRuleDefinition[];
 	questionType: QuestionType;
 	categoryId: string;
@@ -109,6 +111,7 @@ function generateWithRetries(input: {
 		try {
 			const question = validateGeneratedQuestion(
 				generator({
+					locale: input.locale,
 					seed: `${input.seed}:${attempt}:${rule.id}`,
 					difficulty: input.difficulty,
 					ruleType: rule.ruleType,

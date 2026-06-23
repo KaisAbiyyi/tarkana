@@ -9,6 +9,7 @@ node_modules
 .netlify
 .wrangler
 /.svelte-kit
+/.svelte-kit-*
 /build
 
 # OS
@@ -26,3 +27,4 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 # Playwright
 test-results
+.codex-artifacts

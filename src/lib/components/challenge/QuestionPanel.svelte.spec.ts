@@ -10,17 +10,15 @@ describe('QuestionPanel', () => {
 				questionType: 'symbol_pattern',
 				prompt:
 					'Find the next symbol: triangle-left | triangle-up | triangle-right | triangle-down | ?',
-				difficultyScore: 40,
 				orderIndex: 0
-			},
-			totalQuestions: 5
+			}
 		});
 
 		await expect
 			.element(page.getByRole('heading', { name: 'Find the next symbol' }))
 			.toBeInTheDocument();
 		await expect
-			.element(page.getByRole('img', { name: 'Triangle pointing left' }))
+			.element(page.getByRole('img', { name: 'Triangle facing left' }))
 			.toBeInTheDocument();
 		await expect.element(page.getByText('triangle-left')).not.toBeInTheDocument();
 		await expect.element(page.getByText('?')).toBeInTheDocument();

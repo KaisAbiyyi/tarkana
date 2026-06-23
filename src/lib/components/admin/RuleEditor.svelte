@@ -2,6 +2,7 @@
 	import type { CategoryDto } from '$lib/shared/types/challenge';
 	import Button from '$lib/components/primitives/Button.svelte';
 	import Input from '$lib/components/primitives/Input.svelte';
+	import { getI18nContext } from '$lib/i18n/context';
 
 	type Props = {
 		categories: CategoryDto[];
@@ -9,6 +10,7 @@
 	};
 
 	let { categories, message }: Props = $props();
+	const { t } = getI18nContext();
 </script>
 
 <form
@@ -16,20 +18,20 @@
 	method="POST"
 	action="?/saveRule"
 >
-	<h2 class="text-xl font-black">Rule Editor</h2>
+	<h2 class="text-xl font-black">{t('admin.ruleEditor')}</h2>
 	{#if message}<p
 			class="border-2 border-[var(--color-border)] bg-[var(--color-info)] p-3 font-bold"
 		>
 			{message}
 		</p>{/if}
 	<label class="grid gap-2 text-sm font-black uppercase">
-		Category
+		{t('admin.category')}
 		<select
 			class="min-h-12 border-[3px] border-[var(--color-border)] bg-white px-4 font-bold shadow-[var(--shadow-hard-sm)]"
 			name="categoryId"
 			required
 		>
-			<option value="">Select category</option>
+			<option value="">{t('admin.selectCategory')}</option>
 			{#each categories as category (category.id)}
 				<option value={category.id}>{category.name}</option>
 			{/each}
@@ -38,7 +40,7 @@
 	<Input
 		id="ruleType"
 		name="ruleType"
-		label="Rule type"
+		label={t('admin.ruleType')}
 		placeholder="arithmetic_sequence"
 		required
 	/>
@@ -46,7 +48,7 @@
 		<Input
 			id="difficultyMin"
 			name="difficultyMin"
-			label="Difficulty min"
+			label={t('admin.difficultyMin')}
 			type="number"
 			value="100"
 			min={1}
@@ -55,7 +57,7 @@
 		<Input
 			id="difficultyMax"
 			name="difficultyMax"
-			label="Difficulty max"
+			label={t('admin.difficultyMax')}
 			type="number"
 			value="300"
 			min={1}
@@ -64,7 +66,7 @@
 		<Input
 			id="timeLimitSeconds"
 			name="timeLimitSeconds"
-			label="Time limit"
+			label={t('admin.timeLimit')}
 			type="number"
 			value="30"
 			min={1}
@@ -72,7 +74,7 @@
 		/>
 	</div>
 	<label class="grid gap-2 text-sm font-black uppercase">
-		Config JSON
+		{t('admin.configJson')}
 		<textarea
 			class="min-h-28 border-[3px] border-[var(--color-border)] bg-white p-4 font-mono text-sm shadow-[var(--shadow-hard-sm)]"
 			name="config">{'{}'}</textarea
@@ -80,7 +82,7 @@
 	</label>
 	<label class="flex items-center gap-3 font-black">
 		<input class="h-5 w-5" type="checkbox" name="isActive" checked />
-		Active rule
+		{t('admin.activeRule')}
 	</label>
-	<Button type="submit">Save Rule</Button>
+	<Button type="submit">{t('admin.saveRule')}</Button>
 </form>

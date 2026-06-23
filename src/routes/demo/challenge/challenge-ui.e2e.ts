@@ -5,10 +5,10 @@ test('symbol challenge fixture renders visual tokens and playful feedback', asyn
 	await page.waitForLoadState('networkidle');
 
 	await expect(page.getByRole('heading', { name: 'Find the next symbol' })).toBeVisible();
-	await expect(page.getByRole('img', { name: 'Triangle pointing left' })).toHaveCount(2);
+	await expect(page.getByRole('img', { name: 'Triangle facing left' })).toHaveCount(2);
 	await expect(page.getByText('triangle-left')).toHaveCount(0);
 
-	const answer = page.getByRole('radio', { name: 'A. Triangle pointing up' });
+	const answer = page.getByRole('radio', { name: 'A. Triangle facing up' });
 	await answer.click();
 	await expect(answer).toHaveAttribute('aria-checked', 'true');
 
@@ -29,7 +29,7 @@ test('symbol challenge remains usable on mobile with reduced motion', async ({ p
 	}));
 	expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 
-	const choice = page.getByRole('radio', { name: 'A. Triangle pointing up' });
+	const choice = page.getByRole('radio', { name: 'A. Triangle facing up' });
 	await choice.click();
 	await expect(choice).toHaveAttribute('aria-checked', 'true');
 

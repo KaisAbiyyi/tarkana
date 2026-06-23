@@ -10,7 +10,7 @@ export const GET: RequestHandler = async (event) => {
 			await adminService.listQuestionRules(event, parsePagination(event.url.searchParams))
 		);
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };
 
@@ -19,6 +19,6 @@ export const POST: RequestHandler = async (event) => {
 		const adminService = createAdminService();
 		return jsonOk(await readJsonBody(event, (body) => adminService.saveQuestionRule(event, body)));
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };

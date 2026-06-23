@@ -4,7 +4,9 @@
 	import { resolve } from '$app/paths';
 	import type { ProfileSummary } from '$lib/shared/types/auth';
 	import Badge from '$lib/components/primitives/Badge.svelte';
-	import Button from '$lib/components/primitives/Button.svelte';
+	import RankBadge from '$lib/components/primitives/RankBadge.svelte';
+	import LanguageSelector from '$lib/components/app/LanguageSelector.svelte';
+	import { getI18nContext } from '$lib/i18n/context';
 
 	type Props = {
 		children?: Snippet;
@@ -13,33 +15,44 @@
 	};
 
 	let { children, profile, section = 'app' }: Props = $props();
+	const { t } = getI18nContext();
 
 	const appLinks = [
-		{ href: '/dashboard', label: 'Dashboard' },
-		{ href: '/challenge', label: 'Challenge' },
-		{ href: '/history', label: 'History' },
-		{ href: '/leaderboard', label: 'Leaderboard' },
-		{ href: '/profile', label: 'Profile' }
+		{ href: '/dashboard', label: t('nav.dashboard') },
+		{ href: '/challenge', label: t('nav.challenge') },
+		{ href: '/history', label: t('nav.history') },
+		{ href: '/leaderboard', label: t('nav.leaderboard') },
+		{ href: '/profile', label: t('nav.profile') }
 	] as const;
 
 	const adminLinks = [
-		{ href: '/admin', label: 'Overview' },
-		{ href: '/admin/categories', label: 'Categories' },
-		{ href: '/admin/question-rules', label: 'Rules' },
-		{ href: '/admin/challenge-configs', label: 'Configs' },
-		{ href: '/admin/sessions', label: 'Sessions' }
+		{ href: '/admin', label: t('nav.overview') },
+		{ href: '/admin/categories', label: t('nav.categories') },
+		{ href: '/admin/question-rules', label: t('nav.rules') },
+		{ href: '/admin/challenge-configs', label: t('nav.configs') },
+		{ href: '/admin/sessions', label: t('nav.sessions') }
 	] as const;
 
 	let links = $derived(section === 'admin' ? adminLinks : appLinks);
 	let activePath = $derived(page.url.pathname);
+	let menuOpen = $state(false);
+
+	$effect(() => {
+		// Close menu when path changes
+		if (activePath) {
+			menuOpen = false;
+		}
+	});
 </script>
 
 <div class="min-h-screen pb-10">
-	<a class="sr-only focus:not-sr-only" href="#main-content">Skip to main content</a>
+	<a class="sr-only focus:not-sr-only" href="#main-content">{t('common.skipToContent')}</a>
 	<header
 		class="sticky top-0 z-30 border-b-[3px] border-[var(--color-border)] bg-white/95 backdrop-blur"
 	>
-		<div class="page-shell grid gap-4 py-3 lg:grid-cols-[auto_1fr_auto] lg:items-center">
+		<div
+			class="page-shell flex flex-wrap items-center justify-between gap-3 py-3 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-4"
+		>
 			<div class="flex items-center gap-3">
 				<a
 					class="flex items-center gap-2 text-2xl font-black no-underline"
@@ -51,52 +64,86 @@
 					>
 					Tarkana
 				</a>
-				<Badge tone={section === 'admin' ? 'warning' : 'accent'}>
-					{section === 'admin' ? 'Admin' : profile.rank}
-				</Badge>
+				{#if section === 'admin'}
+					<Badge tone="warning">{t('common.admin')}</Badge>
+				{:else if profile.rank !== 'Unranked'}
+					<RankBadge rank={profile.rank} />
+				{/if}
 			</div>
 
-			<nav
-				class="flex flex-wrap items-center gap-2"
-				aria-label={section === 'admin' ? 'Admin navigation' : 'App navigation'}
+			<button
+				class="grid h-10 w-10 place-items-center border-2 border-[var(--color-border)] bg-white lg:hidden"
+				onclick={() => (menuOpen = !menuOpen)}
+				aria-expanded={menuOpen}
+				aria-label={t('nav.toggle')}
 			>
-				{#each links as link (link.href)}
-					{@const isActive =
-						activePath === link.href ||
-						(link.href !== '/dashboard' && activePath.startsWith(link.href))}
-					<a
-						class={`border-2 border-[var(--color-border)] px-3 py-2 text-sm font-black no-underline transition-transform hover:-translate-y-0.5 ${
-							isActive
-								? 'bg-[var(--color-primary)] shadow-[var(--shadow-hard-sm)]'
-								: 'bg-[var(--color-paper)]'
-						}`}
-						href={resolve(link.href)}
-						aria-current={isActive ? 'page' : undefined}
-					>
-						{link.label}
-					</a>
-				{/each}
-				{#if profile.role === 'admin' && section !== 'admin'}
-					<a
-						class="border-2 border-[var(--color-border)] bg-[var(--color-primary)] px-3 py-2 text-sm font-black no-underline"
-						href={resolve('/admin')}
-					>
-						Admin
-					</a>
-				{/if}
-			</nav>
+				<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					{#if menuOpen}
+						<path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+					{:else}
+						<path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+					{/if}
+				</svg>
+			</button>
 
-			<div class="flex flex-wrap items-center gap-3 lg:justify-end">
-				<div
-					class="min-w-0 border-l-[3px] border-[var(--color-border)] pl-3 leading-tight"
-					aria-label="Current profile summary"
+			<div class={`w-full lg:contents ${menuOpen ? 'block' : 'hidden'}`}>
+				<nav
+					class="flex flex-col gap-2 pt-2 lg:flex-row lg:flex-wrap lg:items-center lg:pt-0"
+					aria-label={section === 'admin' ? t('nav.adminLabel') : t('nav.appLabel')}
 				>
-					<p class="truncate text-sm font-black">{profile.displayName}</p>
-					<p class="text-xs font-bold text-[var(--color-muted)]">Logic Rating {profile.rating}</p>
+					{#each links as link (link.href)}
+						{@const isActive =
+							activePath === link.href ||
+							(link.href !== '/dashboard' && activePath.startsWith(link.href))}
+						<a
+							class={`border-2 px-3 py-2 text-sm font-black no-underline transition-transform hover:-translate-y-0.5 ${
+								isActive
+									? 'border-[var(--color-border)] bg-[var(--color-primary)] text-black shadow-[var(--shadow-hard-sm)]'
+									: 'border-transparent bg-transparent text-[var(--color-muted)] hover:border-[var(--color-border)] hover:bg-[var(--color-paper)] hover:text-black'
+							}`}
+							href={resolve(link.href)}
+							aria-current={isActive ? 'page' : undefined}
+						>
+							{link.label}
+						</a>
+					{/each}
+					{#if profile.role === 'admin' && section !== 'admin'}
+						<a
+							class="border-2 border-[var(--color-border)] bg-[var(--color-primary)] px-3 py-2 text-sm font-black no-underline"
+							href={resolve('/admin')}
+						>
+							{t('common.admin')}
+						</a>
+					{/if}
+				</nav>
+
+				<div
+					class="mt-4 flex flex-col gap-3 border-t-2 border-[var(--color-border)] pt-4 lg:mt-0 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end lg:border-none lg:pt-0"
+				>
+					<LanguageSelector />
+					<div
+						class="min-w-0 leading-tight lg:border-l-[3px] lg:border-[var(--color-border)] lg:pl-3"
+						aria-label={t('nav.profileSummary')}
+					>
+						<p class="truncate text-sm font-black">{profile.displayName}</p>
+						<div class="mt-1 flex items-center gap-2">
+							{#if profile.rank !== 'Unranked'}
+								<p class="text-xs font-bold text-[var(--color-muted)]">
+									{t('common.logicRating')}
+									{profile.rating}
+								</p>
+								<span class="text-xs text-[var(--color-muted)]" aria-hidden="true">&middot;</span>
+							{/if}
+							<form method="POST" action="/auth/logout" class="inline">
+								<button
+									type="submit"
+									class="text-xs font-bold text-[var(--color-muted)] underline hover:text-black focus-visible:text-black"
+									>{t('nav.logout')}</button
+								>
+							</form>
+						</div>
+					</div>
 				</div>
-				<form method="POST" action="/auth/logout">
-					<Button type="submit" size="sm" variant="ghost">Logout</Button>
-				</form>
 			</div>
 		</div>
 	</header>

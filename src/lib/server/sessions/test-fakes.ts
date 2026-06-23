@@ -170,7 +170,25 @@ export function createSessionRepositoryFake(
 			);
 		},
 		async listHistory() {
-			return { items: [], total: 0 };
+			return {
+				items: [],
+				total: 0,
+				summary: {
+					totalCompleted: 0,
+					bestScore: 0,
+					averageAccuracy: 0,
+					totalRatingDelta: null,
+					averageTimeSeconds: 0
+				},
+				filterCounts: {
+					all: 0,
+					mixed: 0,
+					number_sequence: 0,
+					symbol_pattern: 0,
+					mini_deduction: 0,
+					memory_pattern: 0
+				}
+			};
 		},
 		async getDashboardStats(): Promise<DashboardSessionStats> {
 			return {
@@ -178,6 +196,7 @@ export function createSessionRepositoryFake(
 				bestScore: 0,
 				averageAccuracy: 0,
 				averageSolveTimeSeconds: 0,
+				totalRatingDelta: 0,
 				recentSessions: []
 			};
 		},

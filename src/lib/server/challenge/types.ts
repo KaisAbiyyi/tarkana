@@ -1,4 +1,5 @@
 import type { ChallengeType, DifficultyBand, QuestionType } from '$lib/shared/constants/challenge';
+import type { Locale } from '$lib/i18n';
 
 export type JsonRecord = Record<string, unknown>;
 
@@ -65,6 +66,7 @@ export type ChallengeConfigDefinition = {
 };
 
 export type GenerateQuestionInput = {
+	locale?: Locale;
 	seed: string;
 	difficulty: DifficultyBand;
 	ruleType: string;
@@ -75,6 +77,7 @@ export type GenerateQuestionInput = {
 export type QuestionGenerator = (input: GenerateQuestionInput) => GeneratedQuestion;
 
 export type ChallengeBuildInput = {
+	locale?: Locale;
 	config: ChallengeConfigDefinition;
 	categories: ChallengeCategoryDefinition[];
 	rules: QuestionRuleDefinition[];

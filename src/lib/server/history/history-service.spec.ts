@@ -34,13 +34,34 @@ describe('history service', () => {
 			findAnswerForQuestion: async () => null,
 			listHistory: async ({ userId }) => {
 				requestedUserId = userId;
-				return { items: [], total: 0 };
+				return {
+					items: [],
+					total: 0,
+					summary: {
+						totalCompleted: 0,
+						bestScore: 0,
+						averageAccuracy: 0,
+						totalRatingDelta: null,
+						averageTimeSeconds: 0,
+						mode: 'standard',
+						validAchievements: []
+					},
+					filterCounts: {
+						all: 0,
+						mixed: 0,
+						number_sequence: 0,
+						symbol_pattern: 0,
+						mini_deduction: 0,
+						memory_pattern: 0
+					}
+				};
 			},
 			getDashboardStats: async (): Promise<DashboardSessionStats> => ({
 				totalCompleted: 0,
 				bestScore: 0,
 				averageAccuracy: 0,
 				averageSolveTimeSeconds: 0,
+				totalRatingDelta: 0,
 				recentSessions: []
 			}),
 			markCompleted: async () => {

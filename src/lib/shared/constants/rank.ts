@@ -40,3 +40,35 @@ export function resolveRankName(rating: number, completedChallenges: number): Ra
 
 	return match?.name ?? 'Mastermind';
 }
+
+export type RankProgress = {
+	percentage: number;
+	remaining: number;
+	nextRankName: RankedTier | null;
+} | null;
+
+export function calculateRankProgress(rating: number, rankName: RankName): RankProgress {
+	if (rankName === UNRANKED) return null;
+
+	const currentIndex = RANK_DEFINITIONS.findIndex((r) => r.name === rankName);
+	if (currentIndex === -1) return null;
+
+	const currentTier = RANK_DEFINITIONS[currentIndex];
+	const nextTier = RANK_DEFINITIONS[currentIndex + 1];
+
+	if (!nextTier || currentTier.maxRating === null) return null;
+
+	const ratingEarned = Math.max(0, rating - currentTier.minRating);
+	const ratingRange = nextTier.minRating - currentTier.minRating;
+
+	if (ratingRange <= 0) return null;
+
+	const progressPercentage = Math.max(0, Math.min(100, (ratingEarned / ratingRange) * 100));
+	const remaining = Math.max(0, nextTier.minRating - rating);
+
+	return {
+		percentage: progressPercentage,
+		remaining,
+		nextRankName: nextTier.name
+	};
+}

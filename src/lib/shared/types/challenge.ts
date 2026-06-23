@@ -37,14 +37,20 @@ export type QuestionRuleDto = {
 export type SessionListItemDto = {
 	id: string;
 	challengeType: ChallengeType;
+	mode: 'mixed' | QuestionType;
 	status: SessionStatus;
 	totalQuestions: number;
 	totalScore: number;
 	accuracy: number;
 	averageTimeSeconds: number;
+	ratingBefore: number;
+	ratingAfter: number;
 	ratingDelta: number;
+	rankBefore: string;
 	rankAfter: string;
 	createdAt: string;
+	completedAt: string | null;
+	validAchievements: string[];
 };
 
 export type SessionQuestionSafeDto = {

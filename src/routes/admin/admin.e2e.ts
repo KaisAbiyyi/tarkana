@@ -4,5 +4,5 @@ test('admin route redirects unauthenticated visitors to login', async ({ page })
 	await page.goto('/admin');
 
 	await expect(page).toHaveURL(/\/auth\/login/);
-	await expect(page.getByRole('heading', { name: /masuk ke tarkana/i })).toBeVisible();
+	await expect(page.getByRole('heading', { name: /log in to tarkana/i })).toBeVisible();
 });

@@ -4,28 +4,31 @@
 	import Card from '$lib/components/primitives/Card.svelte';
 	import QuestionReviewList from '$lib/components/result/QuestionReviewList.svelte';
 	import ResultSummary from '$lib/components/result/ResultSummary.svelte';
+	import { getI18nContext } from '$lib/i18n/context';
 
 	type Props = {
 		data: PageData;
 	};
 
 	let { data }: Props = $props();
+	const { t } = getI18nContext();
 	let result = $derived(data.result);
 </script>
 
 <svelte:head>
-	<title>Result Review | Tarkana</title>
+	<title>{t('result.title')}</title>
+	<meta name="description" content={t('result.meta')} />
 </svelte:head>
 
 <section class="grid gap-8">
 	<header class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
 		<div>
-			<p class="page-kicker">Completed session</p>
-			<h1 class="page-title">Result Review</h1>
+			<p class="page-kicker">{t('result.completed')}</p>
+			<h1 class="page-title">{t('result.review')}</h1>
 		</div>
 		<div class="flex flex-wrap gap-3">
-			<Button href="/challenge">Retry</Button>
-			<Button href="/leaderboard" variant="secondary">Leaderboard</Button>
+			<Button href="/challenge">{t('result.retry')}</Button>
+			<Button href="/leaderboard" variant="secondary">{t('nav.leaderboard')}</Button>
 		</div>
 	</header>
 
@@ -43,15 +46,14 @@
 		isSuspicious={result.isSuspicious}
 	/>
 
-	<Card title="Category Mastery">
+	<Card title={t('dashboard.categoryMastery')}>
 		<p class="font-semibold text-[var(--color-muted)]">
-			Strongest and weakest category summaries are derived from completed answers. Review details
-			below to inspect each category-level result.
+			{t('result.categoryBody')}
 		</p>
 	</Card>
 
 	<section class="grid gap-4">
-		<h2 class="text-3xl font-black">Question Review</h2>
+		<h2 class="text-3xl font-black">{t('result.questionReview')}</h2>
 		<QuestionReviewList review={result.review} />
 	</section>
 </section>

@@ -11,9 +11,11 @@ describe('admin layout guard', () => {
 	it('returns a SvelteKit 403 response for authenticated non-admin users', async () => {
 		const { load } = await import('./+layout.server');
 
-		await expect(load({} as Parameters<typeof load>[0])).rejects.toMatchObject({
+		await expect(
+			load({ locals: { locale: 'en' } } as Parameters<typeof load>[0])
+		).rejects.toMatchObject({
 			status: 403,
-			body: { message: 'Admin access is required' }
+			body: { message: 'You do not have access to this page.' }
 		});
 	});
 });

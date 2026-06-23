@@ -28,12 +28,31 @@ describe('dashboard service', () => {
 			listSessionAnswers: async () => [],
 			findQuestionById: async () => null,
 			findAnswerForQuestion: async () => null,
-			listHistory: async () => ({ items: [], total: 0 }),
+			listHistory: async () => ({
+				items: [],
+				total: 0,
+				summary: {
+					totalCompleted: 0,
+					bestScore: 0,
+					averageAccuracy: 0,
+					totalRatingDelta: null,
+					averageTimeSeconds: 0
+				},
+				filterCounts: {
+					all: 0,
+					mixed: 0,
+					number_sequence: 0,
+					symbol_pattern: 0,
+					mini_deduction: 0,
+					memory_pattern: 0
+				}
+			}),
 			getDashboardStats: async () => ({
 				totalCompleted: 0,
 				bestScore: 0,
 				averageAccuracy: 0,
 				averageSolveTimeSeconds: 0,
+				totalRatingDelta: 0,
 				recentSessions: []
 			}),
 			markCompleted: async () => {

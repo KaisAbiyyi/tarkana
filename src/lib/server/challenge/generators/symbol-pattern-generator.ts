@@ -3,6 +3,7 @@ import { resolveDifficultyScore } from '$lib/server/challenge/difficulty-resolve
 import { createSeededRng } from '$lib/server/challenge/random/seeded-rng';
 import { validateGeneratedQuestion } from '$lib/server/challenge/rule-validator';
 import type { GeneratedQuestion, GenerateQuestionInput } from '$lib/server/challenge/types';
+import { createTranslator, resolveLocale } from '$lib/i18n';
 
 export const SYMBOL_PATTERN_RULES = [
 	'symbol_rotation',
@@ -24,7 +25,8 @@ export function generateSymbolPatternQuestion(input: GenerateQuestionInput): Gen
 	}
 
 	const rng = createSeededRng(`${input.seed}:symbol`);
-	const pattern = buildPattern(input.ruleType as SymbolRule, rng);
+	const t = createTranslator(resolveLocale(input.locale));
+	const pattern = buildPattern(input.ruleType as SymbolRule, rng, t);
 	const choices = createChoices({
 		correctAnswer: pattern.answer,
 		distractors: SIMPLE_SHAPES.concat(SHAPES, pattern.distractors),
@@ -34,7 +36,7 @@ export function generateSymbolPatternQuestion(input: GenerateQuestionInput): Gen
 
 	return validateGeneratedQuestion({
 		questionType: 'symbol_pattern',
-		prompt: `Find the next symbol: ${pattern.visible.join(' | ')} | ?`,
+		prompt: t('question.nextSymbolSequence', { sequence: `${pattern.visible.join(' | ')} | ?` }),
 		choices,
 		correctAnswer: pattern.answer,
 		explanation: pattern.explanation,
@@ -48,7 +50,11 @@ export function generateSymbolPatternQuestion(input: GenerateQuestionInput): Gen
 	});
 }
 
-function buildPattern(rule: SymbolRule, rng: ReturnType<typeof createSeededRng>) {
+function buildPattern(
+	rule: SymbolRule,
+	rng: ReturnType<typeof createSeededRng>,
+	t: import('$lib/i18n').Translator
+) {
 	switch (rule) {
 		case 'symbol_rotation': {
 			const start = rng.intBetween(0, SHAPES.length - 1);
@@ -60,7 +66,7 @@ function buildPattern(rule: SymbolRule, rng: ReturnType<typeof createSeededRng>)
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: SHAPES,
-				explanation: 'Symbol rotation: the direction rotates one step each time.'
+				explanation: t('explain.rotation')
 			};
 		}
 		case 'alternating_symbol': {
@@ -71,7 +77,7 @@ function buildPattern(rule: SymbolRule, rng: ReturnType<typeof createSeededRng>)
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: SIMPLE_SHAPES,
-				explanation: `Alternating symbol: ${first} and ${second} repeat in turn.`
+				explanation: t('explain.symbolAlternate', { first, second })
 			};
 		}
 		case 'repeating_cycle': {
@@ -81,7 +87,7 @@ function buildPattern(rule: SymbolRule, rng: ReturnType<typeof createSeededRng>)
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: SIMPLE_SHAPES,
-				explanation: `Repeating cycle: the three-symbol cycle repeats.`
+				explanation: t('explain.cycle')
 			};
 		}
 		case 'shape_order': {
@@ -94,7 +100,7 @@ function buildPattern(rule: SymbolRule, rng: ReturnType<typeof createSeededRng>)
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: SIMPLE_SHAPES,
-				explanation: 'Shape order: the sequence follows the configured shape order.'
+				explanation: t('explain.shapeOrder')
 			};
 		}
 		case 'growing_count': {
@@ -104,7 +110,7 @@ function buildPattern(rule: SymbolRule, rng: ReturnType<typeof createSeededRng>)
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: [shape, shape.repeat(2), shape.repeat(4), shape.repeat(7)],
-				explanation: 'Growing count: the same symbol appears one more time at each step.'
+				explanation: t('explain.growing')
 			};
 		}
 		case 'mirrored_sequence': {
@@ -114,7 +120,7 @@ function buildPattern(rule: SymbolRule, rng: ReturnType<typeof createSeededRng>)
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: SIMPLE_SHAPES,
-				explanation: 'Mirrored sequence: the pattern reflects back through the earlier symbols.'
+				explanation: t('explain.mirrored')
 			};
 		}
 	}

@@ -8,37 +8,42 @@
 		labelChallengeType,
 		labelSessionStatus
 	} from '$lib/shared/presentation/format';
+	import { getI18nContext } from '$lib/i18n/context';
 
 	type Props = {
 		data: PageData;
 	};
 
 	let { data }: Props = $props();
+	const { locale, t } = getI18nContext();
 </script>
 
 <svelte:head>
-	<title>Session Monitoring | Tarkana</title>
+	<title>{t('admin.sessionMonitoring')} | Tarkana</title>
+	<meta name="description" content={t('admin.sessionMeta')} />
 </svelte:head>
 
 <section class="grid gap-8">
 	<header>
-		<h1 class="page-title">Session Monitoring</h1>
+		<h1 class="page-title">{t('admin.sessionMonitoring')}</h1>
 		<p class="mt-3 text-lg font-semibold text-[var(--color-muted)]">
-			Monitoring operasional web-only. Leaderboard tetap tidak menampilkan email.
+			{t('admin.sessionIntro')}
 		</p>
 	</header>
 
-	<AdminTable title="Recent Sessions">
+	<AdminTable title={t('admin.recentSessions')}>
 		<table class="w-full min-w-[900px] border-collapse text-left">
 			<thead class="bg-[var(--color-primary)]">
 				<tr>
-					<th class="border-b-[3px] border-[var(--color-border)] p-4">Session</th>
-					<th class="border-b-[3px] border-[var(--color-border)] p-4">Display name</th>
-					<th class="border-b-[3px] border-[var(--color-border)] p-4">Type</th>
-					<th class="border-b-[3px] border-[var(--color-border)] p-4">Score</th>
-					<th class="border-b-[3px] border-[var(--color-border)] p-4">Accuracy</th>
-					<th class="border-b-[3px] border-[var(--color-border)] p-4">Status</th>
-					<th class="border-b-[3px] border-[var(--color-border)] p-4">Created</th>
+					<th class="border-b-[3px] border-[var(--color-border)] p-4">{t('admin.session')}</th>
+					<th class="border-b-[3px] border-[var(--color-border)] p-4">{t('admin.displayName')}</th>
+					<th class="border-b-[3px] border-[var(--color-border)] p-4">{t('admin.type')}</th>
+					<th class="border-b-[3px] border-[var(--color-border)] p-4">{t('admin.score')}</th>
+					<th class="border-b-[3px] border-[var(--color-border)] p-4"
+						>{t('leaderboard.accuracy')}</th
+					>
+					<th class="border-b-[3px] border-[var(--color-border)] p-4">{t('admin.status')}</th>
+					<th class="border-b-[3px] border-[var(--color-border)] p-4">{t('admin.created')}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -46,15 +51,17 @@
 					<tr class="border-b-2 border-[var(--color-border)] last:border-b-0">
 						<td class="p-4 font-mono text-xs">{session.id}</td>
 						<td class="p-4 font-black">{session.displayName}</td>
-						<td class="p-4 font-bold">{labelChallengeType(session.challengeType)}</td>
+						<td class="p-4 font-bold">{labelChallengeType(session.challengeType, locale)}</td>
 						<td class="p-4 font-bold">{session.totalScore}</td>
-						<td class="p-4 font-bold">{formatPercent(session.accuracy)}</td>
+						<td class="p-4 font-bold">{formatPercent(session.accuracy, locale)}</td>
 						<td class="p-4">
 							<Badge tone={session.isSuspicious ? 'danger' : 'accent'}>
-								{session.isSuspicious ? 'Suspicious' : labelSessionStatus(session.status)}
+								{session.isSuspicious
+									? t('admin.suspicious')
+									: labelSessionStatus(session.status, locale)}
 							</Badge>
 						</td>
-						<td class="p-4 font-semibold">{formatDateTime(session.createdAt)}</td>
+						<td class="p-4 font-semibold">{formatDateTime(session.createdAt, locale)}</td>
 					</tr>
 				{/each}
 			</tbody>

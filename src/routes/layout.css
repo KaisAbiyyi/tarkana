@@ -17,17 +17,34 @@
 	--color-info: #7cc7ff;
 	--shadow-hard: 6px 6px 0 var(--color-border);
 	--shadow-hard-sm: 3px 3px 0 var(--color-border);
-	--shadow-hard-lg: 10px 10px 0 var(--color-border);
+	--shadow-hard-lg: 8px 8px 0 var(--color-border);
+	--shadow-level-1: 3px 3px 0 var(--color-border);
+	--shadow-level-2: 6px 6px 0 var(--color-border);
+	--shadow-level-3: 8px 8px 0 var(--color-border);
+	--shadow-small: 2px 2px 0 var(--color-border);
+	--shadow-medium: 4px 4px 0 var(--color-border);
+	--shadow-strong: 8px 8px 0 var(--color-border);
+	--shadow-pressed: 1px 1px 0 var(--color-border);
+	--game-choice-default: var(--color-surface);
+	--game-choice-selected: var(--color-accent);
+	--game-choice-disabled: #e4ddd2;
+	--focus-ring-width: 4px;
+	--motion-fast: 150ms;
+	--motion-medium: 260ms;
+	--motion-snap: cubic-bezier(0.2, 1.25, 0.4, 1);
+	--space-1: 0.5rem;
+	--space-2: 1rem;
+	--space-3: 1.5rem;
+	--space-4: 2rem;
+	--space-5: 2.5rem;
+	--space-6: 3rem;
+	--space-8: 4rem;
+	--space-10: 5rem;
+	--space-12: 6rem;
 	--radius-tight: 0.35rem;
-	font-family:
-		Aptos,
-		'Trebuchet MS',
-		ui-sans-serif,
-		system-ui,
-		-apple-system,
-		BlinkMacSystemFont,
-		'Segoe UI',
-		sans-serif;
+	--font-display: 'Bricolage Grotesque', sans-serif;
+	--font-sans: 'IBM Plex Sans', sans-serif;
+	font-family: var(--font-sans);
 	color: var(--color-ink);
 	background: var(--color-paper);
 }
@@ -40,11 +57,7 @@ body {
 	margin: 0;
 	min-width: 320px;
 	min-height: 100vh;
-	background:
-		linear-gradient(rgba(23, 18, 13, 0.05) 1px, transparent 1px),
-		linear-gradient(90deg, rgba(23, 18, 13, 0.05) 1px, transparent 1px),
-		linear-gradient(180deg, #fffaf0 0%, var(--color-paper) 48%, #fff3d1 100%);
-	background-size: 28px 28px;
+	background: var(--color-paper);
 	color: var(--color-ink);
 }
 
@@ -56,8 +69,38 @@ select {
 	letter-spacing: 0;
 }
 
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+	-webkit-box-shadow: 0 0 0 30px var(--color-surface) inset !important;
+	-webkit-text-fill-color: var(--color-ink) !important;
+	transition: background-color 5000s ease-in-out 0s;
+}
+
+button,
+a {
+	touch-action: manipulation;
+}
+
 a {
 	color: inherit;
+}
+
+.button-ink {
+	background-color: var(--color-ink);
+	color: var(--color-primary);
+	box-shadow: var(--shadow-hard-sm);
+}
+
+.button-ink:hover {
+	background-color: #000;
+	color: var(--color-primary);
+}
+
+.button-ink:active {
+	color: var(--color-primary);
+	box-shadow: none;
 }
 
 :focus-visible {
@@ -66,7 +109,7 @@ a {
 }
 
 .page-shell {
-	width: min(1320px, calc(100vw - 32px));
+	width: min(1200px, calc(100% - 96px));
 	margin-inline: auto;
 }
 
@@ -79,9 +122,25 @@ a {
 
 .page-title {
 	max-width: 840px;
-	font-size: 2.75rem;
-	line-height: 0.95;
-	font-weight: 900;
+	font-family: var(--font-display);
+	font-size: clamp(2.625rem, 6vw, 4.5rem);
+	line-height: 0.98;
+	font-weight: 800;
+	letter-spacing: -0.02em;
+	text-wrap: balance;
+}
+
+.section-title {
+	font-family: var(--font-display);
+	font-size: clamp(1.75rem, 4vw, 2.5rem);
+	line-height: 1.1;
+	font-weight: 800;
+	letter-spacing: -0.01em;
+	text-wrap: balance;
+}
+
+[id] {
+	scroll-margin-top: var(--space-4);
 }
 
 .ink-panel {
@@ -286,21 +345,15 @@ a {
 	border: 0;
 }
 
+@media (max-width: 1200px) {
+	.page-shell {
+		width: calc(100% - 64px);
+	}
+}
+
 @media (max-width: 640px) {
 	.page-shell {
-		width: min(100% - 20px, 1180px);
-	}
-}
-
-@media (min-width: 640px) {
-	.page-title {
-		font-size: 4rem;
-	}
-}
-
-@media (min-width: 1024px) {
-	.page-title {
-		font-size: 5rem;
+		width: calc(100% - 32px);
 	}
 }
 

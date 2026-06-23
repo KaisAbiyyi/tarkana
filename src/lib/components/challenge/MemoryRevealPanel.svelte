@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { getI18nContext } from '$lib/i18n/context';
+	import { labelSymbolToken } from '$lib/shared/presentation/symbols';
 	type Props = {
 		metadata: Record<string, unknown>;
 		visible: boolean;
 	};
 
 	let { metadata, visible }: Props = $props();
+	const { locale, t } = getI18nContext();
 	let sequence = $derived(Array.isArray(metadata.memorize) ? metadata.memorize.map(String) : []);
 </script>
 
@@ -12,17 +15,19 @@
 	<div
 		class="border-[3px] border-[var(--color-border)] bg-[var(--color-primary)] p-4 shadow-[var(--shadow-hard-sm)]"
 	>
-		<p class="text-sm font-black uppercase">{visible ? 'Memorize now' : 'Pattern hidden'}</p>
+		<p class="text-sm font-black uppercase">
+			{visible ? t('arena.memoryNow') : t('arena.patternHidden')}
+		</p>
 		{#if visible}
 			<div class="mt-3 flex flex-wrap gap-2">
 				{#each sequence as item, index (`${item}-${index}`)}
 					<span class="border-2 border-[var(--color-border)] bg-white px-4 py-3 font-black"
-						>{item}</span
+						>{labelSymbolToken(item, locale)}</span
 					>
 				{/each}
 			</div>
 		{:else}
-			<p class="mt-3 font-bold">Jawab dari ingatan kamu. Pola tidak ditampilkan lagi.</p>
+			<p class="mt-3 font-bold">{t('arena.recallHint')}</p>
 		{/if}
 	</div>
 {/if}

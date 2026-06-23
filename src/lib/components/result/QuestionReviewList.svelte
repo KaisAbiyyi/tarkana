@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Badge from '$lib/components/primitives/Badge.svelte';
 	import { formatSeconds, labelQuestionType } from '$lib/shared/presentation/format';
+	import { getI18nContext } from '$lib/i18n/context';
 
 	type ReviewItem = {
 		sessionQuestionId: string;
@@ -20,6 +21,7 @@
 	};
 
 	let { review }: Props = $props();
+	const { locale, t } = getI18nContext();
 </script>
 
 <div class="grid gap-4">
@@ -30,26 +32,39 @@
 			<div class="mb-3 flex flex-wrap items-center justify-between gap-2">
 				<div class="flex flex-wrap gap-2">
 					<Badge tone={item.isCorrect ? 'success' : 'danger'}>
-						{item.isCorrect ? 'Correct' : 'Wrong'}
+						{item.isCorrect ? t('result.correct') : t('result.wrong')}
 					</Badge>
-					<Badge tone="accent">{labelQuestionType(item.questionType)}</Badge>
+					<Badge tone="accent">{labelQuestionType(item.questionType, locale)}</Badge>
 				</div>
-				<p class="text-sm font-black">Question {item.orderIndex + 1}</p>
+				<p class="text-sm font-black">
+					{t('arena.questionNumber', { number: item.orderIndex + 1 })}
+				</p>
 			</div>
 
 			<h2 class="text-lg font-black">{item.prompt}</h2>
 			<dl class="mt-4 grid gap-3 sm:grid-cols-3">
 				<div>
-					<dt class="text-xs font-black text-[var(--color-muted)] uppercase">Your answer</dt>
-					<dd class="font-bold">{item.selectedAnswer ?? 'No answer'}</dd>
+					<dt class="text-xs font-black text-[var(--color-muted)] uppercase">
+						{t('result.yourAnswer')}
+					</dt>
+					<dd class="font-bold">{item.selectedAnswer ?? t('result.noAnswer')}</dd>
 				</div>
 				<div>
-					<dt class="text-xs font-black text-[var(--color-muted)] uppercase">Correct answer</dt>
+					<dt class="text-xs font-black text-[var(--color-muted)] uppercase">
+						{t('result.correctAnswer')}
+					</dt>
 					<dd class="font-bold">{item.correctAnswer}</dd>
 				</div>
 				<div>
-					<dt class="text-xs font-black text-[var(--color-muted)] uppercase">Score / time</dt>
-					<dd class="font-bold">{item.scoreEarned} pts, {formatSeconds(item.timeSpentSeconds)}</dd>
+					<dt class="text-xs font-black text-[var(--color-muted)] uppercase">
+						{t('result.scoreTime')}
+					</dt>
+					<dd class="font-bold">
+						{t('dashboard.points', { value: item.scoreEarned })}, {formatSeconds(
+							item.timeSpentSeconds,
+							locale
+						)}
+					</dd>
 				</div>
 			</dl>
 			<p

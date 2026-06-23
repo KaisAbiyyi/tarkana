@@ -1,6 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { createAdminService } from '$lib/server/admin/admin-service';
 import { actionFailure, checkboxValue, optionalJsonObject } from '$lib/server/admin/form-input';
+import { translate } from '$lib/i18n';
 
 export const load: PageServerLoad = async (event) => {
 	const service = createAdminService();
@@ -25,11 +26,9 @@ export const actions: Actions = {
 				config: optionalJsonObject(form, 'config') ?? {},
 				isActive: checkboxValue(form, 'isActive')
 			});
-			return { message: 'Question rule saved.' };
-		} catch (error) {
-			return actionFailure(
-				error instanceof Error ? error.message : 'Question rule could not be saved.'
-			);
+			return { message: translate(event.locals.locale, 'admin.saved') };
+		} catch {
+			return actionFailure(translate(event.locals.locale, 'admin.saveFailed'));
 		}
 	}
 };

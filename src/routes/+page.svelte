@@ -2,107 +2,553 @@
 	import PublicShell from '$lib/components/app/PublicShell.svelte';
 	import Badge from '$lib/components/primitives/Badge.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
+	import ChallengePreviewDemo from '$lib/components/app/landing/ChallengePreviewDemo.svelte';
+	import CategoryCard from '$lib/components/app/landing/CategoryCard.svelte';
+	import HowItWorksStep from '$lib/components/app/landing/HowItWorksStep.svelte';
+	import { onMount } from 'svelte';
+	import gsap from 'gsap';
+	import { ScrollTrigger } from 'gsap/ScrollTrigger';
+	import { getI18nContext } from '$lib/i18n/context';
+
+	const { t } = getI18nContext();
+
+	let pageRoot: HTMLDivElement;
+	let howItWorksSection: HTMLElement;
+	let categoriesSection: HTMLElement;
+	let ctaSection: HTMLElement;
+
+	onMount(() => {
+		gsap.registerPlugin(ScrollTrigger);
+		const media = gsap.matchMedia();
+		const context = gsap.context(() => {
+			media.add('(prefers-reduced-motion: no-preference)', () => {
+				gsap.from('.hero-entrance', {
+					y: 16,
+					duration: 0.45,
+					stagger: 0.06,
+					ease: 'power2.out',
+					clearProps: 'transform'
+				});
+
+				ScrollTrigger.create({
+					trigger: howItWorksSection,
+					start: 'top 82%',
+					onEnter: (trigger) => {
+						gsap.from('.hiw-entrance', {
+							y: 18,
+							opacity: 0,
+							duration: 0.4,
+							stagger: 0.08,
+							ease: 'power2.out',
+							clearProps: 'transform,opacity'
+						});
+
+						const connectorSelector = window.matchMedia('(min-width: 768px)').matches
+							? '.hiw-desktop-connector'
+							: '.hiw-mobile-connector';
+						gsap.from(connectorSelector, {
+							scaleX: window.matchMedia('(min-width: 768px)').matches ? 0 : 1,
+							scaleY: window.matchMedia('(min-width: 768px)').matches ? 1 : 0,
+							duration: 0.45,
+							ease: 'power2.out',
+							clearProps: 'transform'
+						});
+						trigger.kill();
+					}
+				});
+
+				ScrollTrigger.create({
+					trigger: categoriesSection,
+					start: 'top 82%',
+					onEnter: (trigger) => {
+						gsap.from('.category-card', {
+							y: 18,
+							opacity: 0,
+							duration: 0.4,
+							stagger: 0.06,
+							ease: 'power2.out',
+							clearProps: 'transform,opacity'
+						});
+						trigger.kill();
+					}
+				});
+
+				ScrollTrigger.create({
+					trigger: ctaSection,
+					start: 'top 88%',
+					onEnter: (trigger) => {
+						gsap.from('.cta-panel', {
+							y: 20,
+							opacity: 0,
+							duration: 0.45,
+							ease: 'power2.out',
+							clearProps: 'transform,opacity'
+						});
+						trigger.kill();
+					}
+				});
+			});
+		}, pageRoot);
+
+		let refreshFrame = 0;
+		const handleResize = (): void => {
+			cancelAnimationFrame(refreshFrame);
+			refreshFrame = requestAnimationFrame(() => ScrollTrigger.refresh());
+		};
+		window.addEventListener('resize', handleResize);
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			cancelAnimationFrame(refreshFrame);
+			media.revert();
+			context.revert();
+		};
+	});
 </script>
 
 <svelte:head>
-	<title>Tarkana | Ranked Logic Challenge</title>
-	<meta
-		name="description"
-		content="Tarkana adalah arena challenge logika berbasis waktu dengan Logic Rating, Reasoning Score, Rank Progress, dan Category Mastery."
-	/>
+	<title>{t('landing.title')}</title>
+	<meta name="description" content={t('landing.meta')} />
 </svelte:head>
 
 <PublicShell>
-	<section
-		class="page-shell grid gap-10 py-10 md:py-14 lg:min-h-[calc(100dvh-88px)] lg:grid-cols-[0.92fr_1.08fr] lg:items-center"
-	>
-		<div class="space-y-7">
-			<div class="space-y-4">
-				<Badge tone="accent">Ranked logic challenge</Badge>
-				<h1 class="page-title">Tarkana</h1>
-				<p class="text-2xl font-black">Arena nalar untuk pikiran tajam.</p>
-				<p class="max-w-2xl text-lg font-semibold text-[var(--color-muted)]">
-					Latih penalaran lewat challenge singkat berbasis waktu. Setiap jawaban, detik, dan streak
-					membentuk Logic Rating, Reasoning Score, Rank Progress, dan Category Mastery.
-				</p>
-			</div>
-
-			<div class="flex flex-wrap gap-3">
-				<Button href="/auth/register" size="lg">Mulai Challenge</Button>
-				<Button href="/auth/login" size="lg" variant="ghost">Login</Button>
-			</div>
-
-			<p
-				class="max-w-2xl border-l-[5px] border-[var(--color-border)] bg-white px-4 py-3 text-sm font-bold"
-			>
-				Tarkana bukan tes IQ resmi dan tidak memberi klaim klinis, medis, atau penilaian akademik
-				formal.
-			</p>
-		</div>
-
-		<div class="grid gap-4">
-			<div class="ink-panel bg-white p-5 lg:p-6">
-				<div class="flex flex-wrap items-center justify-between gap-3">
-					<div>
-						<p class="page-kicker">Live challenge preview</p>
-						<h2 class="text-3xl font-black">Question 4/10</h2>
+	<div bind:this={pageRoot} class="landing-page">
+		<section class="landing-band landing-band-hero" aria-labelledby="landing-heading">
+			<div class="page-shell hero-layout">
+				<div class="hero-copy">
+					<div class="hero-badge hero-entrance">
+						<Badge tone="accent">{t('landing.badge')}</Badge>
 					</div>
-					<div
-						class="border-[3px] border-[var(--color-border)] bg-[var(--color-primary)] px-4 py-2 text-right shadow-[var(--shadow-hard-sm)]"
-					>
-						<p class="text-xs font-black uppercase">Timer</p>
-						<p class="text-3xl font-black tabular-nums">18s</p>
+					<h1 id="landing-heading" class="hero-headline page-title hero-entrance">
+						<span>{t('landing.heroOne')}</span>
+						<span>{t('landing.heroTwo')}</span>
+					</h1>
+					<p class="hero-body hero-entrance">
+						{t('landing.heroBody')}
+					</p>
+
+					<div class="hero-actions hero-entrance">
+						<Button href="/auth/register" size="lg">{t('landing.freeCta')}</Button>
+						<a class="secondary-cta" href="#cara-kerja">{t('landing.seeHow')}</a>
 					</div>
+
+					<p class="hero-microcopy hero-entrance">
+						{t('landing.microcopy')}
+					</p>
 				</div>
 
-				<div class="mt-6 border-[3px] border-[var(--color-border)] bg-[var(--color-paper)] p-5">
-					<Badge tone="accent">Number Sequence</Badge>
-					<p class="mt-4 text-2xl font-black">Find the next number: 4, 8, 16, 32, ?</p>
-					<div class="mt-5 grid gap-3 sm:grid-cols-2">
-						<div class="choice-surface p-4 font-black">A. 48</div>
-						<div class="choice-surface bg-[var(--color-primary)] p-4 font-black">B. 64</div>
-						<div class="choice-surface p-4 font-black">C. 72</div>
-						<div class="choice-surface p-4 font-black">D. 80</div>
-					</div>
-					<div class="mt-5 h-4 border-[3px] border-[var(--color-border)] bg-white">
-						<div class="h-full w-[72%] bg-[var(--color-accent)]"></div>
-					</div>
+				<div class="hero-preview hero-entrance">
+					<ChallengePreviewDemo />
 				</div>
+			</div>
+		</section>
 
-				<div class="mt-4 grid gap-3 sm:grid-cols-3">
-					<div class="border-[3px] border-[var(--color-border)] bg-[var(--color-accent)] p-4">
-						<p class="text-2xl font-black">+130</p>
-						<p class="text-sm font-bold">Reasoning Score</p>
+		<section
+			id="cara-kerja"
+			bind:this={howItWorksSection}
+			class="landing-band landing-band-how"
+			aria-labelledby="how-it-works-heading"
+		>
+			<div class="page-shell section-layout">
+				<header class="section-heading hiw-entrance">
+					<h2 id="how-it-works-heading" class="section-title">{t('landing.howTitle')}</h2>
+					<div class="section-underline" aria-hidden="true"></div>
+				</header>
+
+				<div class="steps-journey">
+					<div class="hiw-desktop-connector" aria-hidden="true"></div>
+					<div class="hiw-entrance">
+						<HowItWorksStep
+							stepNumber="1"
+							title={t('landing.stepOne')}
+							description={t('landing.stepOneBody')}
+						/>
 					</div>
-					<div class="border-[3px] border-[var(--color-border)] bg-white p-4">
-						<p class="text-2xl font-black">Server</p>
-						<p class="text-sm font-bold">validasi skor</p>
+					<div class="hiw-entrance">
+						<HowItWorksStep
+							stepNumber="2"
+							title={t('landing.stepTwo')}
+							description={t('landing.stepTwoBody')}
+						/>
 					</div>
-					<div class="border-[3px] border-[var(--color-border)] bg-[var(--color-lime)] p-4">
-						<p class="text-2xl font-black">Rank</p>
-						<p class="text-sm font-bold">dari performa</p>
+					<div class="hiw-entrance">
+						<HowItWorksStep
+							stepNumber="3"
+							title={t('landing.stepThree')}
+							description={t('landing.stepThreeBody')}
+							isLast={true}
+						/>
 					</div>
 				</div>
 			</div>
+		</section>
 
-			<div class="grid gap-3 sm:grid-cols-4">
-				<div class="border-[3px] border-[var(--color-border)] bg-white p-4">
-					<h2 class="font-black">Number Sequence</h2>
-					<p class="text-sm font-semibold">Temukan pola angka berikutnya.</p>
-				</div>
-				<div class="border-[3px] border-[var(--color-border)] bg-white p-4">
-					<h2 class="font-black">Symbol Pattern</h2>
-					<p class="text-sm font-semibold">Baca rotasi dan pola simbol.</p>
-				</div>
-				<div class="border-[3px] border-[var(--color-border)] bg-white p-4">
-					<h2 class="font-black">Mini Deduction</h2>
-					<p class="text-sm font-semibold">Pecahkan clue pendek.</p>
-				</div>
-				<div class="border-[3px] border-[var(--color-border)] bg-white p-4">
-					<h2 class="font-black">Memory Pattern</h2>
-					<p class="text-sm font-semibold">Ingat pola, lalu jawab.</p>
+		<section
+			id="kategori"
+			bind:this={categoriesSection}
+			class="landing-band landing-band-categories"
+			aria-labelledby="categories-heading"
+		>
+			<div class="page-shell section-layout">
+				<header class="section-heading">
+					<h2 id="categories-heading" class="section-title">{t('landing.categoriesTitle')}</h2>
+					<div class="section-underline" aria-hidden="true"></div>
+				</header>
+
+				<div class="category-grid">
+					<CategoryCard title={t('category.number')} description={t('category.numberBody')} />
+					<CategoryCard title={t('category.symbol')} description={t('category.symbolBody')} />
+					<CategoryCard title={t('category.deduction')} description={t('category.deductionBody')} />
+					<CategoryCard title={t('category.memory')} description={t('category.memoryBody')} />
 				</div>
 			</div>
-		</div>
-	</section>
+		</section>
+
+		<section
+			bind:this={ctaSection}
+			class="landing-band landing-band-cta"
+			aria-labelledby="closing-heading"
+		>
+			<div class="page-shell">
+				<div class="cta-panel">
+					<div class="cta-content">
+						<p class="cta-eyebrow">{t('landing.ready')}</p>
+						<h2 id="closing-heading" class="section-title">{t('landing.closing')}</h2>
+						<p class="cta-body">
+							{t('landing.closingBody')}
+						</p>
+						<Button href="/auth/register" size="lg" variant="secondary"
+							>{t('landing.freeCta')}</Button
+						>
+						<p class="cta-microcopy">{t('landing.shortMicrocopy')}</p>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
 </PublicShell>
+
+<style>
+	.landing-page {
+		background: var(--color-paper);
+	}
+
+	.landing-band {
+		position: relative;
+		isolation: isolate;
+	}
+
+	.landing-band::before {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		content: '';
+		background-size: 32px 32px;
+	}
+
+	.landing-band-hero::before {
+		background-image:
+			linear-gradient(rgba(23, 18, 13, 0.05) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(23, 18, 13, 0.05) 1px, transparent 1px),
+			linear-gradient(180deg, #fffaf0 0%, var(--color-paper) 100%);
+	}
+
+	.landing-band-how::before {
+		background-image:
+			linear-gradient(rgba(23, 18, 13, 0.022) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(23, 18, 13, 0.022) 1px, transparent 1px);
+	}
+
+	.landing-band-categories::before,
+	.landing-band-cta::before {
+		background-image:
+			linear-gradient(rgba(23, 18, 13, 0.014) 1px, transparent 1px),
+			linear-gradient(90deg, rgba(23, 18, 13, 0.014) 1px, transparent 1px);
+	}
+
+	.hero-layout {
+		display: grid;
+		gap: var(--space-6);
+		align-items: center;
+		padding-block: var(--space-6) var(--space-8);
+	}
+
+	.hero-copy {
+		min-width: 0;
+	}
+
+	.hero-badge {
+		display: inline-block;
+	}
+
+	.hero-headline {
+		display: flex;
+		margin: var(--space-3) 0 0;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+
+	.hero-headline span:last-child {
+		color: var(--color-primary-strong);
+	}
+
+	.hero-body {
+		max-width: 620px;
+		margin: var(--space-3) 0 0;
+		font-size: 1.0625rem;
+		line-height: 1.7;
+		color: var(--color-muted);
+		text-wrap: pretty;
+	}
+
+	.hero-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: stretch;
+		gap: var(--space-2);
+		margin-top: var(--space-4);
+	}
+
+	.secondary-cta {
+		display: inline-flex;
+		min-height: 56px;
+		align-items: center;
+		justify-content: center;
+		border: 3px solid var(--color-border);
+		background: white;
+		padding: 1rem 1.75rem;
+		box-shadow: var(--shadow-level-1);
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: 0.025em;
+		text-align: center;
+		text-transform: uppercase;
+		text-decoration: none;
+		transition:
+			transform 150ms ease,
+			box-shadow 150ms ease,
+			background-color 150ms ease;
+	}
+
+	.secondary-cta:hover {
+		transform: translateY(-2px);
+		background: var(--color-accent);
+		box-shadow: 4px 5px 0 var(--color-border);
+	}
+
+	.secondary-cta:active {
+		transform: translate(2px, 2px);
+		box-shadow: 1px 1px 0 var(--color-border);
+	}
+
+	.hero-microcopy {
+		margin: var(--space-3) 0 0;
+		font-size: 0.8125rem;
+		line-height: 1.5;
+		font-weight: 600;
+		color: var(--color-muted);
+	}
+
+	.hero-preview {
+		min-width: 0;
+	}
+
+	.section-layout {
+		padding-block: var(--space-4) var(--space-6);
+	}
+
+	.landing-band-categories .section-layout {
+		padding-block: var(--space-5) var(--space-6);
+	}
+
+	.section-heading {
+		margin-bottom: var(--space-5);
+	}
+
+	.section-heading h2 {
+		margin: 0;
+	}
+
+	.section-underline {
+		width: 72px;
+		height: 6px;
+		margin-top: 0.875rem;
+		background: var(--color-border);
+	}
+
+	.steps-journey {
+		position: relative;
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--space-6);
+	}
+
+	.hiw-desktop-connector {
+		position: absolute;
+		top: 27px;
+		right: calc(100% / 6);
+		left: calc(100% / 6);
+		z-index: 0;
+		height: 3px;
+		transform-origin: left;
+		background: var(--color-border);
+	}
+
+	.steps-journey > :global(div:not(.hiw-desktop-connector)) {
+		position: relative;
+		z-index: 1;
+		min-width: 0;
+	}
+
+	.category-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		grid-auto-rows: 1fr;
+		gap: var(--space-3);
+		align-items: stretch;
+	}
+
+	.landing-band-cta {
+		padding-block: var(--space-6) var(--space-10);
+	}
+
+	.cta-panel {
+		max-width: 896px;
+		margin-inline: auto;
+		border: 4px solid var(--color-border);
+		background: var(--color-primary);
+		padding: var(--space-6);
+		box-shadow: var(--shadow-level-3);
+		text-align: center;
+	}
+
+	.cta-content {
+		display: flex;
+		align-items: center;
+		flex-direction: column;
+	}
+
+	.cta-eyebrow {
+		margin: 0 0 var(--space-2);
+		border: 2px solid var(--color-border);
+		background: white;
+		padding: 0.375rem 0.75rem;
+		font-size: 0.75rem;
+		font-weight: 800;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+	}
+
+	.cta-content h2 {
+		max-width: 680px;
+		margin: 0;
+		font-size: clamp(2rem, 4.5vw, 2.75rem);
+	}
+
+	.cta-body {
+		max-width: 640px;
+		margin: var(--space-2) 0 var(--space-3);
+		font-size: 1.0625rem;
+		line-height: 1.65;
+		font-weight: 500;
+		text-wrap: pretty;
+	}
+
+	.cta-microcopy {
+		margin: var(--space-2) 0 0;
+		font-size: 0.8125rem;
+		line-height: 1.5;
+		font-weight: 600;
+	}
+
+	@media (min-width: 1120px) {
+		.hero-layout {
+			grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+			gap: var(--space-8);
+		}
+	}
+
+	@media (max-width: 1119px) {
+		.hero-copy,
+		.hero-preview {
+			width: 100%;
+			max-width: 800px;
+			margin-inline: auto;
+		}
+	}
+
+	@media (max-width: 900px) {
+		.category-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 767px) {
+		.hero-layout {
+			gap: var(--space-5);
+			padding-block: var(--space-4) var(--space-5);
+		}
+
+		.section-layout,
+		.landing-band-categories .section-layout {
+			padding-block: var(--space-3) var(--space-4);
+		}
+
+		.section-heading {
+			margin-bottom: var(--space-4);
+		}
+
+		.steps-journey {
+			grid-template-columns: 1fr;
+			gap: var(--space-4);
+		}
+
+		.hiw-desktop-connector {
+			display: none;
+		}
+
+		.landing-band-cta {
+			padding-block: var(--space-4) var(--space-8);
+		}
+
+		.cta-panel {
+			padding: var(--space-4) var(--space-3);
+		}
+	}
+
+	@media (max-width: 560px) {
+		.hero-headline {
+			font-size: clamp(2.35rem, 12vw, 3.25rem);
+		}
+
+		.hero-body {
+			font-size: 1rem;
+		}
+
+		.hero-actions {
+			align-items: stretch;
+			flex-direction: column;
+		}
+
+		.hero-actions :global(.btn),
+		.secondary-cta {
+			width: 100%;
+		}
+
+		.category-grid {
+			grid-template-columns: 1fr;
+			gap: var(--space-2);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.secondary-cta {
+			transition: none;
+		}
+
+		.secondary-cta:hover,
+		.secondary-cta:active {
+			transform: none;
+		}
+	}
+</style>

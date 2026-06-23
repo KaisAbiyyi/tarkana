@@ -11,6 +11,8 @@ bun.lockb
 /.agents/
 /.github/
 /docs/
+/.codex-artifacts/
+/.svelte-kit-*/
 AGENTS.md
 CLAUDE.md
 skills-lock.json

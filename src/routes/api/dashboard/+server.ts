@@ -7,6 +7,6 @@ export const GET: RequestHandler = async (event) => {
 		const dashboardService = createDashboardService();
 		return jsonOk(await dashboardService.getDashboard(event));
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };

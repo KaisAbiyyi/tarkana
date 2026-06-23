@@ -2,16 +2,25 @@ import { json, type RequestEvent } from '@sveltejs/kit';
 import { apiFailure, apiSuccess, type ApiResponse } from '$lib/shared/types/api';
 import { ValidationError } from '$lib/shared/validation/common';
 import { AppError, badRequest, toSafeError } from '$lib/server/errors';
+import { DEFAULT_LOCALE, translate, type Locale } from '$lib/i18n';
 
 export function jsonOk<T>(data: T): Response {
 	return json(apiSuccess(data) satisfies ApiResponse<T>);
 }
 
-export function jsonError(error: unknown): Response {
+export function jsonError(error: unknown, locale: Locale = DEFAULT_LOCALE): Response {
 	const safeError =
 		error instanceof ValidationError ? badRequest(error.message) : toSafeError(error);
+	const message =
+		safeError.status === 404
+			? translate(locale, 'error.notFound')
+			: safeError.status === 401 || safeError.status === 403
+				? translate(locale, 'error.accessDenied')
+				: safeError.status < 500
+					? translate(locale, 'error.invalidRequest')
+					: translate(locale, 'error.generic');
 
-	return json(apiFailure(safeError.code, safeError.message), { status: safeError.status });
+	return json(apiFailure(safeError.code, message), { status: safeError.status });
 }
 
 export async function readJsonBody<T>(

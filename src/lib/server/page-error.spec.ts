@@ -10,7 +10,7 @@ describe('throwPageLoadError', () => {
 		} catch (caught) {
 			expect(caught).toMatchObject({
 				status: 400,
-				body: { message: 'Challenge cannot be finished yet' }
+				body: { message: 'The request could not be processed. Check your input and try again.' }
 			});
 		}
 	});

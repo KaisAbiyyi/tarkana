@@ -16,13 +16,17 @@ describe('leaderboard service', () => {
 				return [
 					{
 						userId: 'user-1',
-						displayName: 'Visible Name',
-						rank: 'Bronze Mind',
-						rating: 120,
-						averageAccuracy: 88.234,
-						totalCompleted: 4
+						displayName: 'Player One',
+						publicDiscriminator: '1234',
+						rank: 'Gold Analyst',
+						rating: 1500,
+						averageAccuracy: 0.854,
+						totalCompleted: 10
 					}
 				];
+			},
+			async getUserPosition() {
+				return null;
 			}
 		};
 
@@ -36,12 +40,14 @@ describe('leaderboard service', () => {
 		);
 
 		expect(result.items[0]).toEqual({
+			userId: 'user-1',
 			position: 1,
-			displayName: 'Visible Name',
-			rank: 'Bronze Mind',
-			logicRating: 120,
-			averageAccuracy: 88.23,
-			totalCompleted: 4
+			displayName: 'Player One',
+			publicDiscriminator: '1234',
+			rank: 'Gold Analyst',
+			logicRating: 1500,
+			averageAccuracy: 0.85,
+			totalCompleted: 10
 		});
 		expect(JSON.stringify(result)).not.toContain('@');
 	});

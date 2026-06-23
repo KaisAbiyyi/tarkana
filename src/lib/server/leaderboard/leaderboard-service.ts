@@ -13,6 +13,7 @@ export type LeaderboardService = {
 		event: RequestEvent,
 		pagination: PaginationInput
 	): Promise<PaginatedResult<LeaderboardEntryDto>>;
+	getCurrentUserEntry(event: RequestEvent): Promise<LeaderboardEntryDto | null>;
 };
 
 export function createLeaderboardService(
@@ -26,8 +27,10 @@ export function createLeaderboardService(
 
 			return {
 				items: rows.map((row, index) => ({
+					userId: row.userId,
 					position: pagination.offset + index + 1,
 					displayName: row.displayName,
+					publicDiscriminator: row.publicDiscriminator,
 					rank: row.rank,
 					logicRating: row.rating,
 					averageAccuracy: Math.round(Number(row.averageAccuracy) * 100) / 100,
@@ -36,6 +39,23 @@ export function createLeaderboardService(
 				limit: pagination.limit,
 				offset: pagination.offset,
 				total: null
+			};
+		},
+
+		async getCurrentUserEntry(event) {
+			const profile = await requireProfile(event, profileRepository);
+			const row = await leaderboardRepository.getUserPosition(profile.id);
+			if (!row) return null;
+
+			return {
+				userId: row.userId,
+				position: row.position,
+				displayName: row.displayName,
+				publicDiscriminator: row.publicDiscriminator,
+				rank: row.rank,
+				logicRating: row.rating,
+				averageAccuracy: Math.round(Number(row.averageAccuracy) * 100) / 100,
+				totalCompleted: row.totalCompleted
 			};
 		}
 	};

@@ -6,6 +6,6 @@ export const GET: RequestHandler = async (event) => {
 	try {
 		return jsonOk(await createAdminService().getOverview(event));
 	} catch (error) {
-		return jsonError(error);
+		return jsonError(error, event.locals.locale);
 	}
 };

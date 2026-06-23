@@ -4,6 +4,7 @@ export type DashboardStatsDto = {
 	totalCompleted: number;
 	bestScore: number;
 	averageAccuracy: number;
+	totalRatingDelta: number;
 	averageSolveTimeSeconds: number;
 	strongestCategory: string | null;
 	weakestCategory: string | null;

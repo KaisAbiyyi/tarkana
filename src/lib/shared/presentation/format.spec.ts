@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { formatPercent, formatSeconds, formatSignedNumber, labelQuestionType } from './format';
 
 describe('presentation format helpers', () => {
-	it('formats percentage values as rounded whole percents', () => {
-		expect(formatPercent(87.6)).toBe('88%');
+	it('formats percentage values as rounded whole percents or with one decimal', () => {
+		expect(formatPercent(87.6)).toBe('87.6%');
 	});
 
 	it('formats short and long durations readably', () => {
@@ -17,6 +17,6 @@ describe('presentation format helpers', () => {
 	});
 
 	it('labels known question types with product copy', () => {
-		expect(labelQuestionType('memory_pattern')).toBe('Memory Pattern');
+		expect(labelQuestionType('memory_pattern')).toBe('Pattern Memory');
 	});
 });

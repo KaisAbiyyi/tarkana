@@ -8,7 +8,7 @@ describe('SymbolGlyph', () => {
 		render(SymbolGlyph, { token: 'triangle-left', size: 'lg' });
 
 		await expect
-			.element(page.getByRole('img', { name: 'Triangle pointing left' }))
+			.element(page.getByRole('img', { name: 'Triangle facing left' }))
 			.toBeInTheDocument();
 		await expect.element(page.getByText('triangle-left')).not.toBeInTheDocument();
 	});

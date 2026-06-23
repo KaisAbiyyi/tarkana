@@ -10,6 +10,6 @@ export const load: PageServerLoad = async (event) => {
 			})
 		};
 	} catch (caught) {
-		throwPageLoadError(caught);
+		throwPageLoadError(caught, event.locals.locale);
 	}
 };

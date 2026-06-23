@@ -10,7 +10,6 @@
 		questionType: 'symbol_pattern' as const,
 		prompt:
 			'Find the next symbol: triangle-left | triangle-up | triangle-right | triangle-down | triangle-left | ?',
-		difficultyScore: 130,
 		orderIndex: 1
 	};
 
@@ -31,8 +30,16 @@
 
 	<div class="grid gap-5 lg:grid-cols-[1fr_300px]">
 		<section class="grid gap-5">
-			<SessionMomentum currentQuestion={2} totalQuestions={5} streak={2} sessionScore={260} />
-			<QuestionPanel {question} totalQuestions={5} />
+			<SessionMomentum
+				currentQuestion={2}
+				totalQuestions={5}
+				streak={2}
+				sessionScore={260}
+				remainingSeconds={18}
+				totalSeconds={25}
+				questionType="symbol_pattern"
+			/>
+			<QuestionPanel {question} />
 			<ChoiceList
 				{choices}
 				{selectedAnswer}

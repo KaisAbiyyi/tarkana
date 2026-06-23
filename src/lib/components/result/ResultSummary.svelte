@@ -5,8 +5,10 @@
 	import {
 		formatPercent,
 		formatSeconds,
-		formatSignedNumber
+		formatSignedNumber,
+		labelRank
 	} from '$lib/shared/presentation/format';
+	import { getI18nContext } from '$lib/i18n/context';
 
 	type RankProgress = {
 		nextRank: string | null;
@@ -41,47 +43,58 @@
 		rankProgress,
 		isSuspicious
 	}: Props = $props();
+	const { locale, t } = getI18nContext();
 </script>
 
-<Card tone={rankPromoted ? 'warning' : 'default'} title="Session Result">
+<Card tone={rankPromoted ? 'warning' : 'default'} title={t('result.sessionResult')}>
 	<div class="grid gap-4 lg:grid-cols-[1fr_1fr]">
 		<div>
-			<p class="text-sm font-black uppercase">Reasoning Score</p>
+			<p class="text-sm font-black uppercase">{t('result.reasoningScore')}</p>
 			<p class="text-6xl font-black">{totalScore}</p>
 			<div class="mt-3 flex flex-wrap gap-2">
-				<Badge tone="success">{correctAnswers} correct</Badge>
-				<Badge tone="danger">{wrongAnswers} wrong</Badge>
-				{#if isSuspicious}<Badge tone="danger">Suspicious</Badge>{/if}
+				<Badge tone="success">{t('result.correctCount', { count: correctAnswers })}</Badge>
+				<Badge tone="danger">{t('result.wrongCount', { count: wrongAnswers })}</Badge>
+				{#if isSuspicious}<Badge tone="danger">{t('label.suspicious')}</Badge>{/if}
 			</div>
 		</div>
 
 		<div class="grid gap-3">
 			<div class="grid grid-cols-2 gap-3">
 				<div class="border-2 border-[var(--color-border)] bg-white p-3">
-					<p class="text-xs font-black uppercase">Challenge Accuracy</p>
-					<p class="text-2xl font-black">{formatPercent(accuracy)}</p>
+					<p class="text-xs font-black uppercase">{t('result.accuracy')}</p>
+					<p class="text-2xl font-black">{formatPercent(accuracy, locale)}</p>
 				</div>
 				<div class="border-2 border-[var(--color-border)] bg-white p-3">
-					<p class="text-xs font-black uppercase">Average Time</p>
-					<p class="text-2xl font-black">{formatSeconds(averageTimeSeconds)}</p>
+					<p class="text-xs font-black uppercase">{t('dashboard.averageTime')}</p>
+					<p class="text-2xl font-black">{formatSeconds(averageTimeSeconds, locale)}</p>
 				</div>
 				<div class="border-2 border-[var(--color-border)] bg-white p-3">
-					<p class="text-xs font-black uppercase">Rating Change</p>
-					<p class="text-2xl font-black">{formatSignedNumber(ratingDelta)}</p>
+					<p class="text-xs font-black uppercase">{t('result.ratingChange')}</p>
+					<p class="text-2xl font-black">{formatSignedNumber(ratingDelta, locale)}</p>
 				</div>
 				<div class="border-2 border-[var(--color-border)] bg-white p-3">
-					<p class="text-xs font-black uppercase">Rank</p>
-					<p class="text-2xl font-black">{rankAfter}</p>
+					<p class="text-xs font-black uppercase">{t('result.rank')}</p>
+					<p class="text-2xl font-black">{labelRank(rankAfter, locale)}</p>
 				</div>
 			</div>
-			<ProgressBar value={rankProgress.progressPercent} label="Rank Progress" tone="accent" />
+			<ProgressBar
+				value={rankProgress.progressPercent}
+				label={t('dashboard.rankProgress')}
+				tone="accent"
+			/>
 			<p class="text-sm font-bold">
 				{#if rankPromoted}
-					Promotion: {rankBefore} -> {rankAfter}
+					{t('result.promotion', {
+						before: labelRank(rankBefore, locale),
+						after: labelRank(rankAfter, locale)
+					})}
 				{:else if rankProgress.nextRank}
-					{rankProgress.pointsToNextRank} points to {rankProgress.nextRank}
+					{t('result.pointsToRank', {
+						points: rankProgress.pointsToNextRank ?? 0,
+						rank: labelRank(rankProgress.nextRank, locale)
+					})}
 				{:else}
-					Top rank reached.
+					{t('result.topRank')}
 				{/if}
 			</p>
 		</div>

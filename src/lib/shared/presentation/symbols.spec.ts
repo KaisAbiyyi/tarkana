@@ -24,7 +24,7 @@ describe('symbol presentation', () => {
 	});
 
 	it('provides readable labels for known and unknown tokens', () => {
-		expect(labelSymbolToken('triangle-left')).toBe('Triangle pointing left');
+		expect(labelSymbolToken('triangle-left')).toBe('Triangle facing left');
 		expect(labelSymbolToken('hexagon-blue')).toBe('Hexagon blue');
 		expect(labelSymbolToken('?')).toBe('Unknown symbol');
 	});

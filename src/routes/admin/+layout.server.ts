@@ -2,6 +2,7 @@ import { error as httpError, redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { requireAdmin } from '$lib/server/auth/guards';
 import { AppError } from '$lib/server/errors';
+import { translate } from '$lib/i18n';
 
 export const load: LayoutServerLoad = async (event) => {
 	try {
@@ -12,7 +13,12 @@ export const load: LayoutServerLoad = async (event) => {
 			redirect(303, '/auth/login');
 		}
 		if (caught instanceof AppError) {
-			httpError(caught.status, caught.status < 500 ? caught.message : 'Something went wrong');
+			httpError(
+				caught.status,
+				caught.status === 403
+					? translate(event.locals.locale, 'error.accessDenied')
+					: translate(event.locals.locale, 'error.generic')
+			);
 		}
 
 		throw caught;

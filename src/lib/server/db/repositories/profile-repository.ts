@@ -28,8 +28,23 @@ export function createProfileRepository(database: Database = getDb()): ProfileRe
 		},
 
 		async create(profile) {
-			const [createdProfile] = await database.insert(usersProfile).values(profile).returning();
-			if (!createdProfile) throw new Error('Could not create profile');
+			const [createdProfile] = await database
+				.insert(usersProfile)
+				.values(profile)
+				.onConflictDoNothing()
+				.returning();
+
+			if (!createdProfile) {
+				const [existingProfile] = await database
+					.select()
+					.from(usersProfile)
+					.where(eq(usersProfile.id, profile.id))
+					.limit(1);
+
+				if (!existingProfile) throw new Error('Could not create or find profile');
+				return existingProfile;
+			}
+
 			return createdProfile;
 		},
 

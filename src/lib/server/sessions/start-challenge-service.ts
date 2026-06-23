@@ -60,6 +60,7 @@ export function createStartChallengeService(
 			const challengeCategories = toChallengeCategories(categories, rules);
 
 			const builtQuestions = buildChallengeQuestions({
+				locale: event.locals.locale,
 				config: challengeConfig,
 				categories: challengeCategories,
 				rules,

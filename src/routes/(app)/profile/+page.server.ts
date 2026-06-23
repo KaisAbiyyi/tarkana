@@ -2,10 +2,21 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createProfileService } from '$lib/server/profile/profile-service';
 
+import { createSessionRepository } from '$lib/server/db/repositories/session-repository';
+import { translate } from '$lib/i18n';
+
 export const load: PageServerLoad = async (event) => {
+	const profile = await createProfileService().getProfile(event);
+	const user = await event.locals.getUser();
+	const stats = await createSessionRepository().getDashboardStats(profile.id);
+
 	return {
-		profile: await createProfileService().getProfile(event),
-		user: await event.locals.getUser()
+		profile,
+		user,
+		stats: {
+			totalCompleted: stats.totalCompleted,
+			averageAccuracy: stats.averageAccuracy
+		}
 	};
 };
 
@@ -17,11 +28,13 @@ export const actions: Actions = {
 		try {
 			return {
 				profile: await createProfileService().updateDisplayName(event, displayName),
-				message: 'Display name updated.'
+				message: translate(event.locals.locale, 'profile.updated'),
+				success: true
 			};
 		} catch {
 			return fail(400, {
-				message: 'Display name harus 2-32 karakter dan memakai huruf, angka, spasi, _ . atau -.'
+				message: translate(event.locals.locale, 'profile.invalidDisplayName'),
+				success: false
 			});
 		}
 	}

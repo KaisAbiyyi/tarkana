@@ -13,7 +13,7 @@ describe('ChoiceList', () => {
 			onSelect
 		});
 
-		const choice = page.getByRole('radio', { name: /triangle pointing left/i });
+		const choice = page.getByRole('radio', { name: /Triangle facing left/i });
 		await expect.element(choice).toBeInTheDocument();
 		await choice.click();
 
