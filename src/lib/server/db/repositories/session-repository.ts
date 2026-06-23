@@ -50,6 +50,9 @@ export type SessionRepository = {
 	getDashboardStats(userId: string): Promise<DashboardSessionStats>;
 	markCompleted(input: CompleteSessionInput): Promise<ChallengeSession>;
 	completeSessionAndUpdateProfile(input: CompleteSessionAndProfileInput): Promise<ChallengeSession>;
+	findActiveSession(userId: string): Promise<ChallengeSession | null>;
+	abandonSession(sessionId: string): Promise<void>;
+	touchSessionUpdatedAt(sessionId: string): Promise<void>;
 };
 
 export type ListHistoryInput = {
@@ -199,7 +202,10 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 		},
 
 		async listHistory({ userId, limit, offset, filter }) {
-			const queryConditions = [eq(challengeSessions.userId, userId)];
+			const queryConditions = [
+				eq(challengeSessions.userId, userId),
+				eq(challengeSessions.status, 'completed')
+			];
 			if (filter && filter !== 'all') {
 				if (
 					['number_sequence', 'symbol_pattern', 'mini_deduction', 'memory_pattern'].includes(filter)
@@ -296,7 +302,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					createdAt: challengeSessions.createdAt
 				})
 				.from(challengeSessions)
-				.where(eq(challengeSessions.userId, userId))
+				.where(and(eq(challengeSessions.userId, userId), eq(challengeSessions.status, 'completed')))
 				.orderBy(desc(challengeSessions.createdAt));
 
 			const modeSessionIds = allSessions.filter((s) => s.challengeType === 'mode').map((s) => s.id);
@@ -531,6 +537,36 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 
 				return updatedSession;
 			});
+		},
+
+		async findActiveSession(userId) {
+			const [session] = await database
+				.select()
+				.from(challengeSessions)
+				.where(
+					and(
+						eq(challengeSessions.userId, userId),
+						eq(challengeSessions.status, 'in_progress')
+					)
+				)
+				.orderBy(desc(challengeSessions.createdAt))
+				.limit(1);
+
+			return session ?? null;
+		},
+
+		async abandonSession(sessionId) {
+			await database
+				.update(challengeSessions)
+				.set({ status: 'abandoned', completedAt: new Date() })
+				.where(eq(challengeSessions.id, sessionId));
+		},
+
+		async touchSessionUpdatedAt(sessionId) {
+			await database
+				.update(challengeSessions)
+				.set({ updatedAt: new Date() })
+				.where(eq(challengeSessions.id, sessionId));
 		}
 	};
 }

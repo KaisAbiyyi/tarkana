@@ -8,11 +8,14 @@
 	import { formatPercent, formatSeconds, labelRank } from '$lib/shared/presentation/format';
 	import { getI18nContext } from '$lib/i18n/context';
 
+	import type { ActiveChallengeResult } from '$lib/server/sessions/active-challenge-service';
+
 	type Props = {
 		stats: DashboardStatsDto;
+		activeChallenge?: ActiveChallengeResult;
 	};
 
-	let { stats }: Props = $props();
+	let { stats, activeChallenge }: Props = $props();
 	const { locale, t } = getI18nContext();
 
 	// Avoid logic rating calculations if UNRANKED
@@ -48,14 +51,20 @@
 			</div>
 		</div>
 		<div class="border-[3px] border-[var(--color-border)] bg-[var(--color-paper)] p-5">
-			<p class="text-sm font-black uppercase">{t('dashboard.nextChallenge')}</p>
-			<p class="mt-2 text-3xl font-black">{t('dashboard.continue')}</p>
-			<p class="mt-2 text-sm font-bold text-[var(--color-muted)]">
-				{t('dashboard.tenQuestions')}
-			</p>
-			<Button href="/challenge" size="lg" class="mt-5 w-full"
-				>{t('dashboard.startChallenge')}</Button
-			>
+			{#if activeChallenge?.hasActive}
+				<p class="text-sm font-black uppercase">Resume Challenge</p>
+				<p class="mt-2 text-2xl font-black">Kamu punya challenge yang belum selesai</p>
+				<Button href="/challenge" size="lg" class="mt-5 w-full">Lanjutkan</Button>
+			{:else}
+				<p class="text-sm font-black uppercase">{t('dashboard.nextChallenge')}</p>
+				<p class="mt-2 text-3xl font-black">{t('dashboard.continue')}</p>
+				<p class="mt-2 text-sm font-bold text-[var(--color-muted)]">
+					{t('dashboard.tenQuestions')}
+				</p>
+				<Button href="/challenge" size="lg" class="mt-5 w-full"
+					>{t('dashboard.startChallenge')}</Button
+				>
+			{/if}
 		</div>
 	</header>
 

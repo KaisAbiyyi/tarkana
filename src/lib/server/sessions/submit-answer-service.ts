@@ -95,6 +95,8 @@ export function createSubmitAnswerService(
 				scoreEarned
 			});
 
+			await sessionRepository.touchSessionUpdatedAt(session.id);
+
 			const nextQuestion = questions.find((item) => item.orderIndex === question.orderIndex + 1);
 
 			return {

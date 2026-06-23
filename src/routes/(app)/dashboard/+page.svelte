@@ -11,6 +11,7 @@
 	let { data }: Props = $props();
 	const { t } = getI18nContext();
 	let stats = $derived(data.stats);
+	let activeChallenge = $derived(data.activeChallenge);
 
 	// Define first run as having no completed sessions
 	let isFirstRun = $derived(stats.totalCompleted === 0);
@@ -24,5 +25,5 @@
 {#if isFirstRun}
 	<FirstRunDashboard />
 {:else}
-	<ActiveDashboard {stats} />
+	<ActiveDashboard {stats} {activeChallenge} />
 {/if}

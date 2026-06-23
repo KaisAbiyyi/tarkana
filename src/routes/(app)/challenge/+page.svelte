@@ -62,6 +62,10 @@
 	const ARENA_LABELS = createArenaLabels(locale);
 	const ROUND_MODE_OPTIONS = createRoundModeOptions(t);
 	const ROUND_SESSION_OPTIONS = createRoundSessionOptions(t);
+
+	let activeChallenge = $derived(data.activeChallenge);
+	let showResumeModal = $state(false);
+
 	let preparationElement = $state<HTMLElement | null>(null);
 	let challengeType = $state<RoundSessionType | null>(null);
 	let selectedMode = $state<RoundMode | null>(null);
@@ -138,6 +142,10 @@
 					}
 				);
 			}, preparationElement);
+		}
+
+		if (activeChallenge?.hasActive && activeChallenge?.currentQuestion) {
+			showResumeModal = true;
 		}
 
 		return () => {
@@ -249,9 +257,37 @@
 			sessionId = payload.data.sessionId;
 			totalQuestions = payload.data.totalQuestions;
 			currentQuestion = payload.data.currentQuestion;
-		} catch {
 			errorMessage = ARENA_LABELS.connectionLost;
 			selectionAnnouncement = t('prep.connectionRetry');
+		} finally {
+			loading = false;
+		}
+	}
+
+	function resumeChallenge(): void {
+		if (!activeChallenge?.currentQuestion || !activeChallenge?.sessionId) return;
+		sessionId = activeChallenge.sessionId;
+		totalQuestions = activeChallenge.totalQuestions || 0;
+		selectedMode = activeChallenge.currentQuestion.questionType as RoundMode;
+		challengeType = activeChallenge.challengeType as RoundSessionType;
+		currentQuestion = activeChallenge.currentQuestion;
+		showResumeModal = false;
+	}
+
+	async function abandonChallenge(): Promise<void> {
+		if (!activeChallenge?.sessionId) return;
+		loading = true;
+		errorMessage = null;
+
+		try {
+			await fetch('/api/challenge/abandon', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ sessionId: activeChallenge.sessionId })
+			});
+			showResumeModal = false;
+		} catch {
+			errorMessage = ARENA_LABELS.connectionLost;
 		} finally {
 			loading = false;
 		}
@@ -601,6 +637,22 @@
 			</div>
 		</div>
 	{/if}
+
+	{#if showResumeModal}
+		<div class="resume-modal-overlay">
+			<div class="resume-modal" role="dialog" aria-modal="true" aria-labelledby="resume-title">
+				<h2 id="resume-title">Sesi Belum Selesai</h2>
+				<p>Kamu punya challenge yang belum selesai.</p>
+				{#if errorMessage}
+					<p class="error-msg">{errorMessage}</p>
+				{/if}
+				<div class="resume-actions">
+					<Button onclick={resumeChallenge} size="lg" {loading}>Lanjutkan</Button>
+					<Button onclick={abandonChallenge} size="lg" variant="ghost" {loading}>Buang & Mulai Baru</Button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </section>
 
 <style>
@@ -799,6 +851,60 @@
 		height: 0.8rem;
 		border: 3px solid var(--color-border);
 		border-radius: 999px;
+	}
+	.symbol-motif span:nth-child(2) {
+		width: 0.6rem;
+		height: 0.6rem;
+		background: var(--color-ink);
+	}
+
+	.resume-modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.75);
+		z-index: 1000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem;
+	}
+
+	.resume-modal {
+		background: white;
+		border: 4px solid var(--color-border);
+		box-shadow: 8px 8px 0 var(--color-ink);
+		padding: 2rem;
+		max-width: 480px;
+		width: 100%;
+		text-align: center;
+	}
+
+	.resume-modal h2 {
+		font-size: 1.5rem;
+		font-weight: 900;
+		margin: 0 0 0.5rem;
+	}
+
+	.resume-modal p {
+		font-weight: 700;
+		color: var(--color-muted);
+		margin: 0 0 1.5rem;
+	}
+
+	.resume-modal .error-msg {
+		color: white;
+		background: var(--color-danger);
+		padding: 0.5rem;
+		border: 2px solid var(--color-border);
+		margin-bottom: 1.5rem;
+	}
+
+	.resume-actions {
+		display: grid;
+		gap: 0.75rem;
 	}
 	.symbol-motif span:last-child {
 		width: 0;

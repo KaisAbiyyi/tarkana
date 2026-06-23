@@ -212,6 +212,19 @@ export function createSessionRepositoryFake(
 				status: input.isSuspicious ? 'suspicious' : 'completed'
 			});
 			return session;
+		},
+		async findActiveSession(userId: string) {
+			return session.userId === userId && session.status === 'in_progress' ? session : null;
+		},
+		async abandonSession(sessionId: string) {
+			if (session.id === sessionId) {
+				session = createChallengeSession({ ...session, status: 'abandoned' });
+			}
+		},
+		async touchSessionUpdatedAt(sessionId: string) {
+			if (session.id === sessionId) {
+				session = createChallengeSession({ ...session, updatedAt: new Date() });
+			}
 		}
 	};
 }
