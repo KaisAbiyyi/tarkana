@@ -20,6 +20,7 @@ describe('symbol presentation', () => {
 		expect(isVisualSymbolToken('triangle-down')).toBe(true);
 		expect(isVisualSymbolToken('circle')).toBe(true);
 		expect(isVisualSymbolToken('star')).toBe(true);
+		expect(isVisualSymbolToken('triangle')).toBe(false);
 		expect(isVisualSymbolToken('hexagon-blue')).toBe(false);
 	});
 

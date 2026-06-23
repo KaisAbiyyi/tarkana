@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { generateSymbolPatternQuestion, SYMBOL_PATTERN_RULES } from './symbol-pattern-generator';
 import { getGeneratedQuestionErrors } from '$lib/server/challenge/rule-validator';
+import { labelSymbolToken } from '$lib/shared/presentation/symbols';
+
+const TRIANGLE_DIRECTION_CHOICES = [
+	'triangle-up',
+	'triangle-right',
+	'triangle-down',
+	'triangle-left'
+].sort();
 
 describe('symbol pattern generator', () => {
 	it.each(SYMBOL_PATTERN_RULES)('generates valid %s questions', (ruleType) => {
@@ -14,4 +22,22 @@ describe('symbol pattern generator', () => {
 		expect(question.questionType).toBe('symbol_pattern');
 		expect(getGeneratedQuestionErrors(question)).toEqual([]);
 	});
+
+	it.each(SYMBOL_PATTERN_RULES)(
+		'uses four visually distinct triangle choices for %s',
+		(ruleType) => {
+			const question = generateSymbolPatternQuestion({
+				seed: `triangle-choices-${ruleType}`,
+				difficulty: 'medium',
+				ruleType,
+				timeLimitSeconds: 25
+			});
+			const visualLabels = question.choices.map((choice) => labelSymbolToken(choice));
+
+			expect(question.choices).toHaveLength(4);
+			expect([...question.choices].sort()).toEqual(TRIANGLE_DIRECTION_CHOICES);
+			expect(new Set(visualLabels).size).toBe(4);
+			expect(question.choices).toContain(question.correctAnswer);
+		}
+	);
 });
