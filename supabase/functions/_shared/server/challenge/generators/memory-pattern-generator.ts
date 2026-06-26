@@ -14,7 +14,16 @@ export const MEMORY_PATTERN_RULES = [
 	'reverse_sequence_recall'
 ] as const;
 
-const ALL_MEMORY_SYMBOLS = ['circle', 'square', 'triangle', 'diamond', 'star', 'hex', 'pentagon', 'octagon'];
+const ALL_MEMORY_SYMBOLS = [
+	'circle',
+	'square',
+	'triangle',
+	'diamond',
+	'star',
+	'hex',
+	'pentagon',
+	'octagon'
+];
 
 type MemoryRule = (typeof MEMORY_PATTERN_RULES)[number];
 
@@ -26,7 +35,13 @@ export function generateMemoryPatternQuestion(input: GenerateQuestionInput): Gen
 	const rng = createSeededRng(`${input.seed}:memory`);
 	const locale = resolveLocale(input.locale);
 	const t = createTranslator(locale);
-	const challenge = buildMemoryChallenge(input.ruleType as MemoryRule, rng, t, locale, input.difficulty);
+	const challenge = buildMemoryChallenge(
+		input.ruleType as MemoryRule,
+		rng,
+		t,
+		locale,
+		input.difficulty
+	);
 	const choices = createChoices({
 		correctAnswer: challenge.answer,
 		distractors: challenge.distractors,
@@ -67,17 +82,17 @@ function buildMemoryChallenge(
 	const revealSeconds = difficulty === 'hard' ? 2 : difficulty === 'medium' ? 3 : 4;
 	// Symbol pool: 4 / 6 / 8
 	const poolSize = difficulty === 'hard' ? 8 : difficulty === 'medium' ? 6 : 4;
-	
+
 	const activePool = ALL_MEMORY_SYMBOLS.slice(0, poolSize);
-	
+
 	// Default sequence generation
 	let sequence = Array.from({ length: seqLength }, () => rng.pick(activePool));
-	
+
 	// For position_recall, target must appear exactly once!
 	if (rule === 'position_recall') {
 		const target = rng.pick(activePool);
-		const nonTargets = activePool.filter(s => s !== target);
-		
+		const nonTargets = activePool.filter((s) => s !== target);
+
 		// Ensure nonTargets are used for the rest
 		sequence = Array.from({ length: seqLength }, () => rng.pick(nonTargets));
 		// Inject target exactly once
@@ -102,10 +117,12 @@ function buildMemoryChallenge(
 		}
 		case 'position_recall': {
 			// Find the single instance of the target we ensured above
-			const targetIndex = sequence.findIndex((s, index, arr) => arr.indexOf(s) === arr.lastIndexOf(s));
+			const targetIndex = sequence.findIndex(
+				(s, index, arr) => arr.indexOf(s) === arr.lastIndexOf(s)
+			);
 			// Fallback in case rng matched perfectly, which won't happen because we forced it
 			const target = sequence[targetIndex !== -1 ? targetIndex : 0] as string;
-			
+
 			return {
 				memorize: sequence,
 				revealSeconds,

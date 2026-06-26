@@ -23,21 +23,18 @@ describe('symbol pattern generator', () => {
 		expect(getGeneratedQuestionErrors(question)).toEqual([]);
 	});
 
-	it.each(SYMBOL_PATTERN_RULES)(
-		'uses four visually distinct choices for %s',
-		(ruleType) => {
-			const question = generateSymbolPatternQuestion({
-				seed: `triangle-choices-${ruleType}`,
-				difficulty: 'medium',
-				ruleType,
-				timeLimitSeconds: 25
-			});
-			const visualLabels = question.choices.map((choice) => labelSymbolToken(choice));
+	it.each(SYMBOL_PATTERN_RULES)('uses four visually distinct choices for %s', (ruleType) => {
+		const question = generateSymbolPatternQuestion({
+			seed: `triangle-choices-${ruleType}`,
+			difficulty: 'medium',
+			ruleType,
+			timeLimitSeconds: 25
+		});
+		const visualLabels = question.choices.map((choice) => labelSymbolToken(choice));
 
-			expect(question.choices).toHaveLength(4);
-			expect(new Set(question.choices).size).toBe(4);
-			expect(new Set(visualLabels).size).toBe(4);
-			expect(question.choices).toContain(question.correctAnswer);
-		}
-	);
+		expect(question.choices).toHaveLength(4);
+		expect(new Set(question.choices).size).toBe(4);
+		expect(new Set(visualLabels).size).toBe(4);
+		expect(question.choices).toContain(question.correctAnswer);
+	});
 });

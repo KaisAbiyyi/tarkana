@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { generateNumberSequenceQuestion, NUMBER_SEQUENCE_RULES } from './number-sequence-generator.ts';
+import {
+	generateNumberSequenceQuestion,
+	NUMBER_SEQUENCE_RULES
+} from './number-sequence-generator.ts';
 import { getGeneratedQuestionErrors } from '../../../server/challenge/rule-validator.ts';
 
 describe('number sequence generator', () => {

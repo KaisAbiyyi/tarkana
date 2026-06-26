@@ -14,7 +14,16 @@ export const SYMBOL_PATTERN_RULES = [
 	'mirrored_sequence'
 ] as const;
 
-const ALL_SHAPES = ['circle', 'square', 'diamond', 'star', 'triangle-up', 'triangle-right', 'triangle-down', 'triangle-left'];
+const ALL_SHAPES = [
+	'circle',
+	'square',
+	'diamond',
+	'star',
+	'triangle-up',
+	'triangle-right',
+	'triangle-down',
+	'triangle-left'
+];
 const SIMPLE_SHAPES = ['circle', 'square', 'diamond', 'star'];
 const TRIANGLES = ['triangle-up', 'triangle-right', 'triangle-down', 'triangle-left'];
 
@@ -63,10 +72,13 @@ function buildPattern(
 	switch (rule) {
 		case 'symbol_rotation': {
 			// Instead of just triangles, rotate through a sequence of shapes
-			const pool = difficulty === 'easy' ? TRIANGLES : rng.shuffle(shapePool).slice(0, difficulty === 'hard' ? 5 : 4);
+			const pool =
+				difficulty === 'easy'
+					? TRIANGLES
+					: rng.shuffle(shapePool).slice(0, difficulty === 'hard' ? 5 : 4);
 			const start = rng.intBetween(0, pool.length - 1);
 			const step = difficulty === 'hard' ? 2 : 1; // Hard skips one
-			
+
 			const values = Array.from(
 				{ length: 6 },
 				(_, index) => pool[(start + index * step) % pool.length] as string
@@ -82,15 +94,18 @@ function buildPattern(
 			const first = rng.pick(shapePool);
 			const second = rng.pick(shapePool.filter((shape) => shape !== first));
 			let values: string[];
-			
+
 			if (difficulty === 'hard') {
 				// A B A B C D -> wait, alternating could be A B C A B C
 				const third = rng.pick(shapePool.filter((shape) => shape !== first && shape !== second));
-				values = Array.from({ length: 6 }, (_, index) => [first, second, third][index % 3] as string);
+				values = Array.from(
+					{ length: 6 },
+					(_, index) => [first, second, third][index % 3] as string
+				);
 			} else {
 				values = Array.from({ length: 6 }, (_, index) => (index % 2 === 0 ? first : second));
 			}
-			
+
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
@@ -111,10 +126,7 @@ function buildPattern(
 		}
 		case 'shape_order': {
 			const cycle = rng.shuffle(shapePool).slice(0, 4);
-			const values = Array.from(
-				{ length: 6 },
-				(_, index) => cycle[index % cycle.length] as string
-			);
+			const values = Array.from({ length: 6 }, (_, index) => cycle[index % cycle.length] as string);
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
@@ -124,18 +136,18 @@ function buildPattern(
 		}
 		case 'growing_count': {
 			const startShape = rng.pick(shapePool);
-			const secondShape = rng.pick(shapePool.filter(s => s !== startShape));
-			
+			const secondShape = rng.pick(shapePool.filter((s) => s !== startShape));
+
 			// Easy: A, B, B, C, C, C -> represented by shapes
 			// Medium: A, A, B, B, B, C, C, C, C -> we only have 6 slots
 			let values: string[];
 			if (difficulty === 'easy') {
 				values = [startShape, secondShape, secondShape, startShape, startShape, startShape];
 			} else {
-				const thirdShape = rng.pick(shapePool.filter(s => s !== startShape && s !== secondShape));
+				const thirdShape = rng.pick(shapePool.filter((s) => s !== startShape && s !== secondShape));
 				values = [startShape, secondShape, secondShape, thirdShape, thirdShape, thirdShape];
 			}
-			
+
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,

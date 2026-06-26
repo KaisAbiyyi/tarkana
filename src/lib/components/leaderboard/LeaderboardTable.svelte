@@ -66,10 +66,7 @@
 		</td>
 		<td class="p-4 font-black">
 			<div class="flex items-center gap-2">
-				<PlayerPublicIdentity
-					displayName={entry.displayName}
-
-				/>
+				<PlayerPublicIdentity displayName={entry.displayName} />
 				{#if isCurrent}
 					<span
 						class="rounded-sm bg-[var(--color-accent)] px-1.5 py-0.5 text-[10px] font-black text-black uppercase"
@@ -102,10 +99,7 @@
 				</div>
 				<div>
 					<h3 class="flex flex-wrap items-center gap-2 text-lg leading-tight font-black">
-						<PlayerPublicIdentity
-							displayName={entry.displayName}
-
-						/>
+						<PlayerPublicIdentity displayName={entry.displayName} />
 						{#if isCurrent}
 							<span
 								class="rounded-sm bg-[var(--color-accent)] px-1.5 py-0.5 text-[10px] font-black text-white uppercase"

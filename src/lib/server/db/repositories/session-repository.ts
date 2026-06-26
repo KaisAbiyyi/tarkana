@@ -544,10 +544,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				.select()
 				.from(challengeSessions)
 				.where(
-					and(
-						eq(challengeSessions.userId, userId),
-						eq(challengeSessions.status, 'in_progress')
-					)
+					and(eq(challengeSessions.userId, userId), eq(challengeSessions.status, 'in_progress'))
 				)
 				.orderBy(desc(challengeSessions.createdAt))
 				.limit(1);

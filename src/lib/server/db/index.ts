@@ -1,11 +1,17 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pg from 'pg';
 import * as schema from './schema';
 import { loadDatabaseUrl } from '$lib/server/config/env';
 
 export function createDb(databaseUrl = loadDatabaseUrl()) {
-	const client = postgres(databaseUrl, { prepare: false });
-	return drizzle(client, { schema });
+	const pool = new pg.Pool({
+		connectionString: databaseUrl,
+		ssl:
+			databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1')
+				? false
+				: { rejectUnauthorized: false }
+	});
+	return drizzle(pool, { schema });
 }
 
 let cachedDb: ReturnType<typeof createDb> | null = null;

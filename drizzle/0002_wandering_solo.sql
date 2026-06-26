@@ -1,0 +1,1 @@
+ALTER TABLE "users_profile" DROP COLUMN "public_discriminator";

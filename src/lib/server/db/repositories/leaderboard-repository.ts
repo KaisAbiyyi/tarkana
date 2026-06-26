@@ -49,7 +49,6 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 					SELECT
 						u.id as "userId",
 						u.display_name as "displayName",
-						u.public_discriminator as "publicDiscriminator",
 						u.rank,
 						u.rating,
 						coalesce(avg(cs.accuracy), 0) as "averageAccuracy",
@@ -59,14 +58,18 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 						) as position
 					FROM users_profile u
 					LEFT JOIN challenge_sessions cs ON cs.user_id = u.id AND cs.status = 'completed' AND cs.is_suspicious = false
-					GROUP BY u.id, u.display_name, u.public_discriminator, u.rank, u.rating
+					GROUP BY u.id, u.display_name, u.rank, u.rating
 				)
 				SELECT * FROM ranked_users WHERE "userId" = ${userId}
 			`);
 
-			if (!result || result.length === 0) return null;
+			const rows =
+				'rows' in result
+					? (result.rows as Record<string, unknown>[])
+					: (result as Record<string, unknown>[]);
+			if (!rows || rows.length === 0) return null;
 
-			const row = result[0] as Record<string, unknown>;
+			const row = rows[0];
 			return {
 				userId: String(row.userId),
 				displayName: String(row.displayName),

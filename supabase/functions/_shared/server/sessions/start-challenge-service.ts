@@ -1,10 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import type { RequestEvent } from '@sveltejs/kit';
-import { DEFAULT_CHALLENGE_QUESTION_COUNTS, QUESTION_TYPES } from '../../shared/constants/challenge.ts';
+import {
+	DEFAULT_CHALLENGE_QUESTION_COUNTS,
+	QUESTION_TYPES
+} from '../../shared/constants/challenge.ts';
 import type { ChallengeType, QuestionType } from '../../shared/constants/challenge.ts';
 import { requireProfile } from '../../server/auth/guards.ts';
 import { badRequest, notFound } from '../../server/errors.ts';
-import { buildChallengeQuestions, toRuleDefinition } from '../../server/challenge/challenge-builder.ts';
+import {
+	buildChallengeQuestions,
+	toRuleDefinition
+} from '../../server/challenge/challenge-builder.ts';
 import type {
 	ChallengeCategoryDefinition,
 	ChallengeConfigDefinition,

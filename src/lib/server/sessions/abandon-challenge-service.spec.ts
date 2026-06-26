@@ -16,7 +16,7 @@ describe('AbandonChallengeService', () => {
 		);
 
 		expect(result.success).toBe(true);
-		
+
 		const updatedSession = await sessionRepository.findSessionById(session.id);
 		expect(updatedSession?.status).toBe('abandoned');
 	});
@@ -28,7 +28,9 @@ describe('AbandonChallengeService', () => {
 		const service = createAbandonChallengeService(sessionRepository, profileRepository);
 
 		await expect(
-			service.abandon({ locals: { getUser: async () => ({ id: 'user-1' }) } } as any, { sessionId: session.id })
+			service.abandon({ locals: { getUser: async () => ({ id: 'user-1' }) } } as any, {
+				sessionId: session.id
+			})
 		).rejects.toThrow('Can only abandon in_progress sessions');
 	});
 });

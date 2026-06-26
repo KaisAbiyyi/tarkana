@@ -9,7 +9,7 @@
 
 	let {
 		displayName,
-		
+
 		class: className = '',
 		nameClass = '',
 		discriminatorClass = 'text-xs font-bold text-[var(--color-muted)]'

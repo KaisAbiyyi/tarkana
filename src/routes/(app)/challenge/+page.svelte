@@ -648,7 +648,9 @@
 				{/if}
 				<div class="resume-actions">
 					<Button onclick={resumeChallenge} size="lg" {loading}>Lanjutkan</Button>
-					<Button onclick={abandonChallenge} size="lg" variant="ghost" {loading}>Buang & Mulai Baru</Button>
+					<Button onclick={abandonChallenge} size="lg" variant="ghost" {loading}
+						>Buang & Mulai Baru</Button
+					>
 				</div>
 			</div>
 		</div>

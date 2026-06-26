@@ -14,7 +14,7 @@
 <!-- ponytail: ultra-simple loading bar instead of a heavy abstraction -->
 {#if $navigating}
 	<div class="fixed top-0 left-0 z-[9999] h-1.5 w-full overflow-hidden bg-transparent">
-		<div class="h-full w-full bg-[var(--color-accent)] origin-left animate-pulse"></div>
+		<div class="h-full w-full origin-left animate-pulse bg-[var(--color-accent)]"></div>
 	</div>
 {/if}
 

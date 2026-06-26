@@ -20,14 +20,11 @@ export async function provisionProfile({
 	if (existingProfile) return toProfileSummary(existingProfile);
 
 	const displayName = buildDefaultDisplayName(user);
-	const publicDiscriminator = Math.floor(Math.random() * 65536)
-		.toString(16)
-		.padStart(4, '0');
 	const createdProfile = await repository.create({
 		id: user.id,
 		name: displayName,
 		displayName,
-		
+
 		role: DEFAULT_USER_ROLE,
 		rating: 0,
 		rank: UNRANKED

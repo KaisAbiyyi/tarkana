@@ -1,4 +1,7 @@
-import { createChoices, createNumericDistractors } from '../../../server/challenge/choice-generator.ts';
+import {
+	createChoices,
+	createNumericDistractors
+} from '../../../server/challenge/choice-generator.ts';
 import { resolveDifficultyScore } from '../../../server/challenge/difficulty-resolver.ts';
 import { createSeededRng } from '../../../server/challenge/random/seeded-rng.ts';
 import { validateGeneratedQuestion } from '../../../server/challenge/rule-validator.ts';
@@ -26,7 +29,7 @@ export function generateNumberSequenceQuestion(input: GenerateQuestionInput): Ge
 	const sequence = buildSequence(input.ruleType as NumberRule, rng, t, input.difficulty);
 	const correctAnswer = sequence.answer;
 	const excludedNumbers = sequence.visibleArr.filter((v): v is number => typeof v === 'number');
-	
+
 	const choices = createChoices({
 		correctAnswer: String(correctAnswer),
 		distractors: createNumericDistractors({
@@ -69,8 +72,13 @@ function buildSequence(
 	// Base properties that change based on difficulty
 	const allowMiddleMissing = difficulty === 'medium' || difficulty === 'hard';
 	const allowNegative = difficulty === 'hard' || (difficulty === 'medium' && rng.boolean());
-	
-	const formatResult = (values: number[], answerIndex: number, spread: number, explanation: string) => {
+
+	const formatResult = (
+		values: number[],
+		answerIndex: number,
+		spread: number,
+		explanation: string
+	) => {
 		const visibleArr = values.map((v, i) => (i === answerIndex ? '?' : v));
 		return {
 			visibleArr,
@@ -86,11 +94,16 @@ function buildSequence(
 			const isNegative = allowNegative ? rng.boolean() : false;
 			const start = rng.intBetween(1, 20) * (isNegative ? -1 : 1);
 			const step = rng.intBetween(2, 12) * (isNegative ? -1 : 1);
-			
+
 			const values = Array.from({ length: 6 }, (_, index) => start + step * index);
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
-			
-			return formatResult(values, answerIndex, Math.abs(step) * 3, t('explain.arithmetic', { step }));
+
+			return formatResult(
+				values,
+				answerIndex,
+				Math.abs(step) * 3,
+				t('explain.arithmetic', { step })
+			);
 		}
 		case 'geometric_sequence': {
 			const isNegative = allowNegative ? rng.boolean() : false;
@@ -98,34 +111,44 @@ function buildSequence(
 			const factor = difficulty === 'hard' ? rng.intBetween(3, 5) : rng.intBetween(2, 3);
 			const factorSign = allowNegative && rng.boolean() ? -1 : 1;
 			const finalFactor = factor * factorSign;
-			
+
 			const values = Array.from({ length: 6 }, (_, index) => start * finalFactor ** index);
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
-			
-			return formatResult(values, answerIndex, Math.abs(finalFactor) * 10, t('explain.geometric', { factor: finalFactor }));
+
+			return formatResult(
+				values,
+				answerIndex,
+				Math.abs(finalFactor) * 10,
+				t('explain.geometric', { factor: finalFactor })
+			);
 		}
 		case 'square_number': {
 			const start = rng.intBetween(1, 10);
 			const isCube = difficulty === 'hard';
 			const power = isCube ? 3 : 2;
 			const step = difficulty === 'medium' ? rng.intBetween(2, 3) : 1;
-			
-			const values = Array.from({ length: 6 }, (_, index) => (start + (index * step)) ** power);
+
+			const values = Array.from({ length: 6 }, (_, index) => (start + index * step) ** power);
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
-			
-			return formatResult(values, answerIndex, 20 * step, t(isCube ? 'explain.cube' : 'explain.square'));
+
+			return formatResult(
+				values,
+				answerIndex,
+				20 * step,
+				t(isCube ? 'explain.cube' : 'explain.square')
+			);
 		}
 		case 'fibonacci_like': {
 			const first = rng.intBetween(1, 7);
 			const second = rng.intBetween(2, 9);
 			const addends = difficulty === 'hard' ? rng.intBetween(1, 3) : 0; // a_n = a_{n-1} + a_{n-2} + addends
-			
+
 			const values = [first, second];
 			while (values.length < 6) {
 				values.push((values.at(-1) ?? 0) + (values.at(-2) ?? 0) + addends);
 			}
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(4, 5) : 5; // Less likely to be early for fibonacci
-			
+
 			return formatResult(values, answerIndex, 15, t('explain.fibonacci'));
 		}
 		case 'alternating_sequence': {
@@ -133,7 +156,7 @@ function buildSequence(
 			const add = rng.intBetween(3, 10);
 			const subtract = difficulty === 'easy' ? rng.intBetween(1, 4) : rng.intBetween(2, 8);
 			const isMultiplyAdd = difficulty === 'hard'; // Instead of +/- it's * / +
-			
+
 			const values = [start];
 			for (let index = 1; index < 6; index += 1) {
 				const previous = values[index - 1] as number;
@@ -144,14 +167,19 @@ function buildSequence(
 				}
 			}
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
-			
-			return formatResult(values, answerIndex, add + subtract + 5, t('explain.alternating', { add, subtract }));
+
+			return formatResult(
+				values,
+				answerIndex,
+				add + subtract + 5,
+				t('explain.alternating', { add, subtract })
+			);
 		}
 		case 'increasing_difference': {
 			const start = rng.intBetween(1, 8);
 			const firstStep = rng.intBetween(1, 4);
 			const stepIncrease = difficulty === 'easy' ? 1 : rng.intBetween(2, 4);
-			
+
 			const values = [start];
 			let currentStep = firstStep;
 			for (let index = 1; index < 6; index += 1) {
@@ -159,7 +187,7 @@ function buildSequence(
 				currentStep += stepIncrease;
 			}
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
-			
+
 			return formatResult(values, answerIndex, 20, t('explain.increasing', { step: firstStep }));
 		}
 	}
