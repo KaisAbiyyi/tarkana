@@ -9,10 +9,18 @@ const __dirname = path.dirname(__filename);
 
 async function run() {
     console.log('Running production migrations...');
-    const databaseUrl = process.env.DATABASE_URL;
+    let databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+    
     if (!databaseUrl) {
         console.warn('DATABASE_URL is not set. Skipping migrations.');
         process.exit(0);
+    }
+
+    // Supabase transaction pooler (6543) does not support DDL statements (migrations).
+    // If we detect port 6543, we automatically switch to the session pooler on port 5432.
+    if (!process.env.DIRECT_URL && databaseUrl.includes('.pooler.supabase.com:6543')) {
+        console.log('Detected Supabase Transaction Pooler (port 6543). Switching to Session Pooler (port 5432) for migrations...');
+        databaseUrl = databaseUrl.replace(':6543', ':5432');
     }
     
     // Create a postgres pool
