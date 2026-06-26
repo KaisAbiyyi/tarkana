@@ -16,6 +16,22 @@ async function run() {
         process.exit(0);
     }
 
+    // Fix missing project ref in username for pooler
+    try {
+        const parsed = new URL(databaseUrl);
+        if (parsed.username === 'postgres' && parsed.hostname.includes('pooler.supabase.com')) {
+            const publicUrl = process.env.PUBLIC_SUPABASE_URL;
+            if (publicUrl) {
+                const match = publicUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
+                if (match) {
+                    parsed.username = `postgres.${match[1]}`;
+                    databaseUrl = parsed.toString();
+                    console.log('Appended project ref to database username.');
+                }
+            }
+        }
+    } catch (e) {}
+
     // Supabase transaction pooler (6543) does not support DDL statements (migrations).
     // If we detect port 6543, we automatically switch to the session pooler on port 5432.
     if (!process.env.DIRECT_URL && databaseUrl.includes('.pooler.supabase.com:6543')) {

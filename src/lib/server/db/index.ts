@@ -1,13 +1,31 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import pg from 'pg';
 import * as schema from './schema';
-import { loadDatabaseUrl } from '$lib/server/config/env';
+import { loadDatabaseUrl, loadServerEnv } from '$lib/server/config/env';
+
+export function fixSupabaseUrl(url: string, publicUrl?: string): string {
+	try {
+		const parsed = new URL(url);
+		if (parsed.username === 'postgres' && parsed.hostname.includes('pooler.supabase.com')) {
+			const pUrl = publicUrl || loadServerEnv().PUBLIC_SUPABASE_URL;
+			const match = pUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
+			if (match) {
+				parsed.username = `postgres.${match[1]}`;
+				return parsed.toString();
+			}
+		}
+	} catch (e) {
+		// Ignore parse errors
+	}
+	return url;
+}
 
 export function createDb(databaseUrl = loadDatabaseUrl()) {
+	const fixedUrl = fixSupabaseUrl(databaseUrl);
 	const pool = new pg.Pool({
-		connectionString: databaseUrl,
+		connectionString: fixedUrl,
 		ssl:
-			databaseUrl.includes('localhost') || databaseUrl.includes('127.0.0.1')
+			fixedUrl.includes('localhost') || fixedUrl.includes('127.0.0.1')
 				? false
 				: { rejectUnauthorized: false }
 	});
