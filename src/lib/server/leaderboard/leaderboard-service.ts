@@ -30,7 +30,7 @@ export function createLeaderboardService(
 					userId: row.userId,
 					position: pagination.offset + index + 1,
 					displayName: row.displayName,
-					publicDiscriminator: row.publicDiscriminator,
+
 					rank: row.rank,
 					logicRating: row.rating,
 					averageAccuracy: Math.round(Number(row.averageAccuracy) * 100) / 100,
@@ -51,7 +51,7 @@ export function createLeaderboardService(
 				userId: row.userId,
 				position: row.position,
 				displayName: row.displayName,
-				publicDiscriminator: row.publicDiscriminator,
+
 				rank: row.rank,
 				logicRating: row.rating,
 				averageAccuracy: Math.round(Number(row.averageAccuracy) * 100) / 100,

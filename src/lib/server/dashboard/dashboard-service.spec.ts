@@ -61,7 +61,7 @@ describe('dashboard service', () => {
 			completeSessionAndUpdateProfile: async () => {
 				throw new Error('not used');
 			}
-		};
+		} as unknown as SessionRepository;
 
 		const service = createDashboardService(sessions, createProfileRepositoryFake(profile));
 		const dashboard = await service.getDashboard(

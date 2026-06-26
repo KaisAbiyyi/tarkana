@@ -27,7 +27,7 @@ export async function provisionProfile({
 		id: user.id,
 		name: displayName,
 		displayName,
-		publicDiscriminator,
+		
 		role: DEFAULT_USER_ROLE,
 		rating: 0,
 		rank: UNRANKED
@@ -61,7 +61,7 @@ export function sanitizeDisplayName(value: string): string {
 function toProfileSummary(profile: {
 	id: string;
 	displayName: string;
-	publicDiscriminator: string;
+
 	role: ProfileSummary['role'];
 	rating: number;
 	rank: ProfileSummary['rank'];
@@ -69,7 +69,7 @@ function toProfileSummary(profile: {
 	return {
 		id: profile.id,
 		displayName: profile.displayName,
-		publicDiscriminator: profile.publicDiscriminator,
+
 		role: profile.role,
 		rating: profile.rating,
 		rank: profile.rank

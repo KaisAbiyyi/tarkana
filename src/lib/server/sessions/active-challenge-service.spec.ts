@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createActiveChallengeService } from './active-challenge-service';
-import { createProfileRepositoryFake } from '$lib/server/test/fakes';
+import { createProfileRepositoryFake, createProfile } from '$lib/server/test/fakes';
 import { createSessionRepositoryFake, createChallengeSession, createSessionQuestion } from './test-fakes';
 
 describe('ActiveChallengeService', () => {
@@ -22,7 +22,7 @@ describe('ActiveChallengeService', () => {
 		const sessionRepository = createSessionRepositoryFake({
 			session: createChallengeSession({ status: 'in_progress', updatedAt: oldDate, userId: 'user-1' })
 		});
-		const profileRepository = createProfileRepositoryFake({ id: 'user-1' });
+		const profileRepository = createProfileRepositoryFake(createProfile({ id: 'user-1' }));
 		const service = createActiveChallengeService(sessionRepository, profileRepository);
 
 		const result = await service.getActive({ locals: { getUser: async () => ({ id: 'user-1' }) } } as any);
@@ -41,7 +41,7 @@ describe('ActiveChallengeService', () => {
 			session,
 			questions: [question]
 		});
-		const profileRepository = createProfileRepositoryFake({ id: 'user-1' });
+		const profileRepository = createProfileRepositoryFake(createProfile({ id: 'user-1' }));
 		const service = createActiveChallengeService(sessionRepository, profileRepository);
 
 		const result = await service.getActive({ locals: { getUser: async () => ({ id: 'user-1' }) } } as any);

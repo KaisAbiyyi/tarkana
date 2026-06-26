@@ -17,7 +17,7 @@ describe('leaderboard service', () => {
 					{
 						userId: 'user-1',
 						displayName: 'Player One',
-						publicDiscriminator: '1234',
+
 						rank: 'Gold Analyst',
 						rating: 1500,
 						averageAccuracy: 0.854,
@@ -43,7 +43,7 @@ describe('leaderboard service', () => {
 			userId: 'user-1',
 			position: 1,
 			displayName: 'Player One',
-			publicDiscriminator: '1234',
+
 			rank: 'Gold Analyst',
 			logicRating: 1500,
 			averageAccuracy: 0.85,

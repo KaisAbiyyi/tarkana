@@ -108,7 +108,7 @@
 							<div class="flex flex-wrap items-center gap-2">
 								<PlayerPublicIdentity
 									displayName={displayNameInput.trim() || profile.displayName}
-									publicDiscriminator={profile.publicDiscriminator}
+
 									class="text-xl font-black break-all"
 								/>
 								<span class="text-[var(--color-muted)]" aria-hidden="true">&middot;</span>

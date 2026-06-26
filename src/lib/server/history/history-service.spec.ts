@@ -32,7 +32,7 @@ describe('history service', () => {
 			listSessionAnswers: async () => [],
 			findQuestionById: async () => null,
 			findAnswerForQuestion: async () => null,
-			listHistory: async ({ userId }) => {
+			listHistory: async ({ userId }: any) => {
 				requestedUserId = userId;
 				return {
 					items: [],
@@ -70,7 +70,7 @@ describe('history service', () => {
 			completeSessionAndUpdateProfile: async () => {
 				throw new Error('not used');
 			}
-		};
+		} as unknown as SessionRepository;
 
 		const service = createHistoryService(repository, createProfileRepositoryFake(profile));
 		const result = await service.listHistory(createFakeEvent(createFakeUser({ id: profile.id })), {

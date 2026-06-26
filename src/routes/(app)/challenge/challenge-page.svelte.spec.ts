@@ -9,11 +9,12 @@ const mockData = {
 	profile: {
 		id: '1',
 		displayName: 'Test',
-		publicDiscriminator: '1234',
+
 		role: 'user',
 		rank: 'Bronze Mind',
 		rating: 105
-	}
+	},
+	activeChallenge: null as any
 } as const;
 
 describe('challenge preparation page', () => {

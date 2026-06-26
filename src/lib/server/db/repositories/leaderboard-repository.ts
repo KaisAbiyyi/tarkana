@@ -10,7 +10,7 @@ export type LeaderboardRepository = {
 export type LeaderboardRow = {
 	userId: string;
 	displayName: string;
-	publicDiscriminator: string;
+
 	rank: string;
 	rating: number;
 	averageAccuracy: number;
@@ -24,7 +24,7 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 				.select({
 					userId: usersProfile.id,
 					displayName: usersProfile.displayName,
-					publicDiscriminator: usersProfile.publicDiscriminator,
+
 					rank: usersProfile.rank,
 					rating: usersProfile.rating,
 					averageAccuracy: sql<number>`coalesce(avg(${challengeSessions.accuracy}), 0)`,
@@ -70,7 +70,7 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 			return {
 				userId: String(row.userId),
 				displayName: String(row.displayName),
-				publicDiscriminator: String(row.publicDiscriminator),
+
 				rank: String(row.rank),
 				rating: Number(row.rating),
 				averageAccuracy: Number(row.averageAccuracy),

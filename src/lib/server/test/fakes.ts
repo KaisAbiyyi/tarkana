@@ -33,7 +33,7 @@ export function createProfile(overrides: Partial<UserProfile> = {}): UserProfile
 		id: '11111111-1111-4111-8111-111111111111',
 		name: 'John Doe',
 		displayName: 'johndoe',
-		publicDiscriminator: '1234',
+
 		role: 'user',
 		rating: 0,
 		rank: 'Unranked',
@@ -80,7 +80,7 @@ export function toProfileSummary(profile: UserProfile): ProfileSummary {
 	return {
 		id: profile.id,
 		displayName: profile.displayName,
-		publicDiscriminator: profile.publicDiscriminator,
+
 		role: profile.role,
 		rating: profile.rating,
 		rank: profile.rank

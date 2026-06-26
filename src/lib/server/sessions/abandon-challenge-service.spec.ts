@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { createAbandonChallengeService } from './abandon-challenge-service';
-import { createProfileRepositoryFake } from '$lib/server/test/fakes';
+import { createProfileRepositoryFake, createProfile } from '$lib/server/test/fakes';
 import { createSessionRepositoryFake, createChallengeSession } from './test-fakes';
 
 describe('AbandonChallengeService', () => {
 	it('should abandon an in_progress session', async () => {
 		const session = createChallengeSession({ status: 'in_progress', userId: 'user-1' });
 		const sessionRepository = createSessionRepositoryFake({ session });
-		const profileRepository = createProfileRepositoryFake({ id: 'user-1' });
+		const profileRepository = createProfileRepositoryFake(createProfile({ id: 'user-1' }));
 		const service = createAbandonChallengeService(sessionRepository, profileRepository);
 
 		const result = await service.abandon(
@@ -24,7 +24,7 @@ describe('AbandonChallengeService', () => {
 	it('should throw error if session is not in_progress', async () => {
 		const session = createChallengeSession({ status: 'completed', userId: 'user-1' });
 		const sessionRepository = createSessionRepositoryFake({ session });
-		const profileRepository = createProfileRepositoryFake({ id: 'user-1' });
+		const profileRepository = createProfileRepositoryFake(createProfile({ id: 'user-1' }));
 		const service = createAbandonChallengeService(sessionRepository, profileRepository);
 
 		await expect(

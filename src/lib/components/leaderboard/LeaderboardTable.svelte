@@ -68,7 +68,7 @@
 			<div class="flex items-center gap-2">
 				<PlayerPublicIdentity
 					displayName={entry.displayName}
-					publicDiscriminator={entry.publicDiscriminator}
+
 				/>
 				{#if isCurrent}
 					<span
@@ -104,7 +104,7 @@
 					<h3 class="flex flex-wrap items-center gap-2 text-lg leading-tight font-black">
 						<PlayerPublicIdentity
 							displayName={entry.displayName}
-							publicDiscriminator={entry.publicDiscriminator}
+
 						/>
 						{#if isCurrent}
 							<span

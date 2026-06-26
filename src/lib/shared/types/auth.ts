@@ -9,7 +9,7 @@ export type AuthenticatedUser = {
 export type ProfileSummary = {
 	id: string;
 	displayName: string;
-	publicDiscriminator: string;
+
 	role: UserRole;
 	rating: number;
 	rank: RankName;
