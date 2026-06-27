@@ -16,42 +16,27 @@ async function run() {
         process.exit(0);
     }
 
-    // Convert Supabase Pooler URL to Direct Connection URL for migrations
-    // Migrations (DDL) should always run against the direct database, not the pooler.
+    // Fix missing project ref in username for pooler
     try {
         const parsed = new URL(databaseUrl);
-        if (parsed.hostname.includes('pooler.supabase.com')) {
-            let projectRef = '';
-            
-            // Extract project ref from username (e.g., postgres.abcdefg)
-            if (parsed.username.includes('.')) {
-                projectRef = parsed.username.split('.')[1];
-            } 
-            // Fallback: extract from PUBLIC_SUPABASE_URL
-            else if (process.env.PUBLIC_SUPABASE_URL) {
-                const match = process.env.PUBLIC_SUPABASE_URL.match(/https:\/\/([^.]+)\.supabase\.co/);
+        if (parsed.username === 'postgres' && parsed.hostname.includes('pooler.supabase.com')) {
+            const publicUrl = process.env.PUBLIC_SUPABASE_URL;
+            if (publicUrl) {
+                const match = publicUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
                 if (match) {
-                    projectRef = match[1];
-                }
-            }
-
-            if (projectRef) {
-                // Construct direct connection URL
-                parsed.hostname = `db.${projectRef}.supabase.co`;
-                parsed.port = '5432';
-                parsed.username = 'postgres'; // Direct connection uses plain 'postgres'
-                databaseUrl = parsed.toString();
-                console.log(`Converted pooler URL to direct connection for migrations (db.${projectRef}.supabase.co).`);
-            } else {
-                console.warn('Could not determine Supabase project ref. Migrations might fail on pooler.');
-                // Fallback to session pooler if direct connection rewrite is impossible
-                if (databaseUrl.includes(':6543')) {
-                    databaseUrl = databaseUrl.replace(':6543', ':5432');
+                    parsed.username = `postgres.${match[1]}`;
+                    databaseUrl = parsed.toString();
+                    console.log('Appended project ref to database username.');
                 }
             }
         }
-    } catch (e) {
-        console.error('Failed to parse database URL for rewrite', e);
+    } catch (e) {}
+
+    // Supabase transaction pooler (6543) does not support DDL statements (migrations).
+    // If we detect port 6543, we automatically switch to the session pooler on port 5432.
+    if (!process.env.DIRECT_URL && databaseUrl.includes('.pooler.supabase.com:6543')) {
+        console.log('Detected Supabase Transaction Pooler (port 6543). Switching to Session Pooler (port 5432) for migrations...');
+        databaseUrl = databaseUrl.replace(':6543', ':5432');
     }
     
     // Create a postgres pool
