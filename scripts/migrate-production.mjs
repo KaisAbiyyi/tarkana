@@ -9,6 +9,14 @@ const __dirname = path.dirname(__filename);
 
 async function run() {
 	console.log('Running production migrations...');
+
+	if (process.env.VERCEL && process.env.RUN_PRODUCTION_MIGRATIONS !== 'true') {
+		console.warn(
+			'Skipping production migrations during Vercel build. Set RUN_PRODUCTION_MIGRATIONS=true to run them explicitly.'
+		);
+		process.exit(0);
+	}
+
 	let databaseUrl =
 		process.env.DIRECT_URL ||
 		process.env.POSTGRES_URL_NON_POOLING ||
