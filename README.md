@@ -31,7 +31,7 @@ https://github.com/KaisAbiyyi/tarkana-android
 Current beta version:
 
 ```text
-0.1.0-beta.1
+0.1.0-beta.2
 ```
 
 Release channels:
@@ -137,8 +137,8 @@ abandon-challenge
 Use semantic prerelease tags while the product is still in beta:
 
 ```text
-v0.1.0-beta.1              Web release
-android-v0.1.0-beta.1      Android APK release
+v0.1.0-beta.2              Web release
+android-v0.1.0-beta.2      Android APK release
 ```
 
 Keep the web and Android beta numbers aligned when the release represents the same product milestone.

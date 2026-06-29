@@ -12,7 +12,7 @@
 
 	const { t } = getI18nContext();
 	const MOBILE_APK_URL =
-		'https://github.com/KaisAbiyyi/tarkana-android/releases/download/android-v0.1.0-beta.1/tarkana-android-0.1.0-beta.1.apk';
+		'https://github.com/KaisAbiyyi/tarkana-android/releases/download/android-v0.1.0-beta.2/tarkana-android-0.1.0-beta.2.apk';
 	const WEB_GITHUB_URL = 'https://github.com/KaisAbiyyi/tarkana';
 	const MOBILE_GITHUB_URL = 'https://github.com/KaisAbiyyi/tarkana-android';
 
