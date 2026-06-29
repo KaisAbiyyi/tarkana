@@ -11,6 +11,10 @@
 	import { getI18nContext } from '$lib/i18n/context';
 
 	const { t } = getI18nContext();
+	const MOBILE_APK_URL =
+		'https://github.com/KaisAbiyyi/tarkana-android/releases/download/android-v0.1.0-beta.1/tarkana-android-0.1.0-beta.1.apk';
+	const WEB_GITHUB_URL = 'https://github.com/KaisAbiyyi/tarkana';
+	const MOBILE_GITHUB_URL = 'https://github.com/KaisAbiyyi/tarkana-android';
 
 	let pageRoot: HTMLDivElement;
 	let howItWorksSection: HTMLElement;
@@ -225,6 +229,26 @@
 				</div>
 			</div>
 		</section>
+
+		<section class="landing-band landing-band-mobile" aria-labelledby="mobile-app-heading">
+			<div class="page-shell">
+				<div class="mobile-release-panel">
+					<div class="mobile-release-copy">
+						<p class="cta-eyebrow">Beta release</p>
+						<h2 id="mobile-app-heading" class="section-title">Get the mobile app</h2>
+						<p class="mobile-release-body">
+							Install Tarkana Android beta and run ranked logic challenges from your phone. The APK
+							is published through GitHub Releases so every build stays traceable.
+						</p>
+					</div>
+					<div class="mobile-release-actions">
+						<a class="release-button release-button--primary" href={MOBILE_APK_URL}>Download APK</a>
+						<a class="release-button" href={MOBILE_GITHUB_URL}>Star mobile app</a>
+						<a class="release-button" href={WEB_GITHUB_URL}>Star web app</a>
+					</div>
+				</div>
+			</div>
+		</section>
 	</div>
 </PublicShell>
 
@@ -260,7 +284,8 @@
 	}
 
 	.landing-band-categories::before,
-	.landing-band-cta::before {
+	.landing-band-cta::before,
+	.landing-band-mobile::before {
 		background-image:
 			linear-gradient(rgba(23, 18, 13, 0.014) 1px, transparent 1px),
 			linear-gradient(90deg, rgba(23, 18, 13, 0.014) 1px, transparent 1px);
@@ -412,6 +437,10 @@
 		padding-block: var(--space-6) var(--space-10);
 	}
 
+	.landing-band-mobile {
+		padding-block: 0 var(--space-10);
+	}
+
 	.cta-panel {
 		max-width: 896px;
 		margin-inline: auto;
@@ -459,6 +488,73 @@
 		font-size: 0.8125rem;
 		line-height: 1.5;
 		font-weight: 600;
+	}
+
+	.mobile-release-panel {
+		display: grid;
+		max-width: 980px;
+		margin-inline: auto;
+		grid-template-columns: minmax(0, 1fr) minmax(260px, 0.45fr);
+		gap: var(--space-4);
+		align-items: center;
+		border: 4px solid var(--color-border);
+		background: var(--color-info);
+		padding: var(--space-5);
+		box-shadow: var(--shadow-level-3);
+	}
+
+	.mobile-release-copy h2 {
+		margin: 0;
+	}
+
+	.mobile-release-body {
+		max-width: 620px;
+		margin: var(--space-2) 0 0;
+		font-size: 1rem;
+		line-height: 1.65;
+		font-weight: 650;
+		text-wrap: pretty;
+	}
+
+	.mobile-release-actions {
+		display: grid;
+		gap: 0.75rem;
+	}
+
+	.release-button {
+		display: inline-flex;
+		min-height: 52px;
+		align-items: center;
+		justify-content: center;
+		border: 3px solid var(--color-border);
+		background: white;
+		padding: 0.85rem 1rem;
+		box-shadow: var(--shadow-level-1);
+		color: var(--color-ink);
+		font-size: 0.95rem;
+		font-weight: 900;
+		text-align: center;
+		text-decoration: none;
+		text-transform: uppercase;
+		transition:
+			transform 150ms ease,
+			box-shadow 150ms ease,
+			background-color 150ms ease;
+	}
+
+	.release-button--primary {
+		background: var(--color-primary);
+	}
+
+	.release-button:hover {
+		transform: translateY(-2px);
+		background: var(--color-accent);
+		box-shadow: 4px 5px 0 var(--color-border);
+	}
+
+	.release-button:active {
+		transform: translate(2px, 2px);
+		box-shadow: 1px 1px 0 var(--color-border);
 	}
 
 	@media (min-width: 1120px) {
@@ -511,7 +607,16 @@
 			padding-block: var(--space-4) var(--space-8);
 		}
 
+		.landing-band-mobile {
+			padding-block: 0 var(--space-8);
+		}
+
 		.cta-panel {
+			padding: var(--space-4) var(--space-3);
+		}
+
+		.mobile-release-panel {
+			grid-template-columns: 1fr;
 			padding: var(--space-4) var(--space-3);
 		}
 	}
@@ -542,12 +647,15 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.secondary-cta {
+		.secondary-cta,
+		.release-button {
 			transition: none;
 		}
 
 		.secondary-cta:hover,
-		.secondary-cta:active {
+		.secondary-cta:active,
+		.release-button:hover,
+		.release-button:active {
 			transform: none;
 		}
 	}
