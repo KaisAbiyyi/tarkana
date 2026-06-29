@@ -31,3 +31,14 @@ test-results
 .agents/
 AGENTS.md
 CLAUDE.md
+
+# Local one-off artifacts
+/*.png
+/*.py
+/*.cjs
+/*.apk
+/*.zip
+/*.pptx
+/*.docx
+/*.pdf
+/*.xlsx
