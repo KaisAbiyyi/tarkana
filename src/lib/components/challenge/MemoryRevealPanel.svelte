@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getI18nContext } from '$lib/i18n/context';
+	import SymbolGlyph from '$lib/components/challenge/SymbolGlyph.svelte';
 	import { labelSymbolToken } from '$lib/shared/presentation/symbols';
 	type Props = {
 		metadata: Record<string, unknown>;
@@ -21,9 +22,12 @@
 		{#if visible}
 			<div class="mt-3 flex flex-wrap gap-2">
 				{#each sequence as item, index (`${item}-${index}`)}
-					<span class="border-2 border-[var(--color-border)] bg-white px-4 py-3 font-black"
-						>{labelSymbolToken(item, locale)}</span
+					<span
+						class="flex h-16 min-w-16 items-center justify-center border-2 border-[var(--color-border)] bg-white p-2 font-black shadow-[var(--shadow-hard-sm)]"
+						aria-label={labelSymbolToken(item, locale)}
 					>
+						<SymbolGlyph token={item} size="md" />
+					</span>
 				{/each}
 			</div>
 		{:else}

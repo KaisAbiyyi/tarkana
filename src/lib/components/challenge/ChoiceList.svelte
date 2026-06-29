@@ -84,7 +84,9 @@
 	{#each choices as choice, index (choice)}
 		{@const state = getCardState(choice)}
 		{@const isSelected = selectedAnswer === choice}
-		{@const visualSymbol = questionType === 'symbol_pattern' && isVisualSymbolToken(choice)}
+		{@const visualSymbol =
+			(questionType === 'symbol_pattern' || questionType === 'memory_pattern') &&
+			isVisualSymbolToken(choice)}
 		{@const letter = String.fromCharCode(65 + index)}
 		<button
 			type="button"
