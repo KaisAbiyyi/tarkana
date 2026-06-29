@@ -9,7 +9,7 @@ serve(async (req) => {
 		);
 
 		// Lakukan query ringan untuk membangunkan database dari mode hibernasi
-		const { data, error } = await supabaseAdmin.from('category').select('id').limit(1);
+		const { data, error } = await supabaseAdmin.from('categories').select('id').limit(1);
 
 		if (error) {
 			return new Response(JSON.stringify({ status: 'error', message: error.message }), {
@@ -28,3 +28,4 @@ serve(async (req) => {
 		});
 	}
 });
+

@@ -43,13 +43,14 @@ export function createSubmitAnswerService(
 			const profile = await requireProfile(event, profileRepository);
 			const session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
 			if (!session) throw notFound('Challenge session was not found');
-			if (session.status === 'completed' || session.status === 'suspicious') {
-				throw conflict('Challenge session is already finished');
-			}
+			if (session.status !== 'in_progress') throw conflict('Challenge session is not in progress');
 
 			const question = await sessionRepository.findQuestionById(input.sessionQuestionId);
 			if (!question || question.sessionId !== session.id) {
 				throw forbidden('Question does not belong to this session');
+			}
+			if (!question.choices.includes(input.selectedAnswer.trim())) {
+				throw badRequest('Selected answer is not one of the question choices');
 			}
 
 			const existingAnswer = await sessionRepository.findAnswerForQuestion(question.id, profile.id);

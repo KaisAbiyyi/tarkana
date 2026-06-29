@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { getAuthenticatedContext } from '../_shared/server/auth.ts';
 import { calculateRatingDelta, applyRatingDelta } from '../_shared/server/scoring/rating.ts';
 import {
 	resolveCompletedRank,
@@ -19,24 +19,17 @@ serve(async (req) => {
 	if (req.method === 'OPTIONS') {
 		return new Response('ok', { headers: corsHeaders });
 	}
+	if (req.method !== 'POST') {
+		return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+			status: 405,
+			headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+		});
+	}
 
 	try {
-		const supabaseClient = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-			{ global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-		);
-
-		const {
-			data: { user },
-			error: userError
-		} = await supabaseClient.auth.getUser();
-		if (userError || !user) {
-			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-				status: 401,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-			});
-		}
+		const auth = await getAuthenticatedContext(req, corsHeaders);
+		if (auth instanceof Response) return auth;
+		const { user, supabaseAdmin } = auth;
 
 		const body = await req.json();
 		const { sessionId, tabSwitchCount, requestAnomalyFlags } = body;
@@ -48,39 +41,40 @@ serve(async (req) => {
 			});
 		}
 
-		const supabaseAdmin = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-		);
-
 		// 1. Fetch Session and Profile
 		const [{ data: session }, { data: profile }] = await Promise.all([
 			supabaseAdmin
-				.from('challenge_session')
+				.from('challenge_sessions')
 				.select('*')
 				.eq('id', sessionId)
 				.eq('user_id', user.id)
 				.single(),
-			supabaseAdmin.from('profile').select('*').eq('id', user.id).single()
+			supabaseAdmin.from('users_profile').select('*').eq('id', user.id).single()
 		]);
 
 		if (!session) throw new Error('Session not found');
 		if (!profile) throw new Error('Profile not found');
+		if (session.status === 'abandoned') throw new Error('Challenge session is abandoned');
+		if (session.status !== 'in_progress' && session.status !== 'completed') {
+			throw new Error('Challenge session is not active');
+		}
 
-		const [{ data: questions }, { data: answers }] = await Promise.all([
-			supabaseAdmin
-				.from('challenge_question')
-				.select('*')
-				.eq('session_id', session.id)
-				.order('order_index', { ascending: true }),
-			supabaseAdmin
-				.from('challenge_answer')
-				.select('*')
-				.eq('session_id', session.id)
-				.eq('user_id', user.id)
-		]);
+		const { data: questions } = await supabaseAdmin
+			.from('session_questions')
+			.select('*')
+			.eq('session_id', session.id)
+			.order('order_index', { ascending: true });
 
 		const qList = questions || [];
+		const questionIds = qList.map((q: any) => q.id);
+		const { data: answers } =
+			questionIds.length > 0
+				? await supabaseAdmin
+						.from('session_answers')
+						.select('*')
+						.eq('user_id', user.id)
+						.in('session_question_id', questionIds)
+				: { data: [] };
 		const aList = answers || [];
 
 		// Helper to format result
@@ -120,7 +114,7 @@ serve(async (req) => {
 					answer: answer
 						? {
 								id: answer.id,
-								sessionId: answer.session_id,
+								sessionId: session.id,
 								sessionQuestionId: answer.session_question_id,
 								userId: answer.user_id,
 								selectedAnswer: answer.selected_answer,
@@ -164,7 +158,7 @@ serve(async (req) => {
 			};
 		};
 
-		if (session.status === 'completed' || session.status === 'suspicious') {
+		if (session.status === 'completed') {
 			return new Response(JSON.stringify(toResult(session, [])), {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
@@ -206,7 +200,7 @@ serve(async (req) => {
 		const rankAfter = suspicious.isSuspicious ? profile.rank : resolveCompletedRank(ratingAfter);
 
 		const updateSessionPayload = {
-			status: suspicious.isSuspicious ? 'suspicious' : 'completed',
+			status: 'completed',
 			total_score: scoreSummary.totalScore,
 			accuracy: scoreSummary.accuracy,
 			total_time_seconds: scoreSummary.totalTimeSeconds,
@@ -222,13 +216,13 @@ serve(async (req) => {
 		// Transactional-ish update (using admin client to bypass RLS for direct profile update)
 		const [{ data: updatedSession, error: sessionErr }, { error: profileErr }] = await Promise.all([
 			supabaseAdmin
-				.from('challenge_session')
+				.from('challenge_sessions')
 				.update(updateSessionPayload)
 				.eq('id', session.id)
 				.select()
 				.single(),
 			supabaseAdmin
-				.from('profile')
+				.from('users_profile')
 				.update({ rating: ratingAfter, rank: rankAfter })
 				.eq('id', profile.id)
 		]);
@@ -245,3 +239,4 @@ serve(async (req) => {
 		});
 	}
 });
+

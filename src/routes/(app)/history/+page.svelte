@@ -264,9 +264,7 @@
 												})}
 											</span>
 											<Badge
-												tone={session.status === 'suspicious'
-													? 'danger'
-													: session.status === 'completed'
+												tone={session.status === 'completed'
 														? 'success'
 														: 'warning'}
 											>

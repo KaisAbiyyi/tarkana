@@ -42,6 +42,7 @@ export const usersProfile = pgTable(
 		id: uuid('id').primaryKey(),
 		name: varchar('name', { length: 120 }),
 		displayName: varchar('display_name', { length: 32 }).notNull(),
+		avatarUrl: text('avatar_url'),
 
 		role: userRoleEnum('role').notNull().default('user'),
 		rating: integer('rating').notNull().default(0),

@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { getAuthenticatedContext } from '../_shared/server/auth.ts';
 
 const corsHeaders = {
 	'Access-Control-Allow-Origin': '*',
@@ -12,50 +12,41 @@ serve(async (req) => {
 	}
 
 	try {
-		const supabaseClient = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-			{ global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-		);
-
-		const {
-			data: { user },
-			error: userError
-		} = await supabaseClient.auth.getUser();
-		if (userError || !user) {
-			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-				status: 401,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-			});
-		}
-
-		const supabaseAdmin = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-		);
+		const auth = await getAuthenticatedContext(req, corsHeaders);
+		if (auth instanceof Response) return auth;
+		const { user, supabaseAdmin } = auth;
 
 		const url = new URL(req.url);
 		const sessionId = url.searchParams.get('sessionId');
 		if (!sessionId) throw new Error('sessionId query param is required');
 
 		const { data: session } = await supabaseAdmin
-			.from('challenge_session')
+			.from('challenge_sessions')
 			.select('*')
 			.eq('id', sessionId)
 			.eq('user_id', user.id)
 			.single();
 		if (!session) throw new Error('Session not found');
+		if (session.status !== 'completed') {
+			throw new Error('Challenge result is only available after completion');
+		}
 
-		const [{ data: questions }, { data: answers }] = await Promise.all([
-			supabaseAdmin
-				.from('challenge_question')
-				.select('*')
-				.eq('session_id', session.id)
-				.order('order_index', { ascending: true }),
-			supabaseAdmin.from('challenge_answer').select('*').eq('session_id', session.id)
-		]);
+		const { data: questions } = await supabaseAdmin
+			.from('session_questions')
+			.select('*')
+			.eq('session_id', session.id)
+			.order('order_index', { ascending: true });
 
 		const qList = questions || [];
+		const questionIds = qList.map((q: any) => q.id);
+		const { data: answers } =
+			questionIds.length > 0
+				? await supabaseAdmin
+						.from('session_answers')
+						.select('*')
+						.eq('user_id', user.id)
+						.in('session_question_id', questionIds)
+				: { data: [] };
 		const aList = answers || [];
 		const answerByQuestionId = new Map(aList.map((a: any) => [a.session_question_id, a]));
 
@@ -80,7 +71,7 @@ serve(async (req) => {
 				answer: answer
 					? {
 							id: answer.id,
-							sessionId: answer.session_id,
+							sessionId: session.id,
 							sessionQuestionId: answer.session_question_id,
 							userId: answer.user_id,
 							selectedAnswer: answer.selected_answer,
@@ -119,3 +110,4 @@ serve(async (req) => {
 		});
 	}
 });
+

@@ -40,4 +40,16 @@ describe('rule validator', () => {
 			expect.arrayContaining(['explanation is required', 'generated seed is required'])
 		);
 	});
+
+	it('rejects blank answers and choices', () => {
+		const errors = getGeneratedQuestionErrors({
+			...validQuestion,
+			correctAnswer: '',
+			choices: [' ', '5']
+		});
+
+		expect(errors).toEqual(
+			expect.arrayContaining(['correct answer is required', 'choices must not be empty'])
+		);
+	});
 });

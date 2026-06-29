@@ -87,4 +87,25 @@ describe('finish challenge service', () => {
 		expect(repository.completedSessions).toHaveLength(0);
 		expect(result.ratingAfter).toBe(530);
 	});
+
+	it('does not reveal review answers for abandoned sessions', async () => {
+		const profile = createProfile();
+		const session = createChallengeSession({
+			userId: profile.id,
+			status: 'abandoned'
+		});
+		const question = createSessionQuestion({ sessionId: session.id });
+		const repository = createSessionRepositoryFake({
+			session,
+			questions: [question],
+			answers: [createSessionAnswer({ sessionQuestionId: question.id, userId: profile.id })]
+		});
+		const service = createFinishChallengeService(repository, createProfileRepositoryFake(profile));
+
+		await expect(
+			service.finish(createFakeEvent(createFakeUser({ id: profile.id })), {
+				sessionId: session.id
+			})
+		).rejects.toMatchObject({ status: 400 });
+	});
 });

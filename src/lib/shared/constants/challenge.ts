@@ -27,8 +27,7 @@ export const SESSION_STATUSES = [
 	'created',
 	'in_progress',
 	'completed',
-	'abandoned',
-	'suspicious'
+	'abandoned'
 ] as const;
 
 export type SessionStatus = (typeof SESSION_STATUSES)[number];

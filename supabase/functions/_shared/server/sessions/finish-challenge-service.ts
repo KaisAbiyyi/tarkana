@@ -59,15 +59,17 @@ export function createFinishChallengeService(
 			const profile = await requireProfile(event, profileRepository);
 			const session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
 			if (!session) throw notFound('Challenge session was not found');
+			if (session.status === 'abandoned') throw badRequest('Challenge session is abandoned');
 
 			const [questions, answers] = await Promise.all([
 				sessionRepository.listSessionQuestions(session.id),
 				sessionRepository.listSessionAnswers(session.id, profile.id)
 			]);
 
-			if (session.status === 'completed' || session.status === 'suspicious') {
+			if (session.status === 'completed') {
 				return toFinishResult({ session, questions, answers, suspiciousReasons: [] });
 			}
+			if (session.status !== 'in_progress') throw badRequest('Challenge session is not active');
 
 			if (questions.length === 0) throw badRequest('Challenge has no questions');
 			if (answers.length !== questions.length) {

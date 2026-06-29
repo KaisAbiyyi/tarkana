@@ -104,6 +104,30 @@ describe('submit answer service', () => {
 		expect(result.scoreEarned).toBe(0);
 	});
 
+	it('rejects answers that are not one of the server-issued choices', async () => {
+		const profile = createProfile();
+		const session = createChallengeSession({ userId: profile.id });
+		const question = createSessionQuestion({ sessionId: session.id, choices: ['4', '5', '6', '7'] });
+		const repository = createSessionRepositoryFake({
+			session,
+			questions: [question]
+		});
+		const service = createSubmitAnswerService(
+			repository,
+			createProfileRepositoryFake(profile),
+			() => new Date('2026-01-01T00:00:05.000Z')
+		);
+
+		await expect(
+			service.submit(createFakeEvent(createFakeUser({ id: profile.id })), {
+				sessionId: session.id,
+				sessionQuestionId: question.id,
+				selectedAnswer: '999',
+				timeSpentSeconds: 5
+			})
+		).rejects.toMatchObject({ status: 400 });
+	});
+
 	it('computes elapsed time from server timestamps instead of trusting the client', async () => {
 		const profile = createProfile();
 		const session = createChallengeSession({

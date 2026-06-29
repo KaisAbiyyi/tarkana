@@ -489,7 +489,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 			const [updatedSession] = await database
 				.update(challengeSessions)
 				.set({
-					status: input.isSuspicious ? 'suspicious' : 'completed',
+					status: 'completed',
 					totalScore: input.totalScore,
 					accuracy: input.accuracy,
 					totalTimeSeconds: input.totalTimeSeconds,
@@ -513,7 +513,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				const [updatedSession] = await tx
 					.update(challengeSessions)
 					.set({
-						status: input.isSuspicious ? 'suspicious' : 'completed',
+						status: 'completed',
 						totalScore: input.totalScore,
 						accuracy: input.accuracy,
 						totalTimeSeconds: input.totalTimeSeconds,

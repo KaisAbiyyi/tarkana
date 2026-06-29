@@ -28,8 +28,7 @@ const statusLabels: Record<SessionStatus, MessageKey> = {
 	created: 'label.created',
 	in_progress: 'label.inProgress',
 	completed: 'label.completed',
-	abandoned: 'label.abandoned',
-	suspicious: 'label.suspicious'
+	abandoned: 'label.abandoned'
 };
 
 const difficultyLabels: Record<DifficultyBand, MessageKey> = {

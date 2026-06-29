@@ -33,6 +33,7 @@ export function createProfile(overrides: Partial<UserProfile> = {}): UserProfile
 		id: '11111111-1111-4111-8111-111111111111',
 		name: 'John Doe',
 		displayName: 'johndoe',
+		avatarUrl: null,
 
 		role: 'user',
 		rating: 0,

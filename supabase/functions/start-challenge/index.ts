@@ -1,11 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { getAuthenticatedContext } from '../_shared/server/auth.ts';
 import {
 	buildChallengeQuestions,
 	toRuleDefinition
 } from '../_shared/server/challenge/challenge-builder.ts';
 import type { QuestionType, ChallengeType } from '../_shared/shared/constants/challenge.ts';
 import {
+	CHALLENGE_TYPES,
 	QUESTION_TYPES,
 	DEFAULT_CHALLENGE_QUESTION_COUNTS
 } from '../_shared/shared/constants/challenge.ts';
@@ -19,29 +20,22 @@ serve(async (req) => {
 	if (req.method === 'OPTIONS') {
 		return new Response('ok', { headers: corsHeaders });
 	}
+	if (req.method !== 'POST') {
+		return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+			status: 405,
+			headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+		});
+	}
 
 	try {
-		const supabaseClient = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-			{ global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-		);
-
-		const {
-			data: { user },
-			error: userError
-		} = await supabaseClient.auth.getUser();
-		if (userError || !user) {
-			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-				status: 401,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-			});
-		}
+		const auth = await getAuthenticatedContext(req, corsHeaders);
+		if (auth instanceof Response) return auth;
+		const { user, supabaseAdmin } = auth;
 
 		const body = await req.json();
-		const challengeType: ChallengeType = body.challengeType;
-		const selectedMode: QuestionType | undefined = body.selectedMode;
-		const seed = body.seed || crypto.randomUUID();
+		const challengeType = body.challengeType as ChallengeType;
+		const selectedMode = body.selectedMode as QuestionType | undefined;
+		const seed = crypto.randomUUID();
 
 		if (!challengeType) {
 			return new Response(JSON.stringify({ error: 'challengeType is required' }), {
@@ -49,28 +43,54 @@ serve(async (req) => {
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
 			});
 		}
+		if (!CHALLENGE_TYPES.includes(challengeType)) {
+			return new Response(JSON.stringify({ error: 'challengeType is invalid' }), {
+				status: 400,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			});
+		}
+		if (selectedMode && !QUESTION_TYPES.includes(selectedMode)) {
+			return new Response(JSON.stringify({ error: 'selectedMode is invalid' }), {
+				status: 400,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			});
+		}
 
-		const { data: profile } = await supabaseClient
-			.from('profile')
+		const { data: profile } = await supabaseAdmin
+			.from('users_profile')
 			.select('*')
 			.eq('id', user.id)
 			.single();
 		if (!profile) throw new Error('Profile not found');
 
-		const supabaseAdmin = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-		);
+		const { data: activeSession } = await supabaseAdmin
+			.from('challenge_sessions')
+			.select('id')
+			.eq('user_id', user.id)
+			.eq('status', 'in_progress')
+			.order('created_at', { ascending: false })
+			.limit(1)
+			.maybeSingle();
+
+		if (activeSession) {
+			return new Response(
+				JSON.stringify({ error: 'An active challenge is already in progress' }),
+				{
+					status: 409,
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+				}
+			);
+		}
 
 		const [configRes, categoriesRes, rulesRes] = await Promise.all([
 			supabaseAdmin
-				.from('challenge_config')
+				.from('challenge_configs')
 				.select('*')
 				.eq('challenge_type', challengeType)
 				.eq('is_active', true)
 				.maybeSingle(),
-			supabaseAdmin.from('category').select('*').eq('is_active', true),
-			supabaseAdmin.from('question_rule').select('*').eq('is_active', true)
+			supabaseAdmin.from('categories').select('*').eq('is_active', true),
+			supabaseAdmin.from('question_rules').select('*').eq('is_active', true)
 		]);
 
 		const rawRules = rulesRes.data || [];
@@ -134,8 +154,8 @@ serve(async (req) => {
 			seed
 		});
 
-		const { data: session, error: sessionErr } = await supabaseClient
-			.from('challenge_session')
+		const { data: session, error: sessionErr } = await supabaseAdmin
+			.from('challenge_sessions')
 			.insert({
 				user_id: user.id,
 				challenge_type: challengeType,
@@ -167,7 +187,7 @@ serve(async (req) => {
 		}));
 
 		const { data: persistedQuestions, error: insertErr } = await supabaseAdmin
-			.from('challenge_question')
+			.from('session_questions')
 			.insert(questionsToInsert)
 			.select();
 		if (insertErr || !persistedQuestions || persistedQuestions.length === 0)
@@ -203,3 +223,4 @@ serve(async (req) => {
 		});
 	}
 });
+

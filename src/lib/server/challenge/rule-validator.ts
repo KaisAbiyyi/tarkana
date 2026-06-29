@@ -16,7 +16,11 @@ export function getGeneratedQuestionErrors(question: GeneratedQuestion): string[
 
 	if (!QUESTION_TYPES.includes(question.questionType)) errors.push('question type is not allowed');
 	if (question.prompt.trim().length === 0) errors.push('prompt is required');
+	if (question.correctAnswer.trim().length === 0) errors.push('correct answer is required');
 	if (question.choices.length < 2) errors.push('at least two choices are required');
+	if (question.choices.some((choice) => choice.trim().length === 0)) {
+		errors.push('choices must not be empty');
+	}
 	if (
 		new Set(question.choices.map((choice) => normalizeAnswer(choice))).size !==
 		question.choices.length

@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { getAuthenticatedContext } from '../_shared/server/auth.ts';
 
 const corsHeaders = {
 	'Access-Control-Allow-Origin': '*',
@@ -12,30 +12,12 @@ serve(async (req) => {
 	}
 
 	try {
-		const supabaseClient = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-			{ global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-		);
-
-		const {
-			data: { user },
-			error: userError
-		} = await supabaseClient.auth.getUser();
-		if (userError || !user) {
-			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-				status: 401,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-			});
-		}
-
-		const supabaseAdmin = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-		);
+		const auth = await getAuthenticatedContext(req, corsHeaders);
+		if (auth instanceof Response) return auth;
+		const { user, supabaseAdmin } = auth;
 
 		const { data: profile, error } = await supabaseAdmin
-			.from('profile')
+			.from('users_profile')
 			.select('id, display_name, avatar_url, rank, rating, created_at')
 			.eq('id', user.id)
 			.single();
@@ -60,3 +42,4 @@ serve(async (req) => {
 		});
 	}
 });
+

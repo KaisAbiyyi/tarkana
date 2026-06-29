@@ -5,6 +5,7 @@
 	import { onMount, tick } from 'svelte';
 	import gsap from 'gsap';
 	import LanguageSelector from '$lib/components/app/LanguageSelector.svelte';
+	import BrandLogo from '$lib/components/app/BrandLogo.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
 
 	type Props = {
@@ -90,10 +91,7 @@
 
 	<header bind:this={headerEl} class="site-header">
 		<div class="page-shell nav-row">
-			<a class="nav-logo nav-entrance" href={homeHref} aria-label={t('nav.homeLabel')}>
-				<span class="nav-logo-mark" aria-hidden="true">T</span>
-				<span translate="no">TARKANA</span>
-			</a>
+			<BrandLogo class="nav-logo nav-entrance" href={homeHref} label={t('nav.homeLabel')} />
 
 			<nav class="desktop-nav" aria-label={t('nav.main')}>
 				<a class="nav-link nav-entrance" href={resolve('/#cara-kerja')}>{t('nav.howItWorks')}</a>
@@ -141,10 +139,7 @@
 	<footer class="site-footer {variant === 'auth' ? 'site-footer-auth' : ''}">
 		<div class="page-shell footer-primary">
 			<div class="footer-brand">
-				<div class="footer-logo">
-					<span class="footer-logo-mark" aria-hidden="true">T</span>
-					<span translate="no">TARKANA</span>
-				</div>
+				<BrandLogo class="footer-logo" size="sm" label="Tarkana" />
 				<p>{t('footer.disclaimer')}</p>
 			</div>
 			<nav class="footer-nav" aria-label={t('nav.footer')}>
@@ -174,33 +169,8 @@
 		gap: var(--space-3);
 	}
 
-	.nav-logo,
-	.footer-logo {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.625rem;
-		font-family: var(--font-display);
-		font-size: 1.35rem;
-		font-weight: 800;
-		text-decoration: none;
-	}
-
-	.nav-logo {
+	:global(.nav-logo) {
 		min-height: 44px;
-	}
-
-	.nav-logo-mark,
-	.footer-logo-mark {
-		display: grid;
-		place-items: center;
-		border: 3px solid var(--color-border);
-		background: var(--color-primary);
-		box-shadow: var(--shadow-level-1);
-	}
-
-	.nav-logo-mark {
-		width: 40px;
-		height: 40px;
 	}
 
 	.desktop-nav {
@@ -290,14 +260,8 @@
 		max-width: 640px;
 	}
 
-	.footer-logo {
+	:global(.footer-logo) {
 		margin-bottom: var(--space-2);
-	}
-
-	.footer-logo-mark {
-		width: 32px;
-		height: 32px;
-		font-size: 0.875rem;
 	}
 
 	.footer-brand p {
@@ -336,7 +300,7 @@
 		gap: var(--space-3);
 	}
 
-	.site-footer-auth .footer-logo {
+	.site-footer-auth :global(.footer-logo) {
 		margin-bottom: var(--space-1);
 	}
 
@@ -389,16 +353,6 @@
 	}
 
 	@media (max-width: 420px) {
-		.nav-logo {
-			gap: 0.5rem;
-			font-size: 1.1rem;
-		}
-
-		.nav-logo-mark {
-			width: 36px;
-			height: 36px;
-		}
-
 		.mobile-menu-button {
 			min-width: 88px;
 		}

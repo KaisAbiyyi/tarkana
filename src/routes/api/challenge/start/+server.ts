@@ -11,8 +11,7 @@ export const POST: RequestHandler = async (event) => {
 			const data = requireObjectBody(body);
 			return {
 				challengeType: parseChallengeType(data.challengeType),
-				selectedMode: parseOptionalQuestionType(data.selectedMode),
-				seed: typeof data.seed === 'string' && data.seed.trim().length > 0 ? data.seed : undefined
+				selectedMode: parseOptionalQuestionType(data.selectedMode)
 			};
 		});
 		return jsonOk(await createStartChallengeService().start(event, input));

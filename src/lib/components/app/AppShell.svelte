@@ -6,6 +6,7 @@
 	import Badge from '$lib/components/primitives/Badge.svelte';
 	import RankBadge from '$lib/components/primitives/RankBadge.svelte';
 	import LanguageSelector from '$lib/components/app/LanguageSelector.svelte';
+	import BrandLogo from '$lib/components/app/BrandLogo.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
 
 	type Props = {
@@ -54,16 +55,7 @@
 			class="page-shell flex flex-wrap items-center justify-between gap-3 py-3 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-4"
 		>
 			<div class="flex items-center gap-3">
-				<a
-					class="flex items-center gap-2 text-2xl font-black no-underline"
-					href={resolve('/dashboard')}
-				>
-					<span
-						class="grid h-9 w-9 place-items-center border-[3px] border-[var(--color-border)] bg-[var(--color-primary)] shadow-[var(--shadow-hard-sm)]"
-						aria-hidden="true">T</span
-					>
-					Tarkana
-				</a>
+				<BrandLogo href={resolve('/dashboard')} size="sm" text="Tarkana" label="Tarkana dashboard" />
 				{#if section === 'admin'}
 					<Badge tone="warning">{t('common.admin')}</Badge>
 				{:else if profile.rank !== 'Unranked'}

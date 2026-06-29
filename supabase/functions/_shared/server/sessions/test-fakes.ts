@@ -209,7 +209,7 @@ export function createSessionRepositoryFake(
 			session = createChallengeSession({
 				...session,
 				...input,
-				status: input.isSuspicious ? 'suspicious' : 'completed'
+				status: 'completed'
 			});
 			return session;
 		}
