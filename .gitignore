@@ -28,3 +28,6 @@ vite.config.ts.timestamp-*
 # Playwright
 test-results
 .codex-artifacts
+.agents/
+AGENTS.md
+CLAUDE.md
