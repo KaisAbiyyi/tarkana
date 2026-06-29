@@ -135,6 +135,7 @@ serve(async (req) => {
 			if (nq) {
 				nextQuestionFull = {
 					id: nq.id,
+					sessionQuestionId: nq.id,
 					sessionId: nq.session_id,
 					categoryId: nq.category_id,
 					questionType: nq.question_type,
@@ -142,6 +143,8 @@ serve(async (req) => {
 					choices: nq.choices,
 					difficultyScore: nq.difficulty_score,
 					timeLimitSeconds: nq.time_limit_seconds,
+					metadata: nq.metadata,
+					generatedSeed: nq.generated_seed,
 					orderIndex: nq.order_index
 				};
 			}

@@ -74,6 +74,7 @@ serve(async (req) => {
 				totalQuestions: qList.length,
 				currentQuestion: {
 					id: currentQuestion.id,
+					sessionQuestionId: currentQuestion.id,
 					sessionId: currentQuestion.session_id,
 					categoryId: currentQuestion.category_id,
 					questionType: currentQuestion.question_type,
@@ -81,6 +82,8 @@ serve(async (req) => {
 					choices: currentQuestion.choices,
 					difficultyScore: currentQuestion.difficulty_score,
 					timeLimitSeconds: currentQuestion.time_limit_seconds,
+					metadata: currentQuestion.metadata,
+					generatedSeed: currentQuestion.generated_seed,
 					orderIndex: currentQuestion.order_index
 				}
 			}),

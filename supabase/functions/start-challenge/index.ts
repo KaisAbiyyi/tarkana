@@ -202,6 +202,7 @@ serve(async (req) => {
 				totalQuestions: persistedQuestions.length,
 				currentQuestion: {
 					id: firstQuestion.id,
+					sessionQuestionId: firstQuestion.id,
 					sessionId: firstQuestion.session_id,
 					categoryId: firstQuestion.category_id,
 					questionType: firstQuestion.question_type,
@@ -209,6 +210,8 @@ serve(async (req) => {
 					choices: firstQuestion.choices,
 					difficultyScore: firstQuestion.difficulty_score,
 					timeLimitSeconds: firstQuestion.time_limit_seconds,
+					metadata: firstQuestion.metadata,
+					generatedSeed: firstQuestion.generated_seed,
 					orderIndex: firstQuestion.order_index
 				}
 			}),
