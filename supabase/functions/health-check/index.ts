@@ -28,4 +28,3 @@ serve(async (req) => {
 		});
 	}
 });
-

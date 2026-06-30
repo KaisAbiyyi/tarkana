@@ -145,7 +145,11 @@ export const challengeSessions = pgTable(
 		index('challenge_sessions_user_id_idx').on(table.userId),
 		index('challenge_sessions_created_at_idx').on(table.createdAt),
 		index('challenge_sessions_is_suspicious_idx').on(table.isSuspicious),
-		index('challenge_sessions_user_status_idx').on(table.userId, table.status)
+		index('challenge_sessions_user_status_created_idx').on(
+			table.userId,
+			table.status,
+			table.createdAt
+		)
 	]
 );
 

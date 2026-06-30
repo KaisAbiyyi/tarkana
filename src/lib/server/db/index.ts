@@ -24,6 +24,8 @@ export function createDb(databaseUrl = loadDatabaseUrl()) {
 	const fixedUrl = fixSupabaseUrl(databaseUrl);
 	const pool = new pg.Pool({
 		connectionString: fixedUrl,
+		max: 15,
+		idleTimeoutMillis: 10000,
 		ssl:
 			fixedUrl.includes('localhost') || fixedUrl.includes('127.0.0.1')
 				? false

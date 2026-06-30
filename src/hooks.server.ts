@@ -35,7 +35,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 
 	event.locals.profile = null;
 
-	return resolve(event, {
+	const response = await resolve(event, {
 		transformPageChunk: ({ html }) =>
 			html
 				.replace('%lang%', event.locals.locale)
@@ -44,4 +44,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 			return name === 'content-range' || name === 'x-supabase-api-version';
 		}
 	});
+
+	response.headers.set('X-Frame-Options', 'DENY');
+	response.headers.set('X-Content-Type-Options', 'nosniff');
+	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+	response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+
+	// Ensure that Content-Security-Policy does not break SvelteKit scripts.
+	// You may need to tune this for external resources if added later.
+	response.headers.set(
+		'Content-Security-Policy',
+		"default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:;"
+	);
+
+	return response;
 };

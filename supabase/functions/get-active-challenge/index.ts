@@ -96,4 +96,3 @@ serve(async (req) => {
 		});
 	}
 });
-

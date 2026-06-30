@@ -23,12 +23,7 @@ export const DIFFICULTY_BANDS = ['easy', 'medium', 'hard'] as const;
 
 export type DifficultyBand = (typeof DIFFICULTY_BANDS)[number];
 
-export const SESSION_STATUSES = [
-	'created',
-	'in_progress',
-	'completed',
-	'abandoned'
-] as const;
+export const SESSION_STATUSES = ['created', 'in_progress', 'completed', 'abandoned'] as const;
 
 export type SessionStatus = (typeof SESSION_STATUSES)[number];
 

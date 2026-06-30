@@ -73,13 +73,10 @@ serve(async (req) => {
 			.maybeSingle();
 
 		if (activeSession) {
-			return new Response(
-				JSON.stringify({ error: 'An active challenge is already in progress' }),
-				{
-					status: 409,
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-				}
-			);
+			return new Response(JSON.stringify({ error: 'An active challenge is already in progress' }), {
+				status: 409,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+			});
 		}
 
 		const [configRes, categoriesRes, rulesRes] = await Promise.all([
@@ -226,4 +223,3 @@ serve(async (req) => {
 		});
 	}
 });
-

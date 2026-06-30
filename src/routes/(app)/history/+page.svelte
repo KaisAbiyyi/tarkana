@@ -263,11 +263,7 @@
 													count: session.totalQuestions
 												})}
 											</span>
-											<Badge
-												tone={session.status === 'completed'
-														? 'success'
-														: 'warning'}
-											>
+											<Badge tone={session.status === 'completed' ? 'success' : 'warning'}>
 												{session.status === 'completed'
 													? t('label.completed')
 													: labelSessionStatus(session.status, locale)}

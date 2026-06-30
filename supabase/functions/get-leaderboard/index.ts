@@ -46,18 +46,18 @@ serve(async (req) => {
 			const stat = stats.get(p.id) || { count: 0, accuracy: 0 };
 			const averageAccuracy = stat.count > 0 ? stat.accuracy / stat.count : 0;
 			return {
-			id: p.id,
-			displayName: p.display_name,
-			playerName: p.display_name,
-			avatarUrl: p.avatar_url,
-			rank: p.rank,
-			rating: p.rating,
-			logicRating: p.rating,
-			position: index + 1,
-			accuracy: `${averageAccuracy.toFixed(1)}%`,
-			completedRounds: stat.count,
-			isCurrentUser: p.id === user.id
-		};
+				id: p.id,
+				displayName: p.display_name,
+				playerName: p.display_name,
+				avatarUrl: p.avatar_url,
+				rank: p.rank,
+				rating: p.rating,
+				logicRating: p.rating,
+				position: index + 1,
+				accuracy: `${averageAccuracy.toFixed(1)}%`,
+				completedRounds: stat.count,
+				isCurrentUser: p.id === user.id
+			};
 		});
 
 		return new Response(JSON.stringify({ leaderboard: mapped }), {
@@ -70,4 +70,3 @@ serve(async (req) => {
 		});
 	}
 });
-

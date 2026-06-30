@@ -55,7 +55,12 @@
 			class="page-shell flex flex-wrap items-center justify-between gap-3 py-3 lg:grid lg:grid-cols-[auto_1fr_auto] lg:gap-4"
 		>
 			<div class="flex items-center gap-3">
-				<BrandLogo href={resolve('/dashboard')} size="sm" text="Tarkana" label="Tarkana dashboard" />
+				<BrandLogo
+					href={resolve('/dashboard')}
+					size="sm"
+					text="Tarkana"
+					label="Tarkana dashboard"
+				/>
 				{#if section === 'admin'}
 					<Badge tone="warning">{t('common.admin')}</Badge>
 				{:else if profile.rank !== 'Unranked'}

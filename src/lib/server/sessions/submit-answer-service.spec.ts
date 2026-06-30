@@ -107,7 +107,10 @@ describe('submit answer service', () => {
 	it('rejects answers that are not one of the server-issued choices', async () => {
 		const profile = createProfile();
 		const session = createChallengeSession({ userId: profile.id });
-		const question = createSessionQuestion({ sessionId: session.id, choices: ['4', '5', '6', '7'] });
+		const question = createSessionQuestion({
+			sessionId: session.id,
+			choices: ['4', '5', '6', '7']
+		});
 		const repository = createSessionRepositoryFake({
 			session,
 			questions: [question]
