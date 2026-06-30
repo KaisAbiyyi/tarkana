@@ -41,11 +41,18 @@ export function createSubmitAnswerService(
 			validateInput(input);
 
 			const profile = await requireProfile(event, profileRepository);
-			const session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
+
+			const [session, question, existingAnswer, questions, answers] = await Promise.all([
+				sessionRepository.findOwnedSession(input.sessionId, profile.id),
+				sessionRepository.findQuestionById(input.sessionQuestionId),
+				sessionRepository.findAnswerForQuestion(input.sessionQuestionId, profile.id),
+				sessionRepository.listSessionQuestions(input.sessionId),
+				sessionRepository.listSessionAnswers(input.sessionId, profile.id)
+			]);
+
 			if (!session) throw notFound('Challenge session was not found');
 			if (session.status !== 'in_progress') throw conflict('Challenge session is not in progress');
 
-			const question = await sessionRepository.findQuestionById(input.sessionQuestionId);
 			if (!question || question.sessionId !== session.id) {
 				throw forbidden('Question does not belong to this session');
 			}
@@ -53,13 +60,8 @@ export function createSubmitAnswerService(
 				throw badRequest('Selected answer is not one of the question choices');
 			}
 
-			const existingAnswer = await sessionRepository.findAnswerForQuestion(question.id, profile.id);
 			if (existingAnswer) throw conflict('Question is already answered');
 
-			const [questions, answers] = await Promise.all([
-				sessionRepository.listSessionQuestions(session.id),
-				sessionRepository.listSessionAnswers(session.id, profile.id)
-			]);
 			const answeredQuestionIds = new Set(answers.map((answer) => answer.sessionQuestionId));
 			const currentQuestion = questions.find((item) => !answeredQuestionIds.has(item.id));
 
@@ -87,16 +89,17 @@ export function createSubmitAnswerService(
 				timeLimitSeconds: question.timeLimitSeconds
 			});
 
-			await sessionRepository.addAnswer({
-				sessionQuestionId: question.id,
-				userId: profile.id,
-				selectedAnswer: input.selectedAnswer.trim(),
-				isCorrect,
-				timeSpentSeconds,
-				scoreEarned
-			});
-
-			await sessionRepository.touchSessionUpdatedAt(session.id);
+			await Promise.all([
+				sessionRepository.addAnswer({
+					sessionQuestionId: question.id,
+					userId: profile.id,
+					selectedAnswer: input.selectedAnswer.trim(),
+					isCorrect,
+					timeSpentSeconds,
+					scoreEarned
+				}),
+				sessionRepository.touchSessionUpdatedAt(session.id)
+			]);
 
 			const nextQuestion = questions.find((item) => item.orderIndex === question.orderIndex + 1);
 
