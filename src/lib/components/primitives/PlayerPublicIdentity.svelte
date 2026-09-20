@@ -1,21 +1,11 @@
 <script lang="ts">
 	type Props = {
 		displayName: string;
-
 		class?: string;
 		nameClass?: string;
-		discriminatorClass?: string;
 	};
 
-	let {
-		displayName,
-
-		class: className = '',
-		nameClass = '',
-		discriminatorClass = 'text-xs font-bold text-[var(--color-muted)]'
-	}: Props = $props();
-
-	let hasSafeDiscriminator = $derived(false);
+	let { displayName, class: className = '', nameClass = '' }: Props = $props();
 </script>
 
 <span class={className}>

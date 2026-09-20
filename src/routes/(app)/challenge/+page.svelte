@@ -18,7 +18,6 @@
 
 	import Badge from '$lib/components/primitives/Badge.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
-	import Card from '$lib/components/primitives/Card.svelte';
 	import GameCard from '$lib/components/primitives/GameCard.svelte';
 	import ReadinessStepper from '$lib/components/primitives/ReadinessStepper.svelte';
 	import ArenaSummaryPanel from '$lib/components/challenge/ArenaSummaryPanel.svelte';
@@ -225,7 +224,6 @@
 		else url.searchParams.delete('session');
 		if (selectedMode) url.searchParams.set('mode', selectedMode);
 		else url.searchParams.delete('mode');
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		replaceState(`${url.pathname}${url.search}`, {});
 	}
 
@@ -365,7 +363,6 @@
 			return;
 		}
 
-		// eslint-disable-next-line svelte/no-navigation-without-resolve
 		await goto(`/result/${sessionId}`);
 	}
 

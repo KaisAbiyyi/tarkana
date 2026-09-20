@@ -15,7 +15,7 @@
 			aria-label={t('language.select')}
 			onchange={(event) => event.currentTarget.form?.submit()}
 		>
-			{#each LOCALE_OPTIONS as option}
+			{#each LOCALE_OPTIONS as option (option.value)}
 				<option value={option.value}>{option.label}</option>
 			{/each}
 		</select>

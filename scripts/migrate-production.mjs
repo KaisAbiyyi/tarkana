@@ -63,7 +63,9 @@ async function run() {
 				console.log('Appended project ref to database username.');
 			}
 		}
-	} catch {}
+	} catch {
+		// Ignore invalid URL parse errors here
+	}
 
 	// Supabase transaction pooler (6543) does not support DDL statements (migrations).
 	// If we detect port 6543, we automatically switch to the session pooler on port 5432.

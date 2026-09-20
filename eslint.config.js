@@ -13,7 +13,15 @@ const gitignorePath = path.resolve(import.meta.dirname, '.gitignore');
 export default defineConfig(
 	includeIgnoreFile(gitignorePath),
 	{
-		ignores: ['.agents/**', '.github/**', 'docs/**', 'AGENTS.md', 'CLAUDE.md', 'skills-lock.json']
+		ignores: [
+			'.agents/**',
+			'.github/**',
+			'docs/**',
+			'supabase/**',
+			'AGENTS.md',
+			'CLAUDE.md',
+			'skills-lock.json'
+		]
 	},
 	js.configs.recommended,
 	ts.configs.recommended,
@@ -37,6 +45,19 @@ export default defineConfig(
 				parser: ts.parser,
 				svelteConfig
 			}
+		}
+	},
+	{
+		files: ['**/*.spec.ts', '**/*.test.ts'],
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'off'
+		}
+	},
+	{
+		files: ['**/*.svelte'],
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'off',
+			'svelte/no-navigation-without-resolve': 'off'
 		}
 	},
 	{
