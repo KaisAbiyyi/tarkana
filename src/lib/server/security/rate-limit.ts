@@ -1,4 +1,6 @@
-﻿import { AppError } from '$lib/server/errors';
+import { AppError } from '$lib/server/errors';
+import { getDb } from '$lib/server/db';
+import { sql } from 'drizzle-orm';
 
 export type RateLimitOptions = {
 	maxRequests: number;
@@ -16,25 +18,24 @@ type RateLimitRecord = {
 	resetTime: number;
 };
 
-const store = new Map<string, RateLimitRecord>();
+const memoryStore = new Map<string, RateLimitRecord>();
 
 /**
- * Checks whether a given key has exceeded the rate limit.
- * Uses an in-memory fixed/sliding window counter.
+ * Checks in-memory rate limiter (used as fallback or for deterministic unit tests).
  */
-export function checkRateLimit(
+export function checkRateLimitMemory(
 	key: string,
 	options: RateLimitOptions,
 	now = Date.now()
 ): RateLimitResult {
-	const current = store.get(key);
+	const current = memoryStore.get(key);
 
 	if (!current || now >= current.resetTime) {
 		const newRecord: RateLimitRecord = {
 			count: 1,
 			resetTime: now + options.windowMs
 		};
-		store.set(key, newRecord);
+		memoryStore.set(key, newRecord);
 		return {
 			allowed: true,
 			remaining: options.maxRequests - 1,
@@ -59,28 +60,79 @@ export function checkRateLimit(
 }
 
 /**
+ * Distributed rate limiter.
+ * Uses PostgreSQL atomic upsert across serverless instances, with fallback to in-memory guard.
+ */
+export async function checkRateLimit(
+	key: string,
+	options: RateLimitOptions,
+	now = Date.now()
+): Promise<RateLimitResult> {
+	try {
+		const db = getDb();
+		const resetAt = new Date(now + options.windowMs);
+
+		const result = await db.execute<{ count: number; reset_at: string }>(sql`
+			INSERT INTO rate_limits (key, count, reset_at)
+			VALUES (${key}, 1, ${resetAt})
+			ON CONFLICT (key) DO UPDATE
+			SET count = CASE
+				WHEN rate_limits.reset_at <= NOW() THEN 1
+				ELSE rate_limits.count + 1
+			END,
+			reset_at = CASE
+				WHEN rate_limits.reset_at <= NOW() THEN ${resetAt}
+				ELSE rate_limits.reset_at
+			END
+			RETURNING count, reset_at;
+		`);
+
+		const rows =
+			(result as unknown as { rows?: Array<{ count: number; reset_at: string }> })?.rows ??
+			(Array.isArray(result) ? (result as Array<{ count: number; reset_at: string }>) : []);
+
+		if (rows.length > 0) {
+			const row = rows[0];
+			const count = Number(row.count);
+			const resetTime = new Date(row.reset_at).getTime();
+			const allowed = count <= options.maxRequests;
+			const remaining = Math.max(0, options.maxRequests - count);
+			const resetMs = Math.max(0, resetTime - now);
+			return { allowed, remaining, resetMs };
+		}
+	} catch {
+		// Gracefully fall back to in-memory limiter when DB is offline or in mock unit tests
+	}
+
+	return checkRateLimitMemory(key, options, now);
+}
+
+/**
  * Enforces rate limiting on a sensitive action/key, throwing an AppError(429) if exceeded.
  */
-export function enforceRateLimit(key: string, options: RateLimitOptions, now = Date.now()): void {
-	const result = checkRateLimit(key, options, now);
+export async function enforceRateLimit(
+	key: string,
+	options: RateLimitOptions,
+	now = Date.now()
+): Promise<void> {
+	const result = await checkRateLimit(key, options, now);
 	if (!result.allowed) {
 		const retryAfterSeconds = Math.ceil(result.resetMs / 1000);
-		const error = new AppError(
+		throw new AppError(
 			429,
 			'bad_request',
 			`Rate limit exceeded. Please wait ${retryAfterSeconds} seconds.`
 		);
-		throw error;
 	}
 }
 
 /**
- * Clears expired records to prevent unbounded memory growth.
+ * Clears expired memory records to prevent unbounded memory growth.
  */
 export function pruneRateLimitStore(now = Date.now()): void {
-	for (const [key, record] of store.entries()) {
+	for (const [key, record] of memoryStore.entries()) {
 		if (now >= record.resetTime) {
-			store.delete(key);
+			memoryStore.delete(key);
 		}
 	}
 }
@@ -89,5 +141,5 @@ export function pruneRateLimitStore(now = Date.now()): void {
  * Resets the in-memory store (primarily for unit tests).
  */
 export function resetRateLimitStore(): void {
-	store.clear();
+	memoryStore.clear();
 }

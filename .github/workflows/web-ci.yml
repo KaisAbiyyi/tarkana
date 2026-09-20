@@ -1,4 +1,4 @@
-﻿name: Web CI
+name: Web CI
 
 on:
   push:
@@ -41,3 +41,13 @@ jobs:
         env:
           PUBLIC_SUPABASE_URL: https://dummy.supabase.co
           PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy_key
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests
+        run: npm run test:e2e
+        env:
+          PUBLIC_SUPABASE_URL: https://dummy.supabase.co
+          PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy_key
+          CI: 'true'

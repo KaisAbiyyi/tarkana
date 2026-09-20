@@ -525,10 +525,25 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 						suspiciousReason: input.suspiciousReason ?? null,
 						completedAt: new Date()
 					})
-					.where(eq(challengeSessions.id, input.sessionId))
+					.where(
+						and(
+							eq(challengeSessions.id, input.sessionId),
+							eq(challengeSessions.status, 'in_progress')
+						)
+					)
 					.returning();
 
-				if (!updatedSession) throw new Error('Could not complete session');
+				// If no rows were updated, a concurrent request already transitioned this session
+				if (!updatedSession) {
+					const [existingCompleted] = await tx
+						.select()
+						.from(challengeSessions)
+						.where(eq(challengeSessions.id, input.sessionId))
+						.limit(1);
+
+					if (!existingCompleted) throw new Error('Could not complete session');
+					return existingCompleted;
+				}
 
 				await tx
 					.update(usersProfile)

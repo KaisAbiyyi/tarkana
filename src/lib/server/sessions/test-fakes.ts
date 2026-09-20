@@ -205,6 +205,9 @@ export function createSessionRepositoryFake(
 			return session;
 		},
 		async completeSessionAndUpdateProfile(input: CompleteSessionAndProfileInput) {
+			if (session.id === input.sessionId && session.status === 'completed') {
+				return session;
+			}
 			completedSessions.push(input);
 			session = createChallengeSession({
 				...session,

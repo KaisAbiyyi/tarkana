@@ -1,12 +1,13 @@
-﻿import { json } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { getDb } from '$lib/server/db';
 import { sql } from 'drizzle-orm';
 import { logger } from '$lib/server/observability/logger';
 
+const APP_VERSION = '0.1.0-beta.2';
+
 export const GET: RequestHandler = async () => {
 	const timestamp = new Date().toISOString();
-	const uptime = Math.round(process.uptime());
 
 	try {
 		const db = getDb();
@@ -15,11 +16,9 @@ export const GET: RequestHandler = async () => {
 		return json(
 			{
 				status: 'ok',
-				uptime,
-				timestamp,
-				services: {
-					database: 'healthy'
-				}
+				database: 'reachable',
+				version: APP_VERSION,
+				timestamp
 			},
 			{ status: 200 }
 		);
@@ -27,12 +26,10 @@ export const GET: RequestHandler = async () => {
 		logger.error('Health check database ping failed', error);
 		return json(
 			{
-				status: 'unhealthy',
-				uptime,
-				timestamp,
-				services: {
-					database: 'unreachable'
-				}
+				status: 'error',
+				database: 'unreachable',
+				version: APP_VERSION,
+				timestamp
 			},
 			{ status: 503 }
 		);

@@ -1,4 +1,4 @@
-﻿import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const mockExecute = vi.fn();
 vi.mock('$lib/server/db', () => ({
@@ -21,9 +21,10 @@ describe('Health Check API Endpoint', () => {
 
 		const data = await response.json();
 		expect(data.status).toBe('ok');
-		expect(data.services.database).toBe('healthy');
-		expect(typeof data.uptime).toBe('number');
+		expect(data.database).toBe('reachable');
+		expect(data.version).toBe('0.1.0-beta.2');
 		expect(data.timestamp).toBeDefined();
+		expect(data).not.toHaveProperty('uptime');
 	});
 
 	it('returns 503 Service Unavailable when database ping fails', async () => {
@@ -34,7 +35,10 @@ describe('Health Check API Endpoint', () => {
 		expect(response.status).toBe(503);
 
 		const data = await response.json();
-		expect(data.status).toBe('unhealthy');
-		expect(data.services.database).toBe('unreachable');
+		expect(data.status).toBe('error');
+		expect(data.database).toBe('unreachable');
+		expect(data.version).toBe('0.1.0-beta.2');
+		expect(data).not.toHaveProperty('uptime');
+		expect(data).not.toHaveProperty('error');
 	});
 });

@@ -1,4 +1,4 @@
-﻿# Tarkana Incident Runbook
+# Tarkana Incident Runbook
 
 ## Overview
 
@@ -25,14 +25,12 @@ This runbook outlines operational procedures and recovery steps for common produ
   ```json
   {
     "status": "ok",
-    "uptime": 12345,
-    "timestamp": "2026-09-20T12:00:00.000Z",
-    "services": {
-      "database": "healthy"
-    }
+    "database": "reachable",
+    "version": "0.1.0-beta.2",
+    "timestamp": "2026-09-20T12:00:00.000Z"
   }
   ```
-- **If 503 is returned**: The backend server is running but cannot query PostgreSQL (`SELECT 1` timed out or failed).
+- **If 503 is returned**: The backend server is running but cannot query PostgreSQL (`SELECT 1` timed out or failed). The response will be `{"status":"degraded","database":"unreachable","version":"0.1.0-beta.2","timestamp":"..."}` without internal connection strings or error trace leak.
 
 ---
 

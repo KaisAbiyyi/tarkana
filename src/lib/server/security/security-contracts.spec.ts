@@ -95,57 +95,110 @@ describe('Security & Reliability Contracts', () => {
 			// Ensure completeSession was NOT re-invoked on the repository
 			expect(repository.completedSessions).toHaveLength(0);
 		});
+
+		it('guarantees exactly one rating mutation under concurrent finish requests', async () => {
+			const profile = createProfile({ rating: 1200, rank: 'Bronze Mind' });
+			const activeSession = createChallengeSession({
+				userId: profile.id,
+				status: 'in_progress',
+				totalQuestions: 1,
+				totalScore: 0,
+				accuracy: 0,
+				ratingBefore: 1200,
+				ratingAfter: 1200,
+				ratingDelta: 0,
+				rankBefore: 'Bronze Mind',
+				rankAfter: 'Bronze Mind'
+			});
+			const question = createSessionQuestion({ sessionId: activeSession.id });
+			const answer = createSessionAnswer({
+				sessionQuestionId: question.id,
+				userId: profile.id,
+				isCorrect: true,
+				scoreEarned: 100
+			});
+
+			const repository = createSessionRepositoryFake({
+				session: activeSession,
+				questions: [question],
+				answers: [answer]
+			});
+
+			const service = createFinishChallengeService(
+				repository,
+				createProfileRepositoryFake(profile)
+			);
+
+			const event = createFakeEvent(createFakeUser({ id: profile.id }));
+
+			// Fire two concurrent finish requests simultaneously
+			const [resA, resB] = await Promise.all([
+				service.finish(event, { sessionId: activeSession.id }),
+				service.finish(event, { sessionId: activeSession.id })
+			]);
+
+			expect(resA.sessionId).toBe(activeSession.id);
+			expect(resB.sessionId).toBe(activeSession.id);
+			expect(resA.totalScore).toBe(resB.totalScore);
+			expect(resA.ratingAfter).toBe(resB.ratingAfter);
+
+			// Critical: exactly ONE completion mutation must have occurred
+			expect(repository.completedSessions).toHaveLength(1);
+		});
 	});
 
 	describe('P0: Endpoint Rate Limiting Contract', () => {
-		it('allows requests within threshold and blocks with 429 when threshold is exceeded', () => {
+		it('allows requests within threshold and blocks with 429 when threshold is exceeded', async () => {
 			const key = 'test-user-ip:action';
-			const options = { maxRequests: 3, windowMs: 1000 };
+			const options = { maxRequests: 3, windowMs: 10000 };
+			const t0 = 1000000;
 
 			// Request 1: Allowed
-			const res1 = checkRateLimit(key, options);
+			const res1 = await checkRateLimit(key, options, t0);
 			expect(res1.allowed).toBe(true);
 			expect(res1.remaining).toBe(2);
 
 			// Request 2: Allowed
-			const res2 = checkRateLimit(key, options);
+			const res2 = await checkRateLimit(key, options, t0 + 100);
 			expect(res2.allowed).toBe(true);
 			expect(res2.remaining).toBe(1);
 
 			// Request 3: Allowed
-			const res3 = checkRateLimit(key, options);
+			const res3 = await checkRateLimit(key, options, t0 + 200);
 			expect(res3.allowed).toBe(true);
 			expect(res3.remaining).toBe(0);
 
 			// Request 4: Exceeded
-			const res4 = checkRateLimit(key, options);
+			const res4 = await checkRateLimit(key, options, t0 + 300);
 			expect(res4.allowed).toBe(false);
 			expect(res4.remaining).toBe(0);
 
 			// enforceRateLimit throws AppError with status 429
-			expect(() => enforceRateLimit(key, options)).toThrowError(/Rate limit exceeded/);
+			await expect(enforceRateLimit(key, options, t0 + 400)).rejects.toThrowError(
+				/Rate limit exceeded/
+			);
 			try {
-				enforceRateLimit(key, options);
+				await enforceRateLimit(key, options, t0 + 400);
 			} catch (err: unknown) {
 				expect((err as { status: number }).status).toBe(429);
 			}
 		});
 
-		it('resets rate limit counter after time window expires', () => {
+		it('resets rate limit counter after time window expires', async () => {
 			const key = 'test-user-ip:window-reset';
 			const options = { maxRequests: 1, windowMs: 500 };
 			const t0 = 1000000;
 
 			// First request at t0
-			const res1 = checkRateLimit(key, options, t0);
+			const res1 = await checkRateLimit(key, options, t0);
 			expect(res1.allowed).toBe(true);
 
 			// Second request at t0 + 200ms -> Blocked
-			const res2 = checkRateLimit(key, options, t0 + 200);
+			const res2 = await checkRateLimit(key, options, t0 + 200);
 			expect(res2.allowed).toBe(false);
 
 			// Third request after window expires (t0 + 600ms) -> Allowed again
-			const res3 = checkRateLimit(key, options, t0 + 600);
+			const res3 = await checkRateLimit(key, options, t0 + 600);
 			expect(res3.allowed).toBe(true);
 		});
 	});

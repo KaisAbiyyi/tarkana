@@ -1,4 +1,4 @@
-﻿export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 export type LogContext = Record<string, unknown>;
 
@@ -19,22 +19,44 @@ export interface LogEntry {
 	};
 }
 
-function sanitizeContext(context?: LogContext): LogContext | undefined {
+const SENSITIVE_KEY_PATTERNS = [
+	'authorization',
+	'cookie',
+	'set-cookie',
+	'access_token',
+	'refresh_token',
+	'apikey',
+	'api_key',
+	'servicerolekey',
+	'service_role_key',
+	'secret',
+	'password',
+	'token',
+	'session',
+	'credential',
+	'bearer'
+];
+
+export function isSensitiveKey(key: string): boolean {
+	const normalized = key.toLowerCase().replace(/[-_]/g, '');
+	return SENSITIVE_KEY_PATTERNS.some((pattern) => {
+		const normPattern = pattern.replace(/[-_]/g, '');
+		return normalized === normPattern || normalized.includes(normPattern);
+	});
+}
+
+export function sanitizeContext(context?: LogContext): LogContext | undefined {
 	if (!context) return undefined;
 	const sanitized: LogContext = {};
-	const SENSITIVE_KEYS = new Set([
-		'password',
-		'token',
-		'authorization',
-		'secret',
-		'cookie',
-		'session'
-	]);
 
 	for (const [key, value] of Object.entries(context)) {
-		if (SENSITIVE_KEYS.has(key.toLowerCase())) {
+		if (isSensitiveKey(key)) {
 			sanitized[key] = '[REDACTED]';
-		} else if (value && typeof value === 'object' && !Array.isArray(value)) {
+		} else if (Array.isArray(value)) {
+			sanitized[key] = value.map((item) =>
+				item && typeof item === 'object' ? sanitizeContext(item as LogContext) : item
+			);
+		} else if (value && typeof value === 'object') {
 			sanitized[key] = sanitizeContext(value as LogContext);
 		} else {
 			sanitized[key] = value;

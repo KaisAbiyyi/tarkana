@@ -13,7 +13,7 @@ export const POST: RequestHandler = async (event) => {
 		const rateLimitKey = user
 			? `user:${user.id}:challenge-submit`
 			: `ip:${clientIp}:challenge-submit`;
-		enforceRateLimit(rateLimitKey, { maxRequests: 60, windowMs: 60 * 1000 });
+		await enforceRateLimit(rateLimitKey, { maxRequests: 60, windowMs: 60 * 1000 });
 
 		const input = await readJsonBody(event, (body) => {
 			const data = requireObjectBody(body);

@@ -7,6 +7,8 @@ for (const route of protectedRoutes) {
 		await page.goto(route);
 
 		await expect(page).toHaveURL(/\/auth\/login/);
-		await expect(page.getByRole('heading', { name: /masuk ke tarkana/i })).toBeVisible();
+		await expect(
+			page.getByRole('heading', { name: /(masuk ke tarkana|log in to tarkana)/i })
+		).toBeVisible();
 	});
 }

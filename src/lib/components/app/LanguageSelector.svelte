@@ -6,7 +6,7 @@
 	const { locale, t } = getI18nContext();
 </script>
 
-<form method="POST" action="/locale" class="language-selector">
+<form data-sveltekit-reload method="POST" action="/locale" class="language-selector">
 	<label>
 		<span class="sr-only">{t('language.change')}</span>
 		<select
