@@ -11,6 +11,7 @@ declare global {
 			getSession: () => Promise<Session | null>;
 			getUser: () => Promise<User | null>;
 			profile: ProfileSummary | null;
+			requestId: string;
 		}
 		// interface PageData {}
 		// interface PageState {}

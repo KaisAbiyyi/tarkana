@@ -3,9 +3,14 @@ import type { CookieOptions } from '@supabase/ssr';
 import type { Handle } from '@sveltejs/kit';
 import { createRequestAuthAccessors } from '$lib/server/auth/request-auth';
 import { loadServerEnv } from '$lib/server/config/env';
+import { logger } from '$lib/server/observability/logger';
 import { getTextDirection, LOCALE_COOKIE, resolveLocale } from '$lib/i18n';
 
 export const handle: Handle = async ({ event, resolve }) => {
+	const requestId = event.request.headers.get('x-request-id') || crypto.randomUUID();
+	event.locals.requestId = requestId;
+
+	const startTime = performance.now();
 	const env = loadServerEnv();
 	event.locals.locale = resolveLocale(event.cookies.get(LOCALE_COOKIE));
 
@@ -56,6 +61,18 @@ export const handle: Handle = async ({ event, resolve }) => {
 		'Content-Security-Policy',
 		"default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https: wss:;"
 	);
+	response.headers.set('X-Request-Id', requestId);
+
+	const durationMs = Math.round(performance.now() - startTime);
+	if (event.url.pathname.startsWith('/api')) {
+		logger.info(`${event.request.method} ${event.url.pathname} ${response.status}`, {
+			requestId,
+			path: event.url.pathname,
+			method: event.request.method,
+			status: response.status,
+			durationMs
+		});
+	}
 
 	return response;
 };

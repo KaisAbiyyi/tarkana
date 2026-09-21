@@ -3,13 +3,6 @@ import { generateSymbolPatternQuestion, SYMBOL_PATTERN_RULES } from './symbol-pa
 import { getGeneratedQuestionErrors } from '$lib/server/challenge/rule-validator';
 import { labelSymbolToken } from '$lib/shared/presentation/symbols';
 
-const TRIANGLE_DIRECTION_CHOICES = [
-	'triangle-up',
-	'triangle-right',
-	'triangle-down',
-	'triangle-left'
-].sort();
-
 describe('symbol pattern generator', () => {
 	it.each(SYMBOL_PATTERN_RULES)('generates valid %s questions', (ruleType) => {
 		const question = generateSymbolPatternQuestion({

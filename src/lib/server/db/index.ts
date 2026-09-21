@@ -14,7 +14,7 @@ export function fixSupabaseUrl(url: string, publicUrl?: string): string {
 				return parsed.toString();
 			}
 		}
-	} catch (e) {
+	} catch {
 		// Ignore parse errors
 	}
 	return url;

@@ -13,7 +13,6 @@
 		disabled?: boolean;
 		locked?: boolean;
 		feedbackStatus?: FeedbackStatus | null;
-		correctAnswer?: string;
 		timedOut?: boolean;
 		onSelect: (choice: string) => void;
 	};

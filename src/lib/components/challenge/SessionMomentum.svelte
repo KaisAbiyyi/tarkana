@@ -14,7 +14,6 @@
 		remainingSeconds: number;
 		totalSeconds: number;
 		questionType?: QuestionType;
-		modeName?: string;
 	};
 
 	let {
@@ -24,8 +23,7 @@
 		sessionScore,
 		remainingSeconds,
 		totalSeconds,
-		questionType,
-		modeName
+		questionType
 	}: Props = $props();
 	const { locale, t } = getI18nContext();
 	const ARENA_LABELS = createArenaLabels(locale);

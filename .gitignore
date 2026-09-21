@@ -29,6 +29,7 @@ vite.config.ts.timestamp-*
 test-results
 .codex-artifacts
 .agents/
+graphify-out/
 AGENTS.md
 CLAUDE.md
 

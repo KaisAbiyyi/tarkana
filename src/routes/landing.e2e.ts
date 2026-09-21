@@ -29,9 +29,10 @@ test('English, Indonesian, and Arabic render with the correct direction on deskt
 	await page.goto('/');
 
 	for (const locale of locales) {
-		if ((await page.locator('html').getAttribute('lang')) !== locale.value) {
-			await page.locator('select[name="locale"]:visible').selectOption(locale.value);
-		}
+		await page
+			.context()
+			.addCookies([{ name: 'tarkana-locale', value: locale.value, url: 'http://127.0.0.1:4173' }]);
+		await page.goto('/');
 		await expect(page.locator('html')).toHaveAttribute('lang', locale.value);
 		await expect(page.locator('html')).toHaveAttribute('dir', locale.dir);
 		await expect(page.getByRole('heading', { name: locale.heading })).toBeVisible();

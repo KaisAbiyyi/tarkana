@@ -1,11 +1,20 @@
 import type { RequestHandler } from './$types';
 import { jsonError, jsonOk, readJsonBody, requireObjectBody } from '$lib/server/api/response';
 import { createFinishChallengeService } from '$lib/server/sessions/finish-challenge-service';
+import { enforceRateLimit } from '$lib/server/security/rate-limit';
 import { requireUuid } from '$lib/shared/validation/common';
 import { ValidationError } from '$lib/shared/validation/common';
 
 export const POST: RequestHandler = async (event) => {
 	try {
+		const clientIp =
+			typeof event.getClientAddress === 'function' ? event.getClientAddress() : '127.0.0.1';
+		const user = await event.locals.getUser();
+		const rateLimitKey = user
+			? `user:${user.id}:challenge-finish`
+			: `ip:${clientIp}:challenge-finish`;
+		await enforceRateLimit(rateLimitKey, { maxRequests: 20, windowMs: 60 * 1000 });
+
 		const input = await readJsonBody(event, (body) => {
 			const data = requireObjectBody(body);
 			return {

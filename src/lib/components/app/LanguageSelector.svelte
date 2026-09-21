@@ -6,7 +6,7 @@
 	const { locale, t } = getI18nContext();
 </script>
 
-<form method="POST" action="/locale" class="language-selector">
+<form data-sveltekit-reload method="POST" action="/locale" class="language-selector">
 	<label>
 		<span class="sr-only">{t('language.change')}</span>
 		<select
@@ -15,7 +15,7 @@
 			aria-label={t('language.select')}
 			onchange={(event) => event.currentTarget.form?.submit()}
 		>
-			{#each LOCALE_OPTIONS as option}
+			{#each LOCALE_OPTIONS as option (option.value)}
 				<option value={option.value}>{option.label}</option>
 			{/each}
 		</select>

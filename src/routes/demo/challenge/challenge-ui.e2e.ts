@@ -5,7 +5,7 @@ test('symbol challenge fixture renders visual tokens and playful feedback', asyn
 	await page.waitForLoadState('networkidle');
 
 	await expect(page.getByRole('heading', { name: 'Find the next symbol' })).toBeVisible();
-	await expect(page.getByRole('img', { name: 'Triangle facing left' })).toHaveCount(2);
+	await expect(page.getByRole('img', { name: 'Triangle facing left' })).toHaveCount(3);
 	await expect(page.getByText('triangle-left')).toHaveCount(0);
 
 	const answer = page.getByRole('radio', { name: 'A. Triangle facing up' });
