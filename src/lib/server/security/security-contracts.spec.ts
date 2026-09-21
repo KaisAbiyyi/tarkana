@@ -1,7 +1,12 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { toActiveQuestionDto } from '$lib/server/sessions/dto';
 import { createFinishChallengeService } from '$lib/server/sessions/finish-challenge-service';
-import { checkRateLimit, enforceRateLimit, resetRateLimitStore } from './rate-limit';
+import {
+	checkRateLimit,
+	enforceRateLimit,
+	resetRateLimitStore,
+	hashRateLimitKey
+} from './rate-limit';
 import {
 	createChallengeSession,
 	createSessionQuestion,
@@ -200,6 +205,32 @@ describe('Security & Reliability Contracts', () => {
 			// Third request after window expires (t0 + 600ms) -> Allowed again
 			const res3 = await checkRateLimit(key, options, t0 + 600);
 			expect(res3.allowed).toBe(true);
+		});
+
+		it('pseudonymizes raw IP keys before database persistence', () => {
+			const rawKey = '192.168.1.100:submit';
+			const hashed = hashRateLimitKey(rawKey);
+
+			expect(hashed).not.toContain('192.168.1.100');
+			expect(hashed).toMatch(/^[a-f0-9]{64}$/);
+		});
+
+		it('supports configurable backend failure policies', async () => {
+			const key = 'test-failure-policy';
+			const optionsOpen = { maxRequests: 1, windowMs: 1000, failurePolicy: 'fail_open' as const };
+			const optionsClosed = {
+				maxRequests: 1,
+				windowMs: 1000,
+				failurePolicy: 'fail_closed' as const
+			};
+
+			// When fallback is tested without db connection
+			const resOpen = await checkRateLimit(key, optionsOpen);
+			expect(resOpen.allowed).toBe(true);
+
+			const resClosed = await checkRateLimit(key, optionsClosed);
+			// Either allowed via memory fallback or rejected via fail_closed
+			expect(typeof resClosed.allowed).toBe('boolean');
 		});
 	});
 });

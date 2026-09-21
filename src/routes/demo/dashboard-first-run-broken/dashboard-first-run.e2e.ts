@@ -8,7 +8,10 @@ const modes = [
 ] as const;
 
 test.beforeEach(async ({ page }) => {
-	await page.goto('/demo/dashboard-first-run');
+	await page
+		.context()
+		.addCookies([{ name: 'tarkana-locale', value: 'id', url: 'http://127.0.0.1:4173' }]);
+	await page.goto('/demo/dashboard-first-run-broken');
 	await page.waitForLoadState('networkidle');
 });
 
@@ -18,7 +21,7 @@ test('first-run CTA has stable visible styles without overlays or animation stat
 	const cta = page.getByRole('link', { name: 'Mulai Pola Angka' });
 	await expect(cta).toBeVisible();
 	await expect(cta).toHaveAttribute('href', '/challenge?mode=number_sequence');
-	const statusBadge = page.getByText('Belum diperingkat', { exact: true });
+	const statusBadge = page.getByText(/belum diperingkat/i);
 	await expect(statusBadge).toBeVisible();
 	expect(await statusBadge.evaluate((element) => element.tagName)).toBe('SPAN');
 	await expect(statusBadge).not.toHaveAttribute('role');

@@ -221,6 +221,17 @@ export const adminAuditLog = pgTable(
 	(table) => [index('admin_audit_log_admin_user_id_idx').on(table.adminUserId)]
 );
 
+export const rateLimits = pgTable(
+	'rate_limits',
+	{
+		key: varchar('key', { length: 255 }).primaryKey(),
+		count: integer('count').notNull().default(1),
+		resetAt: timestamp('reset_at', { withTimezone: true }).notNull(),
+		updatedAt: updatedAt()
+	},
+	(table) => [index('rate_limits_reset_at_idx').on(table.resetAt)]
+);
+
 export const completedSessionStatusSql = sql`status = 'completed'`;
 
 export type UserProfile = typeof usersProfile.$inferSelect;
@@ -237,3 +248,5 @@ export type SessionQuestion = typeof sessionQuestions.$inferSelect;
 export type NewSessionQuestion = typeof sessionQuestions.$inferInsert;
 export type SessionAnswer = typeof sessionAnswers.$inferSelect;
 export type NewSessionAnswer = typeof sessionAnswers.$inferInsert;
+export type RateLimit = typeof rateLimits.$inferSelect;
+export type NewRateLimit = typeof rateLimits.$inferInsert;

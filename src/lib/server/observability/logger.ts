@@ -27,14 +27,24 @@ const SENSITIVE_KEY_PATTERNS = [
 	'refresh_token',
 	'apikey',
 	'api_key',
+	'x-api-key',
 	'servicerolekey',
 	'service_role_key',
 	'secret',
+	'client_secret',
+	'clientsecret',
 	'password',
+	'passphrase',
+	'private_key',
+	'privatekey',
 	'token',
 	'session',
 	'credential',
-	'bearer'
+	'bearer',
+	'database_url',
+	'databaseurl',
+	'postgres_url',
+	'direct_url'
 ];
 
 export function isSensitiveKey(key: string): boolean {
@@ -45,8 +55,22 @@ export function isSensitiveKey(key: string): boolean {
 	});
 }
 
-export function sanitizeContext(context?: LogContext): LogContext | undefined {
+/**
+ * Recursively sanitizes a log context, replacing sensitive key values with [REDACTED].
+ * Circular references are guarded using a WeakSet to prevent stack overflow.
+ */
+export function sanitizeContext(
+	context?: LogContext,
+	seen: WeakSet<object> = new WeakSet()
+): LogContext | undefined {
 	if (!context) return undefined;
+	if (typeof context !== 'object') return context;
+
+	if (seen.has(context)) {
+		return { '[Circular]': true };
+	}
+	seen.add(context);
+
 	const sanitized: LogContext = {};
 
 	for (const [key, value] of Object.entries(context)) {
@@ -54,10 +78,10 @@ export function sanitizeContext(context?: LogContext): LogContext | undefined {
 			sanitized[key] = '[REDACTED]';
 		} else if (Array.isArray(value)) {
 			sanitized[key] = value.map((item) =>
-				item && typeof item === 'object' ? sanitizeContext(item as LogContext) : item
+				item && typeof item === 'object' ? sanitizeContext(item as LogContext, seen) : item
 			);
 		} else if (value && typeof value === 'object') {
-			sanitized[key] = sanitizeContext(value as LogContext);
+			sanitized[key] = sanitizeContext(value as LogContext, seen);
 		} else {
 			sanitized[key] = value;
 		}
@@ -101,12 +125,22 @@ export const logger = {
 		error?: unknown,
 		meta?: Omit<LogEntry, 'timestamp' | 'level' | 'message' | 'error'>
 	) => {
-		const errorObj =
+		const errorPayload =
 			error instanceof Error
-				? { name: error.name, message: error.message, stack: error.stack }
+				? {
+						name: error.name,
+						message: error.message,
+						stack: error.stack
+					}
 				: error
-					? { name: 'UnknownError', message: String(error) }
+					? { name: 'Error', message: String(error) }
 					: undefined;
-		log({ level: 'error', message, error: errorObj, ...meta });
+
+		log({
+			level: 'error',
+			message,
+			error: errorPayload,
+			...meta
+		});
 	}
 };

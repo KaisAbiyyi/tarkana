@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function run() {
-	console.log('Running production migrations...');
+	console.log('Initializing production migration runner...');
 
 	if (process.env.VERCEL && process.env.RUN_PRODUCTION_MIGRATIONS !== 'true') {
 		console.warn(
@@ -76,8 +76,16 @@ async function run() {
 		databaseUrl = databaseUrl.replace(':6543', ':5432');
 	}
 
+	let targetHost = 'unknown';
+	let targetPort = '5432';
+	let targetDb = 'postgres';
+
 	try {
 		const parsed = new URL(databaseUrl);
+		targetHost = parsed.hostname;
+		targetPort = parsed.port || '5432';
+		targetDb = parsed.pathname.slice(1) || 'postgres';
+
 		if (parsed.hostname.includes('pooler.supabase.com') && parsed.username === 'postgres') {
 			throw new Error(
 				'Supabase pooler URLs require username "postgres.<project-ref>". Set PUBLIC_SUPABASE_URL or DIRECT_URL in Vercel so migrations can authenticate.'
@@ -92,6 +100,8 @@ async function run() {
 		process.exit(1);
 	}
 
+	console.log(`Target cluster: ${targetHost}:${targetPort} (Database: ${targetDb})`);
+
 	// Create a postgres pool
 	const pool = new pg.Pool({
 		connectionString: databaseUrl,
@@ -101,15 +111,34 @@ async function run() {
 				: { rejectUnauthorized: false }
 	});
 
-	const db = drizzle(pool);
+	let client;
+	try {
+		client = await pool.connect();
+	} catch (connErr) {
+		console.error('Failed to establish database connection:', connErr.message);
+		await pool.end();
+		process.exit(1);
+	}
 
 	try {
+		console.log('Acquiring PostgreSQL migration concurrency lock (pg_advisory_lock)...');
+		await client.query("SELECT pg_advisory_lock(hashtext('tarkana_production_migrations'))");
+		console.log('Concurrency lock acquired. Executing Drizzle migrations...');
+
+		const db = drizzle(client);
 		await migrate(db, { migrationsFolder: path.resolve(__dirname, '../drizzle') });
 		console.log('Migrations completed successfully.');
 	} catch (err) {
 		console.error('Migration failed!', err);
 		process.exit(1);
 	} finally {
+		try {
+			await client.query("SELECT pg_advisory_unlock(hashtext('tarkana_production_migrations'))");
+			console.log('Concurrency lock released.');
+		} catch (unlockErr) {
+			console.warn('Warning: Could not release advisory lock:', unlockErr.message);
+		}
+		client.release();
 		await pool.end();
 	}
 }

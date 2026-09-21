@@ -510,6 +510,32 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 
 		async completeSessionAndUpdateProfile(input) {
 			return database.transaction(async (tx) => {
+				// Acquire row-level lock on the session to serialize concurrent finish attempts
+				const [currentSession] = await tx
+					.select()
+					.from(challengeSessions)
+					.where(
+						and(
+							eq(challengeSessions.id, input.sessionId),
+							eq(challengeSessions.userId, input.userId)
+						)
+					)
+					.for('update')
+					.limit(1);
+
+				if (!currentSession) {
+					throw new Error('Could not find session to complete');
+				}
+
+				// If already completed (e.g. concurrent winner committed first), return idempotently without mutating
+				if (currentSession.status === 'completed') {
+					return currentSession;
+				}
+
+				if (currentSession.status !== 'in_progress') {
+					throw new Error(`Cannot complete session with status: ${currentSession.status}`);
+				}
+
 				const [updatedSession] = await tx
 					.update(challengeSessions)
 					.set({
@@ -533,16 +559,8 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					)
 					.returning();
 
-				// If no rows were updated, a concurrent request already transitioned this session
 				if (!updatedSession) {
-					const [existingCompleted] = await tx
-						.select()
-						.from(challengeSessions)
-						.where(eq(challengeSessions.id, input.sessionId))
-						.limit(1);
-
-					if (!existingCompleted) throw new Error('Could not complete session');
-					return existingCompleted;
+					throw new Error('Could not complete session');
 				}
 
 				await tx

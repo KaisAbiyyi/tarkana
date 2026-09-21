@@ -29,6 +29,13 @@
       "when": 1782824364922,
       "tag": "0003_useful_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790002769749,
+      "tag": "0004_abnormal_bishop",
+      "breakpoints": true
     }
   ]
 }
