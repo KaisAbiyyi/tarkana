@@ -30,25 +30,25 @@ Direct pushes to `main` are prohibited for all contributors and automated agents
 
 ### Required Status Checks
 All required checks must pass prior to merge:
-1. **Web CI / Verify (`Lint, Typecheck, Test & Build`)**
+1. **Lint, Typecheck, Test & Build** (Workflow: `Web CI`, `.github/workflows/web-ci.yml`)
    - SvelteKit typecheck (`npm run check`)
    - Prettier & ESLint check (`npm run lint`)
    - Vitest Unit Test Suite (`npm run test:unit`)
    - Production build (`npm run build`)
    - Playwright Critical-Path E2E (`npm run test:e2e`)
-2. **CodeQL / Analyze (`security-extended`)**
+2. **CodeQL Analysis (javascript-typescript)** (Workflow: `CodeQL`, optional or advisory)
    - Static application security testing for JavaScript/TypeScript
 
 ---
 
 ## 3. Automation Setup (GitHub CLI)
 
-To apply or verify these branch rules via GitHub CLI:
+To apply or verify these branch rules via GitHub CLI using the tracked configuration:
 
 ```bash
 gh api \
   --method POST \
   -H "Accept: application/vnd.github+json" \
   /repos/KaisAbiyyi/tarkana/rulesets \
-  --input ruleset-config.json
+  --input .github/ruleset-config.json
 ```

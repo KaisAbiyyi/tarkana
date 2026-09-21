@@ -154,7 +154,7 @@ describe('Security & Reliability Contracts', () => {
 
 	describe('P0: Endpoint Rate Limiting Contract', () => {
 		it('allows requests within threshold and blocks with 429 when threshold is exceeded', async () => {
-			const key = 'test-user-ip:action';
+			const key = 'test-user-ip:action-' + Math.random().toString(36).substring(2);
 			const options = { maxRequests: 3, windowMs: 10000 };
 			const t0 = 1000000;
 
@@ -190,7 +190,7 @@ describe('Security & Reliability Contracts', () => {
 		});
 
 		it('resets rate limit counter after time window expires', async () => {
-			const key = 'test-user-ip:window-reset';
+			const key = 'test-user-ip:window-reset-' + Math.random().toString(36).substring(2);
 			const options = { maxRequests: 1, windowMs: 500 };
 			const t0 = 1000000;
 
@@ -216,7 +216,7 @@ describe('Security & Reliability Contracts', () => {
 		});
 
 		it('supports configurable backend failure policies', async () => {
-			const key = 'test-failure-policy';
+			const key = 'test-failure-policy-' + Math.random().toString(36).substring(2);
 			const optionsOpen = { maxRequests: 1, windowMs: 1000, failurePolicy: 'fail_open' as const };
 			const optionsClosed = {
 				maxRequests: 1,

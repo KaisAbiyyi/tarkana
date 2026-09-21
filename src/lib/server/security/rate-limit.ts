@@ -104,20 +104,21 @@ export async function checkRateLimit(
 	try {
 		const db = getDb();
 		const resetAt = new Date(now + options.windowMs);
+		const nowTs = new Date(now);
 
 		const result = await db.execute<{ count: number; reset_at: string }>(sql`
 			INSERT INTO rate_limits (key, count, reset_at)
 			VALUES (${hashedKey}, 1, ${resetAt})
 			ON CONFLICT (key) DO UPDATE
 			SET count = CASE
-				WHEN rate_limits.reset_at <= NOW() THEN 1
+				WHEN rate_limits.reset_at <= ${nowTs} THEN 1
 				ELSE rate_limits.count + 1
 			END,
 			reset_at = CASE
-				WHEN rate_limits.reset_at <= NOW() THEN ${resetAt}
+				WHEN rate_limits.reset_at <= ${nowTs} THEN ${resetAt}
 				ELSE rate_limits.reset_at
 			END,
-			updated_at = NOW()
+			updated_at = ${nowTs}
 			RETURNING count, reset_at;
 		`);
 
