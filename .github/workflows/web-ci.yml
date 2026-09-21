@@ -19,6 +19,7 @@ jobs:
       PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy_key
       TEST_DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/tarkana_test
       DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/tarkana_test
+      PLAYWRIGHT_BROWSERS_PATH: .playwright-browsers
       CI: 'true'
 
     services:
@@ -49,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: Run svelte-check
         run: npm run check
 
@@ -63,9 +67,6 @@ jobs:
 
       - name: Run production build
         run: npm run build
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
 
       - name: Run Playwright E2E tests
         run: npm run test:e2e
