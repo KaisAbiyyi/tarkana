@@ -14,6 +14,12 @@ jobs:
   verify:
     name: Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_SUPABASE_URL: https://dummy.supabase.co
+      PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy_key
+      TEST_DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/tarkana_test
+      DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/tarkana_test
+      CI: 'true'
 
     services:
       postgres:
@@ -51,27 +57,15 @@ jobs:
 
       - name: Run database migrations against test DB
         run: npm run db:migrate
-        env:
-          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/tarkana_test
 
       - name: Run unit & integration tests
-        run: npm run test:unit -- --run
-        env:
-          TEST_DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/tarkana_test
-          DATABASE_URL: postgresql://postgres:postgrespassword@localhost:5432/tarkana_test
+        run: npm run test:unit
 
       - name: Run production build
         run: npm run build
-        env:
-          PUBLIC_SUPABASE_URL: https://dummy.supabase.co
-          PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy_key
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
       - name: Run Playwright E2E tests
         run: npm run test:e2e
-        env:
-          PUBLIC_SUPABASE_URL: https://dummy.supabase.co
-          PUBLIC_SUPABASE_PUBLISHABLE_KEY: dummy_key
-          CI: 'true'
