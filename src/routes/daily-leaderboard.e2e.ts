@@ -15,8 +15,7 @@ test.describe('P1.4 Daily Leaderboard E2E', () => {
 		await expect(dailyTab).toBeVisible();
 
 		// Check countdown reset timer
-		const timerBanner = page.locator('header').filter({ hasText: /Resets In|Daily Challenge/i });
-		await expect(timerBanner).toBeVisible();
+		await expect(page.getByText('Resets In')).toBeVisible();
 
 		// Leaderboard table or empty state
 		const mainContent = page.locator('main');
