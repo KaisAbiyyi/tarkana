@@ -3,13 +3,19 @@ import type { RequestEvent } from '@sveltejs/kit';
 import {
 	DAILY_CHALLENGE_CONFIG_VERSION,
 	DAILY_CHALLENGE_GENERATOR_VERSION,
+	DEFAULT_DEV_DAILY_SECRET,
+	resolveDailyChallengeSecret,
 	generateCanonicalDailySeed,
 	generateDailyPuzzleSnapshot,
 	getSecondsUntilNextUtcMidnight,
 	getUtcDateString
 } from './daily-challenge';
 import { createDailyChallengeService } from './daily-challenge-service';
-import type { DailyRepository } from '$lib/server/db/repositories/daily-repository';
+import type {
+	DailyRepository,
+	StartDailySessionAtomicInput,
+	StartDailySessionAtomicResult
+} from '$lib/server/db/repositories/daily-repository';
 import type {
 	Category,
 	DailyChallenge,
@@ -20,6 +26,7 @@ import type {
 	UserProfile
 } from '$lib/server/db/schema';
 import { createFinishChallengeService } from '$lib/server/sessions/finish-challenge-service';
+import { GUEST_TOKEN_COOKIE, hashGuestToken } from '$lib/server/sessions/guest-token';
 
 function createMockCategory(id: string, slug: string): Category {
 	return {
@@ -79,11 +86,18 @@ function getMockCategoriesAndRules() {
 	return { categories, rules };
 }
 
-function createDailyRepositoryFake(): DailyRepository {
+function createDailyRepositoryFake(
+	sessionRepo?: any
+): DailyRepository & { setSessionRepo: (repo: any) => void } {
 	const challenges: DailyChallenge[] = [];
 	const attempts: DailyChallengeAttempt[] = [];
+	let internalSessionRepo = sessionRepo;
 
 	return {
+		setSessionRepo(repo: any) {
+			internalSessionRepo = repo;
+		},
+
 		async findDailyChallengeByDate(dateString) {
 			return challenges.find((c) => c.challengeDate === dateString) ?? null;
 		},
@@ -100,8 +114,7 @@ function createDailyRepositoryFake(): DailyRepository {
 				seed: input.seed,
 				totalQuestions: input.totalQuestions ?? 10,
 				puzzleSnapshot: input.puzzleSnapshot,
-				createdAt: new Date(),
-				generatedAt: new Date()
+				createdAt: new Date()
 			};
 			challenges.push(created);
 			return created;
@@ -217,6 +230,116 @@ function createDailyRepositoryFake(): DailyRepository {
 			}
 
 			return { claimedCount, demotedCount };
+		},
+
+		async startDailySessionAtomic(
+			input: StartDailySessionAtomicInput
+		): Promise<StartDailySessionAtomicResult> {
+			const sRepo = internalSessionRepo;
+			if (!sRepo) {
+				throw new Error('Session repository not configured in DailyRepositoryFake');
+			}
+
+			const checkAttempt = async () => {
+				let existing: DailyChallengeAttempt | undefined;
+				if (input.userId) {
+					existing = attempts.find(
+						(a) => a.dailyChallengeId === input.dailyChallengeId && a.userId === input.userId
+					);
+				} else if (input.guestTokenHash) {
+					existing = attempts.find(
+						(a) =>
+							a.dailyChallengeId === input.dailyChallengeId &&
+							a.guestTokenHash === input.guestTokenHash
+					);
+				}
+
+				if (existing) {
+					if (existing.status === 'completed') {
+						return { type: 'conflict_completed' as const };
+					}
+					if (existing.status === 'abandoned') {
+						return { type: 'conflict_forfeited' as const };
+					}
+					if (existing.status === 'in_progress' && existing.sessionId) {
+						const session = await sRepo.findSessionById(existing.sessionId);
+						if (session && session.status === 'in_progress') {
+							const questions = await sRepo.listSessionQuestions(session.id);
+							const answers = await sRepo.listSessionAnswers(session.id);
+							const answeredIds = new Set(answers.map((a: any) => a.sessionQuestionId));
+							const nextQuestion =
+								questions.find((q: any) => !answeredIds.has(q.id)) ?? questions[0];
+							if (nextQuestion) {
+								return {
+									type: 'resumed' as const,
+									session,
+									currentQuestion: nextQuestion
+								};
+							}
+						}
+					}
+				}
+				return null;
+			};
+
+			const preCheck = await checkAttempt();
+			if (preCheck) return preCheck;
+
+			// Atomic creation
+			let session: any;
+			let persistedQuestions: any[];
+			try {
+				session = await sRepo.createSession({
+					userId: input.userId,
+					guestToken: input.rawGuestToken,
+					dailyChallengeId: input.dailyChallengeId,
+					challengeType: 'daily',
+					status: 'in_progress',
+					totalQuestions: input.totalQuestions,
+					ratingBefore: input.userRating,
+					ratingAfter: input.userRating,
+					rankBefore: input.userRank,
+					rankAfter: input.userRank
+				});
+
+				const qs = input.questions.map((q) => ({
+					sessionId: session.id,
+					...q
+				}));
+				persistedQuestions = await sRepo.addQuestions(qs);
+
+				await this.createAttempt({
+					dailyChallengeId: input.dailyChallengeId,
+					sessionId: session.id,
+					userId: input.userId,
+					guestTokenHash: input.userId ? null : input.guestTokenHash,
+					distinctId: input.distinctId,
+					isOfficial: true,
+					status: 'in_progress'
+				});
+			} catch (err: unknown) {
+				if (session) {
+					const sIdx = sRepo.sessions.findIndex((s: any) => s.id === session.id);
+					if (sIdx !== -1) sRepo.sessions.splice(sIdx, 1);
+					for (let i = sRepo.questions.length - 1; i >= 0; i--) {
+						if (sRepo.questions[i].sessionId === session.id) {
+							sRepo.questions.splice(i, 1);
+						}
+					}
+				}
+
+				if (err instanceof Error && /unique constraint/i.test(err.message)) {
+					const fallback = await checkAttempt();
+					if (fallback) return fallback;
+				}
+				throw err;
+			}
+
+			return {
+				type: 'created' as const,
+				session,
+				currentQuestion: persistedQuestions[0]
+			};
 		}
 	};
 }
@@ -244,6 +367,7 @@ function createSessionRepositoryFake() {
 			const s = {
 				id: `sess-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
 				...input,
+				guestToken: input.guestToken ? hashGuestToken(input.guestToken) : null,
 				claimedAt: null,
 				createdAt: new Date(),
 				updatedAt: new Date(),
@@ -261,6 +385,15 @@ function createSessionRepositoryFake() {
 			questions.push(...created);
 			return created;
 		},
+		async addAnswer(ans: any) {
+			const created = {
+				id: `ans-${Date.now()}-${answers.length}`,
+				createdAt: new Date(),
+				...ans
+			};
+			answers.push(created);
+			return created;
+		},
 		async findSessionById(id: string) {
 			return sessions.find((s) => s.id === id) ?? null;
 		},
@@ -274,7 +407,8 @@ function createSessionRepositoryFake() {
 			return sessions.find((s) => s.id === id && s.userId === userId) ?? null;
 		},
 		async findGuestSession(id: string, guestToken: string) {
-			return sessions.find((s) => s.id === id && s.guestToken === guestToken) ?? null;
+			const hashed = hashGuestToken(guestToken);
+			return sessions.find((s) => s.id === id && s.guestToken === hashed) ?? null;
 		},
 		async markCompleted(input: any) {
 			const s = sessions.find((item) => item.id === input.sessionId);
@@ -347,6 +481,52 @@ describe('P1.3 Daily Challenge Core Architecture', () => {
 	const { categories, rules } = getMockCategoriesAndRules();
 
 	describe('HMAC Canonical Seed & Determinism', () => {
+		it('fails in production when DAILY_CHALLENGE_SECRET is missing', () => {
+			const prevEnv = process.env.NODE_ENV;
+			const prevVercel = process.env.VERCEL;
+			const prevSecret = process.env.DAILY_CHALLENGE_SECRET;
+			try {
+				process.env.NODE_ENV = 'production';
+				delete process.env.DAILY_CHALLENGE_SECRET;
+				delete process.env.VERCEL;
+				expect(() => resolveDailyChallengeSecret()).toThrow(
+					/CRITICAL CONFIGURATION ERROR: DAILY_CHALLENGE_SECRET/i
+				);
+			} finally {
+				process.env.NODE_ENV = prevEnv;
+				if (prevVercel !== undefined) process.env.VERCEL = prevVercel;
+				if (prevSecret !== undefined) process.env.DAILY_CHALLENGE_SECRET = prevSecret;
+			}
+		});
+
+		it('uses dev fallback key outside production when DAILY_CHALLENGE_SECRET is missing', () => {
+			const prevEnv = process.env.NODE_ENV;
+			const prevVercel = process.env.VERCEL;
+			const prevSecret = process.env.DAILY_CHALLENGE_SECRET;
+			try {
+				process.env.NODE_ENV = 'test';
+				delete process.env.DAILY_CHALLENGE_SECRET;
+				delete process.env.VERCEL;
+				expect(resolveDailyChallengeSecret()).toBe(DEFAULT_DEV_DAILY_SECRET);
+			} finally {
+				process.env.NODE_ENV = prevEnv;
+				if (prevVercel !== undefined) process.env.VERCEL = prevVercel;
+				if (prevSecret !== undefined) process.env.DAILY_CHALLENGE_SECRET = prevSecret;
+			}
+		});
+
+		it('uses explicit secret or env var when provided', () => {
+			expect(resolveDailyChallengeSecret('custom_explicit_key')).toBe('custom_explicit_key');
+			const prevSecret = process.env.DAILY_CHALLENGE_SECRET;
+			try {
+				process.env.DAILY_CHALLENGE_SECRET = 'env_secret_key';
+				expect(resolveDailyChallengeSecret()).toBe('env_secret_key');
+			} finally {
+				if (prevSecret !== undefined) process.env.DAILY_CHALLENGE_SECRET = prevSecret;
+				else delete process.env.DAILY_CHALLENGE_SECRET;
+			}
+		});
+
 		it('generates unguessable 64-character hex seed via HMAC-SHA256', () => {
 			const seed = generateCanonicalDailySeed('2026-09-22', 1, 1, 'secret_salt');
 			expect(seed).toMatch(/^[0-9a-f]{64}$/);
@@ -416,8 +596,8 @@ describe('P1.3 Daily Challenge Core Architecture', () => {
 
 	describe('Concurrent Daily Creation & Single Official Attempt', () => {
 		function setupService() {
-			const dailyRepo = createDailyRepositoryFake();
 			const sessionRepo = createSessionRepositoryFake();
+			const dailyRepo = createDailyRepositoryFake(sessionRepo);
 			const profileRepo = createProfileRepositoryFake([
 				{
 					id: 'user-alice',
@@ -501,12 +681,116 @@ describe('P1.3 Daily Challenge Core Architecture', () => {
 
 			await expect(service.start(event, '2026-09-22')).rejects.toThrow(/already forfeited/i);
 		});
+
+		it('guest Daily lifecycle: start -> submit -> resume -> finish with same HttpOnly cookie', async () => {
+			const { service, dailyRepo, sessionRepo, profileRepo } = setupService();
+			const event = createMockEvent({ distinctId: 'guest-distinct-1' });
+
+			// 1. Guest starts Daily challenge
+			const startRes = await service.start(event, '2026-09-22');
+			expect(startRes.isGuest).toBe(true);
+			expect(startRes.isResumed).toBe(false);
+			expect(startRes.currentQuestion.orderIndex).toBe(0);
+
+			// Verify HttpOnly cookie was set
+			const guestToken = event.cookies.get(GUEST_TOKEN_COOKIE);
+			expect(guestToken).toBeTruthy();
+
+			// Verify session in repository has hash of raw guest token (not double-hashed)
+			const storedSession = await sessionRepo.findSessionById(startRes.sessionId);
+			expect(storedSession?.guestToken).toBe(hashGuestToken(guestToken!));
+
+			// findGuestSession with the raw guestToken from cookie MUST succeed
+			const verifiedSession = await sessionRepo.findGuestSession(startRes.sessionId, guestToken!);
+			expect(verifiedSession).not.toBeNull();
+			expect(verifiedSession?.id).toBe(startRes.sessionId);
+
+			// 2. Submit answer to question 0
+			await sessionRepo.addAnswer({
+				sessionId: startRes.sessionId,
+				sessionQuestionId: startRes.currentQuestion.sessionQuestionId,
+				userId: null,
+				selectedAnswer: '42',
+				isCorrect: true,
+				timeSpentSeconds: 5,
+				scoreEarned: 100
+			});
+
+			// 3. Guest resumes Daily challenge (using the same event/cookies)
+			const resumeRes = await service.start(event, '2026-09-22');
+			expect(resumeRes.sessionId).toBe(startRes.sessionId);
+			expect(resumeRes.isResumed).toBe(true);
+			expect(resumeRes.currentQuestion.orderIndex).toBe(1); // advanced to next question!
+
+			// 4. Answer remaining 9 questions so session can be finished
+			const allQuestions = await sessionRepo.listSessionQuestions(startRes.sessionId);
+			for (let i = 1; i < allQuestions.length; i++) {
+				await sessionRepo.addAnswer({
+					sessionId: startRes.sessionId,
+					sessionQuestionId: allQuestions[i].id,
+					userId: null,
+					selectedAnswer: allQuestions[i].correctAnswer,
+					isCorrect: true,
+					timeSpentSeconds: 5,
+					scoreEarned: 100
+				});
+			}
+
+			// 5. Guest finishes Daily challenge
+			const finishService = createFinishChallengeService(sessionRepo as any, profileRepo as any);
+			const finishRes = await finishService.finish(event, { sessionId: startRes.sessionId });
+			expect(finishRes.isGuest).toBe(true);
+			expect(finishRes.ratingDelta).toBe(0);
+
+			// Complete attempt in dailyRepo (like real DB completeSessionAndUpdateProfile transaction)
+			const att = await dailyRepo.findAttemptBySessionId(startRes.sessionId);
+			await dailyRepo.completeAttempt({
+				attemptId: att!.id,
+				score: finishRes.totalScore,
+				accuracy: finishRes.accuracy,
+				totalTimeSeconds: finishRes.totalTimeSeconds
+			});
+
+			// Verify attempt in dailyRepo is completed
+			const updatedAttempt = await dailyRepo.findAttemptBySessionId(startRes.sessionId);
+			expect(updatedAttempt?.status).toBe('completed');
+
+			// 6. Subsequent start is rejected with 409 conflict
+			await expect(service.start(event, '2026-09-22')).rejects.toThrow(/already been completed/i);
+		});
+
+		it('concurrent start requests resolve to same canonical attempt with 0 orphan sessions', async () => {
+			const { service, sessionRepo } = setupService();
+			const event = createMockEvent({ user: { id: 'user-alice' }, distinctId: 'dist-alice' });
+
+			// Fire 5 concurrent starts for Alice on the same date
+			const results = await Promise.all([
+				service.start(event, '2026-09-22'),
+				service.start(event, '2026-09-22'),
+				service.start(event, '2026-09-22'),
+				service.start(event, '2026-09-22'),
+				service.start(event, '2026-09-22')
+			]);
+
+			// All 5 must have the same sessionId
+			const firstSessionId = results[0].sessionId;
+			for (const res of results) {
+				expect(res.sessionId).toBe(firstSessionId);
+			}
+
+			// Verify session repository has exactly 1 session for Alice
+			expect(sessionRepo.sessions.filter((s: any) => s.userId === 'user-alice')).toHaveLength(1);
+			// Verify questions array has exactly 10 questions for this session
+			expect(sessionRepo.questions.filter((q: any) => q.sessionId === firstSessionId)).toHaveLength(
+				10
+			);
+		});
 	});
 
 	describe('Competitive Rating Protection & Guest Claim Conflict', () => {
 		it('Daily Challenge completion adds 0 competitive Logic Rating delta', async () => {
-			const dailyRepo = createDailyRepositoryFake();
 			const sessionRepo = createSessionRepositoryFake();
+			const dailyRepo = createDailyRepositoryFake(sessionRepo);
 			const profileRepo = createProfileRepositoryFake([
 				{
 					id: 'user-bob',

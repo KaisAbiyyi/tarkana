@@ -37,10 +37,31 @@ export const DAILY_CHALLENGE_MODE_DISTRIBUTION: Record<QuestionType, number> = {
 };
 
 /**
- * Canonical secret fallback for development and local testing.
- * Production must set DAILY_CHALLENGE_SECRET in environment variables.
+ * Deterministic secret fallback strictly for development and unit testing.
+ * Production must fail configuration validation if DAILY_CHALLENGE_SECRET is missing.
  */
-const DEFAULT_DAILY_SECRET = 'tarkana_daily_challenge_secret_fallback_key_2026';
+export const DEFAULT_DEV_DAILY_SECRET = 'tarkana_daily_challenge_dev_test_fallback_key';
+
+export function resolveDailyChallengeSecret(explicitSecret?: string): string {
+	if (explicitSecret && explicitSecret.trim().length > 0) {
+		return explicitSecret;
+	}
+
+	const envSecret = process.env.DAILY_CHALLENGE_SECRET;
+	if (envSecret && envSecret.trim().length > 0) {
+		return envSecret;
+	}
+
+	const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+
+	if (isProduction) {
+		throw new Error(
+			'CRITICAL CONFIGURATION ERROR: DAILY_CHALLENGE_SECRET environment variable is missing in production. Refusing to run with default fallback key.'
+		);
+	}
+
+	return DEFAULT_DEV_DAILY_SECRET;
+}
 
 /**
  * Generates an unguessable canonical seed server-side using HMAC-SHA256.
@@ -50,9 +71,10 @@ export function generateCanonicalDailySeed(
 	dateString: string,
 	configVersion = DAILY_CHALLENGE_CONFIG_VERSION,
 	generatorVersion = DAILY_CHALLENGE_GENERATOR_VERSION,
-	secret = process.env.DAILY_CHALLENGE_SECRET || DEFAULT_DAILY_SECRET
+	secret?: string
 ): string {
-	return createHmac('sha256', secret)
+	const resolvedSecret = resolveDailyChallengeSecret(secret);
+	return createHmac('sha256', resolvedSecret)
 		.update(`tarkana:daily:${dateString}:cfg${configVersion}:gen${generatorVersion}`)
 		.digest('hex');
 }

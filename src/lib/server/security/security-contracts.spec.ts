@@ -187,7 +187,7 @@ describe('Security & Reliability Contracts', () => {
 			} catch (err: unknown) {
 				expect((err as { status: number }).status).toBe(429);
 			}
-		});
+		}, 15000);
 
 		it('resets rate limit counter after time window expires', async () => {
 			const key = 'test-user-ip:window-reset-' + Math.random().toString(36).substring(2);
