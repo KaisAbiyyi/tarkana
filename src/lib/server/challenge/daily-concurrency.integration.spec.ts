@@ -8,7 +8,8 @@ import {
 	dailyChallenges,
 	dailyChallengeAttempts,
 	challengeSessions,
-	sessionQuestions
+	sessionQuestions,
+	categories
 } from '$lib/server/db/schema';
 import { createDailyRepository } from '$lib/server/db/repositories/daily-repository';
 import { hashGuestToken } from '$lib/server/sessions/guest-token';
@@ -21,6 +22,7 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 	let pool: pg.Pool | null = null;
 	let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 	let isDbAvailable = false;
+	let testCategoryId = '00000000-0000-4000-8000-000000000001';
 
 	beforeAll(async () => {
 		if (!dbUrl) {
@@ -40,6 +42,22 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 			client.release();
 			db = drizzle(pool, { schema });
 			isDbAvailable = true;
+
+			// Ensure a valid category exists for session_questions FK
+			const [existingCat] = await db.select({ id: categories.id }).from(categories).limit(1);
+			if (existingCat) {
+				testCategoryId = existingCat.id;
+			} else {
+				const [insertedCat] = await db
+					.insert(categories)
+					.values({
+						name: 'Concurrency Test Category',
+						slug: 'concurrency-test-category',
+						description: 'For concurrency integration tests'
+					})
+					.returning({ id: categories.id });
+				testCategoryId = insertedCat.id;
+			}
 		} catch (err: unknown) {
 			console.warn(
 				'Could not connect to test database. Integration test will skip.',
@@ -85,7 +103,7 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 
 		const mockSnapshotQuestions = Array.from({ length: 10 }, (_, i) => ({
 			orderIndex: i,
-			categoryId: '00000000-0000-4000-8000-000000000001',
+			categoryId: testCategoryId,
 			questionType: 'number_sequence' as const,
 			prompt: `Test question ${i}`,
 			choices: ['A', 'B', 'C', 'D'],
@@ -194,7 +212,7 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 
 		const mockSnapshotQuestions = Array.from({ length: 10 }, (_, i) => ({
 			orderIndex: i,
-			categoryId: '00000000-0000-4000-8000-000000000001',
+			categoryId: testCategoryId,
 			questionType: 'number_sequence' as const,
 			prompt: `Test guest question ${i}`,
 			choices: ['A', 'B', 'C', 'D'],
