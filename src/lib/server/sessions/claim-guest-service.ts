@@ -1,7 +1,12 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { requireProfile } from '$lib/server/auth/guards';
 import { badRequest } from '$lib/server/errors';
-import { clearGuestTokenCookie, getGuestToken } from '$lib/server/sessions/guest-token';
+import {
+	clearGuestTokenCookie,
+	getGuestToken,
+	hashGuestToken
+} from '$lib/server/sessions/guest-token';
+import { logger } from '$lib/server/observability/logger';
 import {
 	createProfileRepository,
 	type ProfileRepository
@@ -13,20 +18,21 @@ import {
 import type { ChallengeSession } from '$lib/server/db/schema';
 
 export type ClaimGuestInput = {
-	sessionId: string;
-	guestToken?: string;
+	sessionId?: string;
 };
 
 export type ClaimGuestResult = {
 	success: boolean;
-	sessionId: string;
+	claimedCount: number;
+	sessionId: string | null;
 	rating: number;
 	rank: ChallengeSession['rankAfter'];
+	isProvisional: boolean;
 	alreadyClaimed: boolean;
 };
 
 export type ClaimGuestService = {
-	claim(event: RequestEvent, input: ClaimGuestInput): Promise<ClaimGuestResult>;
+	claim(event: RequestEvent, input?: ClaimGuestInput): Promise<ClaimGuestResult>;
 };
 
 export function createClaimGuestService(
@@ -34,33 +40,88 @@ export function createClaimGuestService(
 	profileRepository: ProfileRepository = createProfileRepository()
 ): ClaimGuestService {
 	return {
-		async claim(event, input) {
-			if (!input.sessionId) {
-				throw badRequest('sessionId is required');
-			}
-
+		async claim(event, input = {}) {
 			const profile = await requireProfile(event, profileRepository);
-			const guestToken = input.guestToken || getGuestToken(event);
+			const guestToken = getGuestToken(event);
 
 			if (!guestToken) {
-				throw badRequest('Guest token is required to claim session');
+				logger.warn('Guest claim failed: missing guest token cookie', {
+					context: {
+						action: 'guest_claim_failed',
+						userId: profile.id,
+						reason: 'Guest token cookie is required to claim session'
+					}
+				});
+				throw badRequest('Guest token cookie is required to claim session');
 			}
 
-			const result = await sessionRepository.claimGuestSession({
-				sessionId: input.sessionId,
-				guestToken,
-				userId: profile.id
-			});
+			try {
+				const result = await sessionRepository.claimAllGuestSessions({
+					guestToken,
+					userId: profile.id,
+					specificSessionId: input.sessionId
+				});
 
-			clearGuestTokenCookie(event);
+				clearGuestTokenCookie(event);
 
-			return {
-				success: true,
-				sessionId: result.session.id,
-				rating: result.profileRating,
-				rank: result.profileRank,
-				alreadyClaimed: result.alreadyClaimed ?? false
-			};
+				if (result.alreadyClaimed) {
+					logger.info('Guest claim already claimed idempotently', {
+						context: {
+							action: 'guest_claim_success',
+							userId: profile.id,
+							guestTokenHash: hashGuestToken(guestToken),
+							alreadyClaimed: true
+						}
+					});
+				} else {
+					logger.info('Guest claim succeeded', {
+						context: {
+							action: 'guest_claim_success',
+							userId: profile.id,
+							guestTokenHash: hashGuestToken(guestToken),
+							claimedSessionsCount: result.claimedSessions.length,
+							sessionIds: result.claimedSessions.map((s) => s.id),
+							isProvisional: result.isProvisional,
+							ratingAfter: result.profileRating,
+							rankAfter: result.profileRank
+						}
+					});
+				}
+
+				return {
+					success: true,
+					claimedCount: result.claimedSessions.length,
+					sessionId: result.primarySession?.id ?? null,
+					rating: result.profileRating,
+					rank: result.profileRank,
+					isProvisional: result.isProvisional,
+					alreadyClaimed: result.alreadyClaimed ?? false
+				};
+			} catch (caught) {
+				const err = caught as Error;
+				if (err.message.includes('already been claimed')) {
+					logger.warn('Guest claim conflict: session claimed by another account', {
+						context: {
+							action: 'guest_claim_conflict',
+							userId: profile.id,
+							guestTokenHash: hashGuestToken(guestToken),
+							sessionId: input.sessionId,
+							reason: err.message
+						}
+					});
+				} else {
+					logger.warn('Guest claim failed', {
+						context: {
+							action: 'guest_claim_failed',
+							userId: profile.id,
+							guestTokenHash: hashGuestToken(guestToken),
+							sessionId: input.sessionId,
+							reason: err.message
+						}
+					});
+				}
+				throw badRequest(err.message);
+			}
 		}
 	};
 }

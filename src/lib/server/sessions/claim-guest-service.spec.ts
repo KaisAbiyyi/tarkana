@@ -62,8 +62,7 @@ describe('claim guest service', () => {
 
 		await expect(
 			service.claim(createFakeEvent(null), {
-				sessionId: '11111111-1111-4111-8111-111111111111',
-				guestToken: 'some-token'
+				sessionId: '11111111-1111-4111-8111-111111111111'
 			})
 		).rejects.toMatchObject({ status: 401 });
 	});

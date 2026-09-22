@@ -231,12 +231,22 @@ export function createSessionRepositoryFake(
 		async findLatestGuestSession(guestToken: string) {
 			return session.guestToken === guestToken && !session.userId ? session : null;
 		},
-		async claimGuestSession(input) {
-			if (session.id !== input.sessionId || session.guestToken !== input.guestToken) {
+		async claimAllGuestSessions(input) {
+			if (session.guestToken !== input.guestToken) {
+				throw new Error('Guest session not found or token mismatch');
+			}
+			if (input.specificSessionId && session.id !== input.specificSessionId) {
 				throw new Error('Guest session not found or token mismatch');
 			}
 			if (session.claimedAt && session.userId === input.userId) {
-				return { session, profileRating: 1200, profileRank: 'Bronze Mind', alreadyClaimed: true };
+				return {
+					claimedSessions: [session],
+					primarySession: session,
+					profileRating: 1200,
+					profileRank: 'Bronze Mind',
+					isProvisional: false,
+					alreadyClaimed: true
+				};
 			}
 			if (session.claimedAt || session.userId) {
 				throw new Error('Session has already been claimed');
@@ -251,11 +261,29 @@ export function createSessionRepositoryFake(
 				rankAfter: session.status === 'completed' ? 'Bronze Mind' : 'Unranked'
 			});
 			return {
-				session,
+				claimedSessions: [session],
+				primarySession: session,
 				profileRating: session.status === 'completed' ? 1200 : 0,
 				profileRank: session.status === 'completed' ? 'Bronze Mind' : 'Unranked',
+				isProvisional: true,
 				alreadyClaimed: false
 			};
+		},
+		async claimGuestSession(input) {
+			const result = await this.claimAllGuestSessions({
+				guestToken: input.guestToken,
+				userId: input.userId,
+				specificSessionId: input.sessionId
+			});
+			return {
+				session: result.primarySession ?? result.claimedSessions[0]!,
+				profileRating: result.profileRating,
+				profileRank: result.profileRank,
+				alreadyClaimed: result.alreadyClaimed
+			};
+		},
+		async pruneStaleGuestSessions() {
+			return { deletedCount: 0 };
 		},
 		async abandonSession(sessionId: string) {
 			if (session.id === sessionId) {
