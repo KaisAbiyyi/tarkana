@@ -231,6 +231,41 @@ export const rateLimits = pgTable(
 	(table) => [index('rate_limits_reset_at_idx').on(table.resetAt)]
 );
 
+export const analyticsEvents = pgTable(
+	'analytics_events',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		distinctId: varchar('distinct_id', { length: 64 }).notNull(),
+		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'set null' }),
+		event: varchar('event', { length: 64 }).notNull(),
+		properties: jsonb('properties').$type<Record<string, unknown>>().notNull().default({}),
+		createdAt: now()
+	},
+	(table) => [
+		index('analytics_events_distinct_id_idx').on(table.distinctId),
+		index('analytics_events_user_id_idx').on(table.userId),
+		index('analytics_events_event_created_at_idx').on(table.event, table.createdAt),
+		index('analytics_events_created_at_idx').on(table.createdAt)
+	]
+);
+
+export const identityAliases = pgTable(
+	'identity_aliases',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		anonymousId: varchar('anonymous_id', { length: 64 }).notNull(),
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => usersProfile.id, { onDelete: 'cascade' }),
+		createdAt: now()
+	},
+	(table) => [
+		uniqueIndex('identity_aliases_anon_user_uidx').on(table.anonymousId, table.userId),
+		index('identity_aliases_anon_id_idx').on(table.anonymousId),
+		index('identity_aliases_user_id_idx').on(table.userId)
+	]
+);
+
 export const completedSessionStatusSql = sql`status = 'completed'`;
 
 export type UserProfile = typeof usersProfile.$inferSelect;
@@ -249,3 +284,7 @@ export type SessionAnswer = typeof sessionAnswers.$inferSelect;
 export type NewSessionAnswer = typeof sessionAnswers.$inferInsert;
 export type RateLimit = typeof rateLimits.$inferSelect;
 export type NewRateLimit = typeof rateLimits.$inferInsert;
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
+export type IdentityAlias = typeof identityAliases.$inferSelect;
+export type NewIdentityAlias = typeof identityAliases.$inferInsert;

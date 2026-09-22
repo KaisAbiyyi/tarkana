@@ -16,6 +16,8 @@ import { resolveCompletedRank, isRankPromotion, getRankProgress } from '$lib/ser
 import { calculateSessionScore } from '$lib/server/scoring/scoring';
 import { detectSuspiciousSession } from '$lib/server/scoring/suspicious-session';
 import { toResultQuestionReviewDto } from '$lib/server/sessions/dto';
+import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
+import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
 
 export type FinishChallengeInput = {
 	sessionId: string;
@@ -217,7 +219,7 @@ export function createFinishChallengeService(
 					profileRank: rankAfter
 				});
 
-				return {
+				const finishResult = {
 					...toFinishResult({
 						session: completedSession,
 						questions,
@@ -227,6 +229,31 @@ export function createFinishChallengeService(
 					isGuest: false,
 					canClaim: false
 				};
+
+				try {
+					const distinctId = getOrSetDistinctId(event);
+					getAnalyticsService()
+						.track({
+							distinctId,
+							userId: profile.id,
+							event: 'challenge_completed',
+							properties: {
+								session_id: session.id,
+								challenge_type: session.challengeType,
+								total_score: completedSession.totalScore,
+								accuracy: completedSession.accuracy,
+								total_time_seconds: completedSession.totalTimeSeconds,
+								is_guest: false,
+								rank_after: completedSession.rankAfter,
+								rating_after: completedSession.ratingAfter
+							}
+						})
+						.catch(() => {});
+				} catch {
+					/* ignore */
+				}
+
+				return finishResult;
 			} else {
 				const ratingAfter = applyRatingDelta(session.ratingBefore, ratingDelta);
 				const rankAfter = suspicious.isSuspicious
@@ -246,7 +273,7 @@ export function createFinishChallengeService(
 					suspiciousReason: suspicious.reasons.join(', ') || null
 				});
 
-				return {
+				const finishResult = {
 					...toFinishResult({
 						session: completedSession,
 						questions,
@@ -256,6 +283,31 @@ export function createFinishChallengeService(
 					isGuest: true,
 					canClaim: true
 				};
+
+				try {
+					const distinctId = getOrSetDistinctId(event);
+					getAnalyticsService()
+						.track({
+							distinctId,
+							userId: null,
+							event: 'challenge_completed',
+							properties: {
+								session_id: session.id,
+								challenge_type: session.challengeType,
+								total_score: completedSession.totalScore,
+								accuracy: completedSession.accuracy,
+								total_time_seconds: completedSession.totalTimeSeconds,
+								is_guest: true,
+								rank_after: completedSession.rankAfter,
+								rating_after: completedSession.ratingAfter
+							}
+						})
+						.catch(() => {});
+				} catch {
+					/* ignore */
+				}
+
+				return finishResult;
 			}
 		}
 	};

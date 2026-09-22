@@ -3,6 +3,9 @@ import type { Actions, PageServerLoad } from './$types';
 import { parseDisplayName } from '$lib/shared/validation/common';
 import { translate } from '$lib/i18n';
 import { tryClaimGuestSessionOnAuth } from '$lib/server/sessions/auth-guest-claim';
+import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
+import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
+import { getGuestToken } from '$lib/server/sessions/guest-token';
 
 export const load: PageServerLoad = async (event) => {
 	const user = await event.locals.getUser();
@@ -61,6 +64,26 @@ export const actions = {
 			}
 			return fail(400, { displayName, email, message: t('auth.requestFailed'), errors: {} });
 		}
+
+		if (data.user) {
+			try {
+				const distinctId = getOrSetDistinctId(event);
+				const hasGuestToken = Boolean(getGuestToken(event));
+				await getAnalyticsService().identify(distinctId, data.user.id);
+				await getAnalyticsService().track({
+					distinctId,
+					userId: data.user.id,
+					event: 'signup_completed',
+					properties: {
+						user_id: data.user.id,
+						has_guest_sessions: hasGuestToken
+					}
+				});
+			} catch {
+				/* ignore */
+			}
+		}
+
 		if (data.session) {
 			const claimSession = event.url.searchParams.get('claimSession');
 			const claimedId = await tryClaimGuestSessionOnAuth(event, data.session.user, claimSession);

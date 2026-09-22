@@ -10,6 +10,8 @@ import {
 	createProfileRepository,
 	type ProfileRepository
 } from '$lib/server/db/repositories/profile-repository';
+import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
+import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
 
 export type AbandonChallengeInput = {
 	sessionId: string;
@@ -54,7 +56,26 @@ export function createAbandonChallengeService(
 				throw badRequest('Can only abandon in_progress sessions');
 			}
 
+			const answers = await sessionRepository.listSessionAnswers(session.id);
 			await sessionRepository.abandonSession(session.id);
+
+			try {
+				const distinctId = getOrSetDistinctId(event);
+				getAnalyticsService()
+					.track({
+						distinctId,
+						userId: profile?.id ?? null,
+						event: 'challenge_abandoned',
+						properties: {
+							session_id: session.id,
+							questions_answered: answers.length,
+							total_questions: session.totalQuestions
+						}
+					})
+					.catch(() => {});
+			} catch {
+				/* ignore */
+			}
 
 			return { success: true };
 		}

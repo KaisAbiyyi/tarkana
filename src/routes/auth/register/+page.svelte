@@ -10,6 +10,9 @@
 	import SocialAuthButton from '$lib/components/auth/SocialAuthButton.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
+	import { onMount } from 'svelte';
+	import { page } from '$app/state';
+	import { analytics } from '$lib/client/analytics';
 
 	type Props = {
 		form?: ActionData;
@@ -20,6 +23,13 @@
 	let f = $derived(form as any);
 	let loading = $state(false);
 	let googleLoading = $state(false);
+
+	onMount(() => {
+		const claimSession = page.url.searchParams.get('claimSession');
+		analytics.track('signup_started', {
+			source: claimSession ? 'claim_banner' : 'direct'
+		});
+	});
 </script>
 
 <svelte:head>

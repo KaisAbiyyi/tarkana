@@ -9,6 +9,7 @@
 	import gsap from 'gsap';
 	import { ScrollTrigger } from 'gsap/ScrollTrigger';
 	import { getI18nContext } from '$lib/i18n/context';
+	import { analytics } from '$lib/client/analytics';
 
 	const { t } = getI18nContext();
 	const MOBILE_APK_URL =
@@ -22,6 +23,32 @@
 	let ctaSection: HTMLElement;
 
 	onMount(() => {
+		try {
+			const lastVisit = localStorage.getItem('tarkana_last_visit');
+			const now = Date.now();
+			const isReturning = Boolean(lastVisit);
+
+			if (lastVisit) {
+				const diffMs = now - Number(lastVisit);
+				const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+				if (days >= 1) {
+					analytics.track('return_visit', {
+						days_since_last_visit: days,
+						has_active_account: false
+					});
+				}
+			}
+
+			localStorage.setItem('tarkana_last_visit', String(now));
+
+			analytics.track('landing_view', {
+				referrer: document.referrer || undefined,
+				is_returning: isReturning
+			});
+		} catch {
+			/* ignore */
+		}
+
 		gsap.registerPlugin(ScrollTrigger);
 		const media = gsap.matchMedia();
 		const context = gsap.context(() => {

@@ -13,6 +13,8 @@ import {
 } from '$lib/server/db/repositories/session-repository';
 import { calculateQuestionScore } from '$lib/server/scoring/scoring';
 import { toActiveQuestionDto } from '$lib/server/sessions/dto';
+import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
+import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
 
 export type SubmitAnswerInput = {
 	sessionId: string;
@@ -113,6 +115,26 @@ export function createSubmitAnswerService(
 			]);
 
 			const nextQuestion = questions.find((item) => item.orderIndex === question.orderIndex + 1);
+
+			try {
+				const distinctId = getOrSetDistinctId(event);
+				getAnalyticsService()
+					.track({
+						distinctId,
+						userId: profile?.id ?? null,
+						event: 'question_answered',
+						properties: {
+							session_id: session.id,
+							question_index: question.orderIndex,
+							question_type: question.questionType,
+							is_correct: isCorrect,
+							time_spent_seconds: timeSpentSeconds
+						}
+					})
+					.catch(() => {});
+			} catch {
+				/* ignore */
+			}
 
 			return {
 				isCorrect,

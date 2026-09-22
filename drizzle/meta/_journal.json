@@ -43,6 +43,13 @@
       "when": 1790052387135,
       "tag": "0005_shiny_patriot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790066839709,
+      "tag": "0006_nebulous_madame_masque",
+      "breakpoints": true
     }
   ]
 }

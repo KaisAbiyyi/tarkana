@@ -5,6 +5,8 @@
 	import QuestionReviewList from '$lib/components/result/QuestionReviewList.svelte';
 	import ResultSummary from '$lib/components/result/ResultSummary.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
+	import { onMount } from 'svelte';
+	import { analytics } from '$lib/client/analytics';
 
 	type Props = {
 		data: PageData;
@@ -13,6 +15,50 @@
 	let { data }: Props = $props();
 	const { t } = getI18nContext();
 	let result = $derived(data.result);
+	let copied = $state(false);
+
+	onMount(() => {
+		if (result.canClaim) {
+			analytics.track('claim_cta_viewed', {
+				session_id: result.sessionId,
+				placement: 'result_banner'
+			});
+		}
+	});
+
+	async function handleShare() {
+		if (typeof window === 'undefined') return;
+		const shareUrl = window.location.href;
+		if (navigator.share) {
+			try {
+				await navigator.share({
+					title: 'Tarkana Challenge Result',
+					text: `I scored ${result.totalScore} on Tarkana!`,
+					url: shareUrl
+				});
+				analytics.track('result_shared', {
+					session_id: result.sessionId,
+					platform: 'native_share',
+					score: result.totalScore
+				});
+				return;
+			} catch {
+				/* ignore */
+			}
+		}
+		try {
+			await navigator.clipboard.writeText(shareUrl);
+			copied = true;
+			setTimeout(() => (copied = false), 2500);
+			analytics.track('result_shared', {
+				session_id: result.sessionId,
+				platform: 'clipboard',
+				score: result.totalScore
+			});
+		} catch {
+			/* ignore */
+		}
+	}
 </script>
 
 <svelte:head>
@@ -27,6 +73,9 @@
 			<h1 class="page-title">{t('result.review')}</h1>
 		</div>
 		<div class="flex flex-wrap gap-3">
+			<Button onclick={handleShare} variant="secondary">
+				{copied ? 'Link Copied!' : 'Share Result'}
+			</Button>
 			<Button href="/challenge">{t('result.retry')}</Button>
 			<Button href="/leaderboard" variant="secondary">{t('nav.leaderboard')}</Button>
 		</div>

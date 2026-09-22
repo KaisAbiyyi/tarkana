@@ -25,6 +25,8 @@ import {
 } from '$lib/server/db/repositories/profile-repository';
 import type { Category, ChallengeConfig } from '$lib/server/db/schema';
 import { toActiveQuestionDto } from '$lib/server/sessions/dto';
+import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
+import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
 
 export type StartChallengeInput = {
 	challengeType: ChallengeType;
@@ -122,6 +124,38 @@ export function createStartChallengeService(
 
 			const firstQuestion = persistedQuestions[0];
 			if (!firstQuestion) throw notFound('Challenge question was not created');
+
+			try {
+				const distinctId = getOrSetDistinctId(event);
+				getAnalyticsService()
+					.track({
+						distinctId,
+						userId: profile?.id ?? null,
+						event: 'challenge_started',
+						properties: {
+							challenge_type: input.challengeType,
+							is_guest: isGuest,
+							session_id: session.id,
+							question_count: persistedQuestions.length
+						}
+					})
+					.catch(() => {});
+
+				getAnalyticsService()
+					.track({
+						distinctId,
+						userId: profile?.id ?? null,
+						event: 'first_question_seen',
+						properties: {
+							session_id: session.id,
+							question_type: firstQuestion.questionType,
+							difficulty: firstQuestion.difficultyScore
+						}
+					})
+					.catch(() => {});
+			} catch {
+				/* ignore */
+			}
 
 			return {
 				sessionId: session.id,
