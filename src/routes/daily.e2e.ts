@@ -87,7 +87,7 @@ test.describe('P1.3 Daily Challenge E2E', () => {
 			expect(retryRes.status()).toBe(409);
 			const retryBody = await retryRes.json();
 			expect(retryBody.ok).toBe(false);
-			expect(retryBody.error.message).toMatch(/forfeited|completed/i);
+			expect(retryBody.error.code).toBe('conflict');
 		} finally {
 			await freshContext.dispose();
 		}
