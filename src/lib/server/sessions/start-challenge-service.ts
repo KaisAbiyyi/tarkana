@@ -55,6 +55,14 @@ export function createStartChallengeService(
 				throw badRequest('selectedMode is invalid');
 			}
 
+			if (input.challengeType === 'daily') {
+				const { createDailyChallengeService } =
+					await import('$lib/server/challenge/daily-challenge-service');
+				return createDailyChallengeService(undefined, sessionRepository, profileRepository).start(
+					event
+				);
+			}
+
 			const profile = await getOptionalProfile(event, profileRepository);
 			const isGuest = !profile;
 
@@ -137,19 +145,6 @@ export function createStartChallengeService(
 							is_guest: isGuest,
 							session_id: session.id,
 							question_count: persistedQuestions.length
-						}
-					})
-					.catch(() => {});
-
-				getAnalyticsService()
-					.track({
-						distinctId,
-						userId: profile?.id ?? null,
-						event: 'first_question_seen',
-						properties: {
-							session_id: session.id,
-							question_type: firstQuestion.questionType,
-							difficulty: firstQuestion.difficultyScore
 						}
 					})
 					.catch(() => {});

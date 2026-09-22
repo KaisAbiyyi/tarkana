@@ -37,17 +37,6 @@ export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 			}
 		},
 
-		async linkEventsToUser(anonymousId: string, userId: string): Promise<number> {
-			let count = 0;
-			for (const ev of events) {
-				if (ev.distinctId === anonymousId && !ev.userId) {
-					ev.userId = userId;
-					count++;
-				}
-			}
-			return count;
-		},
-
 		async listEventsForDistinctId(distinctId: string): Promise<AnalyticsEvent[]> {
 			return events
 				.filter((e) => e.distinctId === distinctId)
@@ -62,6 +51,11 @@ export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 				return { totalStarted: 0, steps: [], overallConversionRate: 0 };
 			}
 
+			const resolveActorId = (ev: AnalyticsEvent) => {
+				const alias = aliases.find((a) => a.anonymousId === ev.distinctId);
+				return alias?.userId ?? ev.userId ?? ev.distinctId;
+			};
+
 			const filtered = events.filter((e) => {
 				if (options.startDate && e.createdAt < options.startDate) return false;
 				if (options.endDate && e.createdAt > options.endDate) return false;
@@ -72,7 +66,7 @@ export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 
 			const actorEvents = new Map<string, { event: string; createdAt: Date }[]>();
 			for (const row of filtered) {
-				const actorId = row.userId ?? row.distinctId;
+				const actorId = resolveActorId(row);
 				const list = actorEvents.get(actorId) ?? [];
 				list.push({ event: row.event, createdAt: row.createdAt });
 				actorEvents.set(actorId, list);
@@ -131,11 +125,19 @@ export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 			cohortStartDate: Date;
 			cohortEndDate: Date;
 		}): Promise<RetentionResult> {
+			const meaningfulEvents = ['challenge_started', 'challenge_completed'];
+			const resolveActorId = (ev: AnalyticsEvent) => {
+				const alias = aliases.find((a) => a.anonymousId === ev.distinctId);
+				return alias?.userId ?? ev.userId ?? ev.distinctId;
+			};
+
 			const actorFirstSeen = new Map<string, Date>();
-			const sorted = [...events].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+			const sorted = [...events]
+				.filter((e) => meaningfulEvents.includes(e.event))
+				.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
 			for (const ev of sorted) {
-				const actorId = ev.userId ?? ev.distinctId;
+				const actorId = resolveActorId(ev);
 				if (!actorFirstSeen.has(actorId)) {
 					actorFirstSeen.set(actorId, ev.createdAt);
 				}
@@ -165,7 +167,8 @@ export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 			const d7Actors = new Set<string>();
 
 			for (const ev of events) {
-				const actorId = ev.userId ?? ev.distinctId;
+				if (!meaningfulEvents.includes(ev.event)) continue;
+				const actorId = resolveActorId(ev);
 				const firstSeen = cohortActors.get(actorId);
 				if (!firstSeen) continue;
 

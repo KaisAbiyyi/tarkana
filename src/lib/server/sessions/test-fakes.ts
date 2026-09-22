@@ -25,6 +25,7 @@ export function createChallengeSession(
 		userId: '11111111-1111-4111-8111-111111111111',
 		guestToken: null,
 		claimedAt: null,
+		dailyChallengeId: null,
 		challengeType: 'quick',
 		status: 'in_progress',
 		totalQuestions: 1,

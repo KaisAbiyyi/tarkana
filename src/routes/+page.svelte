@@ -41,8 +41,17 @@
 
 			localStorage.setItem('tarkana_last_visit', String(now));
 
+			let referrerHost: string | undefined;
+			if (document.referrer) {
+				try {
+					referrerHost = new URL(document.referrer).hostname;
+				} catch {
+					referrerHost = undefined;
+				}
+			}
+
 			analytics.track('landing_view', {
-				referrer: document.referrer || undefined,
+				referrer: referrerHost,
 				is_returning: isReturning
 			});
 		} catch {

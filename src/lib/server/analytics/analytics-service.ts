@@ -93,13 +93,19 @@ export function createPostHogForwarder(
 	};
 }
 
-export const DEFAULT_FUNNEL_STAGES: CanonicalEventName[] = [
+export const ACTIVATION_FUNNEL_STAGES: CanonicalEventName[] = [
 	'landing_view',
 	'challenge_started',
+	'challenge_completed'
+];
+
+export const GUEST_CONVERSION_FUNNEL_STAGES: CanonicalEventName[] = [
 	'challenge_completed',
 	'signup_completed',
 	'guest_claim_succeeded'
 ];
+
+export const DEFAULT_FUNNEL_STAGES: CanonicalEventName[] = ACTIVATION_FUNNEL_STAGES;
 
 export interface AnalyticsService {
 	track<T extends CanonicalEventName>(input: TrackEventInput<T>): Promise<AnalyticsEvent>;
@@ -152,17 +158,14 @@ export function createAnalyticsService(
 		async identify(anonymousId, userId) {
 			if (!anonymousId || !userId) return;
 
-			// 1. Record immutable alias link
+			// 1. Record immutable alias link (identity stitching resolved at query time)
 			await repository.createAlias({
 				anonymousId,
 				userId,
 				createdAt: new Date()
 			});
 
-			// 2. Backfill historical events
-			await repository.linkEventsToUser(anonymousId, userId);
-
-			// 3. Forward alias to external provider
+			// 2. Forward alias to external provider (best effort)
 			posthog.alias(userId, anonymousId).catch(() => {});
 		},
 

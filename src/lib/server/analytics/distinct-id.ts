@@ -14,7 +14,7 @@ export function getOrSetDistinctId(event: RequestEvent, fallbackId?: string): st
 		path: '/',
 		httpOnly: false, // Accessible to client JS for analytics stitching
 		sameSite: 'lax',
-		secure: event.url.protocol === 'https:',
+		secure: event.url?.protocol === 'https:',
 		maxAge: 60 * 60 * 24 * 365 // 1 year
 	});
 
