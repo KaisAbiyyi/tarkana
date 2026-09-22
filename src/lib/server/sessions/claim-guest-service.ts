@@ -7,6 +7,8 @@ import {
 	hashGuestToken
 } from '$lib/server/sessions/guest-token';
 import { logger } from '$lib/server/observability/logger';
+import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
+import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
 import {
 	createProfileRepository,
 	type ProfileRepository
@@ -86,6 +88,26 @@ export function createClaimGuestService(
 							rankAfter: result.profileRank
 						}
 					});
+				}
+
+				if (!result.alreadyClaimed) {
+					try {
+						const distinctId = getOrSetDistinctId(event);
+						await getAnalyticsService().identify(distinctId, profile.id);
+						await getAnalyticsService().track({
+							distinctId,
+							userId: profile.id,
+							event: 'guest_claim_succeeded',
+							properties: {
+								user_id: profile.id,
+								claimed_count: result.claimedSessions.length,
+								is_provisional: result.isProvisional,
+								rating_after: result.profileRating
+							}
+						});
+					} catch {
+						/* ignore */
+					}
 				}
 
 				return {
