@@ -1,11 +1,18 @@
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
 import { createServer } from 'vite';
+import { runSeed } from './seed.mjs';
 
 const require = createRequire(import.meta.url);
 const args = process.argv.slice(2);
 
 process.env.PLAYWRIGHT_BROWSERS_PATH ??= '.playwright-browsers';
+
+try {
+	await runSeed();
+} catch (seedErr) {
+	console.warn('Notice: Could not seed database before running E2E:', seedErr.message);
+}
 
 const server = await createServer({
 	configFile: 'vite.config.ts',

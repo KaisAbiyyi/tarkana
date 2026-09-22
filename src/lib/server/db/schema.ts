@@ -141,8 +141,7 @@ export const dailyChallenges = pgTable(
 		seed: varchar('seed', { length: 128 }).notNull(),
 		totalQuestions: integer('total_questions').notNull().default(10),
 		puzzleSnapshot: jsonb('puzzle_snapshot').$type<DailyPuzzleSnapshotQuestion[]>().notNull(),
-		createdAt: now(),
-		generatedAt: now()
+		createdAt: now()
 	},
 	(table) => [
 		uniqueIndex('daily_challenges_challenge_date_uidx').on(table.challengeDate),

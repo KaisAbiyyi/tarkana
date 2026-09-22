@@ -1,13 +1,22 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
 import {
+	challengeSessions,
 	dailyChallenges,
 	dailyChallengeAttempts,
+	sessionQuestions,
+	sessionAnswers,
+	type ChallengeSession,
 	type DailyChallenge,
 	type DailyChallengeAttempt,
+	type DailyPuzzleSnapshotQuestion,
+	type NewChallengeSession,
 	type NewDailyChallenge,
-	type NewDailyChallengeAttempt
+	type NewDailyChallengeAttempt,
+	type SessionQuestion
 } from '$lib/server/db/schema';
+import { hashGuestToken } from '$lib/server/sessions/guest-token';
+import type { RankName } from '$lib/shared/constants/rank';
 
 export interface CompleteDailyAttemptInput {
 	attemptId: string;
@@ -21,6 +30,36 @@ export interface ClaimGuestDailyAttemptsInput {
 	guestTokenHash: string;
 	userId: string;
 }
+
+export interface StartDailySessionAtomicInput {
+	dailyChallengeId: string;
+	totalQuestions: number;
+	questions: DailyPuzzleSnapshotQuestion[];
+	userId: string | null;
+	rawGuestToken: string | null;
+	guestTokenHash: string | null;
+	distinctId: string;
+	userRating: number;
+	userRank: RankName;
+}
+
+export type StartDailySessionAtomicResult =
+	| {
+			type: 'created';
+			session: ChallengeSession;
+			currentQuestion: SessionQuestion;
+	  }
+	| {
+			type: 'resumed';
+			session: ChallengeSession;
+			currentQuestion: SessionQuestion;
+	  }
+	| {
+			type: 'conflict_completed';
+	  }
+	| {
+			type: 'conflict_forfeited';
+	  };
 
 export interface DailyRepository {
 	findDailyChallengeByDate(dateString: string): Promise<DailyChallenge | null>;
@@ -40,6 +79,9 @@ export interface DailyRepository {
 	claimGuestDailyAttempts(
 		input: ClaimGuestDailyAttemptsInput
 	): Promise<{ claimedCount: number; demotedCount: number }>;
+	startDailySessionAtomic(
+		input: StartDailySessionAtomicInput
+	): Promise<StartDailySessionAtomicResult>;
 }
 
 export function createDailyRepository(database: Database = getDb()): DailyRepository {
@@ -221,6 +263,198 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 
 				return { claimedCount, demotedCount };
 			});
+		},
+
+		async startDailySessionAtomic(input) {
+			type DbExecutor = Database | Parameters<Parameters<Database['transaction']>[0]>[0];
+			const checkAttempt = async (executor: DbExecutor) => {
+				let existingAttempt: DailyChallengeAttempt | undefined;
+				if (input.userId) {
+					const [att] = await executor
+						.select()
+						.from(dailyChallengeAttempts)
+						.where(
+							and(
+								eq(dailyChallengeAttempts.dailyChallengeId, input.dailyChallengeId),
+								eq(dailyChallengeAttempts.userId, input.userId)
+							)
+						)
+						.orderBy(
+							desc(dailyChallengeAttempts.isOfficial),
+							desc(dailyChallengeAttempts.createdAt)
+						)
+						.limit(1);
+					existingAttempt = att;
+				} else if (input.guestTokenHash) {
+					const [att] = await executor
+						.select()
+						.from(dailyChallengeAttempts)
+						.where(
+							and(
+								eq(dailyChallengeAttempts.dailyChallengeId, input.dailyChallengeId),
+								eq(dailyChallengeAttempts.guestTokenHash, input.guestTokenHash)
+							)
+						)
+						.orderBy(
+							desc(dailyChallengeAttempts.isOfficial),
+							desc(dailyChallengeAttempts.createdAt)
+						)
+						.limit(1);
+					existingAttempt = att;
+				}
+
+				if (existingAttempt) {
+					if (existingAttempt.status === 'completed') {
+						return { type: 'conflict_completed' as const };
+					}
+					if (existingAttempt.status === 'abandoned') {
+						return { type: 'conflict_forfeited' as const };
+					}
+					if (existingAttempt.status === 'in_progress' && existingAttempt.sessionId) {
+						const [session] = await executor
+							.select()
+							.from(challengeSessions)
+							.where(eq(challengeSessions.id, existingAttempt.sessionId))
+							.limit(1);
+
+						if (session && session.status === 'in_progress') {
+							const questions = await executor
+								.select()
+								.from(sessionQuestions)
+								.where(eq(sessionQuestions.sessionId, session.id))
+								.orderBy(asc(sessionQuestions.orderIndex));
+
+							const answers = await executor
+								.select({ sessionQuestionId: sessionAnswers.sessionQuestionId })
+								.from(sessionAnswers)
+								.innerJoin(
+									sessionQuestions,
+									eq(sessionAnswers.sessionQuestionId, sessionQuestions.id)
+								)
+								.where(eq(sessionQuestions.sessionId, session.id));
+
+							const answeredIds = new Set(answers.map((a) => a.sessionQuestionId));
+							const nextQuestion = questions.find((q) => !answeredIds.has(q.id)) ?? questions[0];
+
+							if (nextQuestion) {
+								return {
+									type: 'resumed' as const,
+									session,
+									currentQuestion: nextQuestion
+								};
+							}
+						}
+					}
+				}
+				return null;
+			};
+
+			try {
+				return await database.transaction(async (tx) => {
+					// 1. Check existing attempt within transaction
+					const existingResult = await checkAttempt(tx);
+					if (existingResult) {
+						return existingResult;
+					}
+
+					// 2. Atomically create session with guestToken hashed once
+					const newSession: NewChallengeSession = {
+						userId: input.userId,
+						guestToken: input.rawGuestToken ? hashGuestToken(input.rawGuestToken) : null,
+						dailyChallengeId: input.dailyChallengeId,
+						challengeType: 'daily',
+						status: 'in_progress',
+						totalQuestions: input.totalQuestions,
+						ratingBefore: input.userRating,
+						ratingAfter: input.userRating,
+						rankBefore: input.userRank,
+						rankAfter: input.userRank
+					};
+
+					const [session] = await tx.insert(challengeSessions).values(newSession).returning();
+
+					if (!session) {
+						throw new Error('Failed to create daily challenge session');
+					}
+
+					// 3. Atomically populate questions
+					const questionsToInsert = input.questions.map((q) => ({
+						sessionId: session.id,
+						categoryId: q.categoryId,
+						questionType: q.questionType,
+						prompt: q.prompt,
+						choices: q.choices,
+						correctAnswer: q.correctAnswer,
+						explanation: q.explanation,
+						difficultyScore: q.difficultyScore,
+						timeLimitSeconds: q.timeLimitSeconds,
+						metadata: q.metadata,
+						generatedSeed: q.generatedSeed,
+						orderIndex: q.orderIndex
+					}));
+
+					const persistedQuestions = await tx
+						.insert(sessionQuestions)
+						.values(questionsToInsert)
+						.returning();
+
+					if (!persistedQuestions || persistedQuestions.length === 0) {
+						throw new Error('Failed to insert daily session questions');
+					}
+
+					// 4. Atomically record attempt
+					await tx.insert(dailyChallengeAttempts).values({
+						dailyChallengeId: input.dailyChallengeId,
+						sessionId: session.id,
+						userId: input.userId,
+						guestTokenHash: input.userId ? null : input.guestTokenHash,
+						distinctId: input.distinctId,
+						isOfficial: true,
+						status: 'in_progress'
+					});
+
+					return {
+						type: 'created' as const,
+						session,
+						currentQuestion: persistedQuestions[0]
+					};
+				});
+			} catch (err: unknown) {
+				if (isUniqueConstraintError(err)) {
+					// A concurrent transaction committed first. Reselect the canonical attempt.
+					for (let attempt = 0; attempt < 5; attempt++) {
+						const fallbackResult = await checkAttempt(database);
+						if (fallbackResult) {
+							return fallbackResult;
+						}
+						await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
+					}
+				}
+
+				throw err;
+			}
 		}
 	};
+}
+
+function isUniqueConstraintError(err: unknown): boolean {
+	let current: unknown = err;
+	while (current && typeof current === 'object') {
+		const candidate = current as Record<string, unknown>;
+		if (candidate.code === '23505') return true;
+		if (
+			typeof candidate.message === 'string' &&
+			/unique constraint|duplicate key|daily_attempts_/i.test(candidate.message)
+		) {
+			return true;
+		}
+		if (typeof candidate.detail === 'string' && /already exists/i.test(candidate.detail)) {
+			return true;
+		}
+		if (typeof candidate.constraint === 'string' && /daily_attempts_/i.test(candidate.constraint)) {
+			return true;
+		}
+		current = candidate.cause;
+	}
+	return false;
 }

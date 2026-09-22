@@ -62,6 +62,9 @@ jobs:
       - name: Run database migrations against test DB
         run: npm run db:migrate
 
+      - name: Seed database
+        run: npm run db:seed
+
       - name: Run unit & integration tests
         run: npm run test:unit
 

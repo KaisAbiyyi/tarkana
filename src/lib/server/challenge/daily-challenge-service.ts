@@ -6,7 +6,7 @@ import {
 	hashGuestToken,
 	setGuestTokenCookie
 } from '$lib/server/sessions/guest-token';
-import { conflict, notFound } from '$lib/server/errors';
+import { conflict } from '$lib/server/errors';
 import { toActiveQuestionDto } from '$lib/server/sessions/dto';
 import type { ActiveQuestionDto } from '$lib/server/challenge/types';
 import {
@@ -26,7 +26,7 @@ import {
 	getSecondsUntilNextUtcMidnight,
 	getUtcDateString
 } from '$lib/server/challenge/daily-challenge';
-import type { DailyChallenge, SessionQuestion } from '$lib/server/db/schema';
+import type { DailyChallenge } from '$lib/server/db/schema';
 import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
 import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
 
@@ -140,7 +140,7 @@ export function createDailyChallengeService(
 			};
 		},
 
-		async start(event, dateString = getUtcDateString()) {
+		async start(event, dateString = getUtcDateString()): Promise<StartDailyChallengeResult> {
 			const profile = await getOptionalProfile(event, profileRepository);
 			let guestToken: string | null = null;
 			let guestTokenHash: string | null = null;
@@ -154,120 +154,63 @@ export function createDailyChallengeService(
 			const distinctId = getOrSetDistinctId(event);
 			const daily = await this.getOrCreateDailyChallenge(dateString);
 
-			// Check existing attempt
-			const existingAttempt = profile
-				? await dailyRepository.findAttemptForUser(daily.id, profile.id)
-				: await dailyRepository.findAttemptForGuest(daily.id, guestTokenHash!);
-
-			if (existingAttempt) {
-				if (existingAttempt.status === 'completed') {
-					throw conflict('Daily challenge for today has already been completed');
-				}
-
-				if (existingAttempt.status === 'abandoned') {
-					throw conflict('Daily challenge attempt was already forfeited');
-				}
-
-				if (existingAttempt.status === 'in_progress' && existingAttempt.sessionId) {
-					// Resume existing attempt
-					const session = await sessionRepository.findSessionById(existingAttempt.sessionId);
-					if (session && session.status === 'in_progress') {
-						const [questions, answers] = await Promise.all([
-							sessionRepository.listSessionQuestions(session.id),
-							sessionRepository.listSessionAnswers(session.id, profile?.id)
-						]);
-
-						const answeredQuestionIds = new Set(answers.map((a) => a.sessionQuestionId));
-						const nextQuestion =
-							questions.find((q) => !answeredQuestionIds.has(q.id)) ?? questions[0];
-
-						if (nextQuestion) {
-							return {
-								sessionId: session.id,
-								totalQuestions: session.totalQuestions,
-								currentQuestion: toActiveQuestionDto(nextQuestion),
-								isGuest: !profile,
-								isResumed: true
-							};
-						}
-					}
-				}
-			}
-
-			// Start new official attempt
 			const userRating = profile ? profile.rating : 0;
 			const userRank = profile ? profile.rank : 'Unranked';
 
-			// Create challenge session
-			const session = await sessionRepository.createSession({
-				userId: profile?.id ?? null,
-				guestToken: guestToken ? guestTokenHash : null,
+			const atomicResult = await dailyRepository.startDailySessionAtomic({
 				dailyChallengeId: daily.id,
-				challengeType: 'daily',
-				status: 'in_progress',
 				totalQuestions: daily.totalQuestions,
-				ratingBefore: userRating,
-				ratingAfter: userRating,
-				rankBefore: userRank,
-				rankAfter: userRank
-			});
-
-			// Populate questions from snapshot
-			const questionsToInsert = daily.puzzleSnapshot.map((q) => ({
-				sessionId: session.id,
-				categoryId: q.categoryId,
-				questionType: q.questionType,
-				prompt: q.prompt,
-				choices: q.choices,
-				correctAnswer: q.correctAnswer,
-				explanation: q.explanation,
-				difficultyScore: q.difficultyScore,
-				timeLimitSeconds: q.timeLimitSeconds,
-				metadata: q.metadata,
-				generatedSeed: q.generatedSeed,
-				orderIndex: q.orderIndex
-			}));
-
-			const persistedQuestions = await sessionRepository.addQuestions(questionsToInsert);
-			const firstQuestion = persistedQuestions[0] as SessionQuestion;
-			if (!firstQuestion) throw notFound('Failed to populate daily challenge questions');
-
-			// Create daily attempt record
-			await dailyRepository.createAttempt({
-				dailyChallengeId: daily.id,
-				sessionId: session.id,
+				questions: daily.puzzleSnapshot,
 				userId: profile?.id ?? null,
+				rawGuestToken: profile ? null : guestToken,
 				guestTokenHash: profile ? null : guestTokenHash,
 				distinctId,
-				isOfficial: true,
-				status: 'in_progress'
+				userRating,
+				userRank
 			});
 
-			// Track analytics
-			try {
-				getAnalyticsService()
-					.track({
-						distinctId,
-						userId: profile?.id ?? null,
-						event: 'challenge_started',
-						properties: {
-							challenge_type: 'daily',
-							is_guest: !profile,
-							session_id: session.id,
-							question_count: daily.totalQuestions
-						}
-					})
-					.catch(() => {});
-			} catch {
-				/* ignore */
+			if (atomicResult.type === 'conflict_completed') {
+				throw conflict('Daily challenge for today has already been completed');
+			}
+
+			if (atomicResult.type === 'conflict_forfeited') {
+				throw conflict('Daily challenge attempt was already forfeited');
+			}
+
+			if (atomicResult.type === 'created') {
+				try {
+					getAnalyticsService()
+						.track({
+							distinctId,
+							userId: profile?.id ?? null,
+							event: 'challenge_started',
+							properties: {
+								challenge_type: 'daily',
+								is_guest: !profile,
+								session_id: atomicResult.session.id,
+								question_count: daily.totalQuestions
+							}
+						})
+						.catch(() => {});
+				} catch {
+					/* ignore */
+				}
+
+				return {
+					sessionId: atomicResult.session.id,
+					totalQuestions: atomicResult.session.totalQuestions,
+					currentQuestion: toActiveQuestionDto(atomicResult.currentQuestion),
+					isGuest: !profile,
+					isResumed: false
+				};
 			}
 
 			return {
-				sessionId: session.id,
-				totalQuestions: daily.totalQuestions,
-				currentQuestion: toActiveQuestionDto(firstQuestion),
+				sessionId: atomicResult.session.id,
+				totalQuestions: atomicResult.session.totalQuestions,
+				currentQuestion: toActiveQuestionDto(atomicResult.currentQuestion),
 				isGuest: !profile,
-				isResumed: false
+				isResumed: true
 			};
 		}
 	};
