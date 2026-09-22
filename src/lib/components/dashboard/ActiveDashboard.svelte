@@ -61,7 +61,8 @@
 				<p class="mt-2 text-sm font-bold text-[var(--color-muted)]">
 					{t('dashboard.tenQuestions')}
 				</p>
-				<Button href="/challenge" size="lg" class="mt-5 w-full"
+				<Button href="/daily" size="lg" class="mt-5 w-full">{t('label.daily')}</Button>
+				<Button href="/challenge" variant="secondary" size="sm" class="mt-2 w-full"
 					>{t('dashboard.startChallenge')}</Button
 				>
 			{/if}

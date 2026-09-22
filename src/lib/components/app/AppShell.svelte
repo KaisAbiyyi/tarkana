@@ -20,6 +20,7 @@
 
 	const appLinks = [
 		{ href: '/dashboard', label: t('nav.dashboard') },
+		{ href: '/daily', label: t('label.daily') },
 		{ href: '/challenge', label: t('nav.challenge') },
 		{ href: '/history', label: t('nav.history') },
 		{ href: '/leaderboard', label: t('nav.leaderboard') },
@@ -27,6 +28,7 @@
 	] as const;
 
 	const guestLinks = [
+		{ href: '/daily', label: t('label.daily') },
 		{ href: '/challenge', label: t('nav.challenge') },
 		{ href: '/leaderboard', label: t('nav.leaderboard') }
 	] as const;

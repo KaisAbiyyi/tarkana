@@ -211,7 +211,7 @@ export function sanitizeEventProperties<T extends CanonicalEventName>(
 		}
 
 		if (typeof value === 'string') {
-			// Check for embedded email pattern
+			// Check for embedded email pattern first
 			if (EMAIL_PATTERN.test(value)) {
 				if (options.strict) {
 					throw new Error(
@@ -220,6 +220,25 @@ export function sanitizeEventProperties<T extends CanonicalEventName>(
 				}
 				continue;
 			}
+
+			// Specific handling for referrer: keep only hostname/origin
+			if (key === 'referrer') {
+				let hostname: string;
+				try {
+					const parsed = new URL(value.includes('://') ? value : `https://${value}`);
+					hostname = parsed.hostname;
+				} catch {
+					hostname = value
+						.split('?')[0]
+						.split('#')[0]
+						.replace(/^\/\/|^https?:\/\//, '')
+						.split('/')[0];
+				}
+
+				sanitized[key] = hostname.slice(0, 256);
+				continue;
+			}
+
 			// Cap string length to 256 characters
 			sanitized[key] = value.slice(0, 256);
 			continue;

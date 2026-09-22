@@ -20,6 +20,7 @@ import {
 	categories,
 	challengeConfigs,
 	challengeSessions,
+	dailyChallengeAttempts,
 	questionRules,
 	sessionAnswers,
 	sessionQuestions,
@@ -563,26 +564,42 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 		},
 
 		async markCompleted(input) {
-			const [updatedSession] = await database
-				.update(challengeSessions)
-				.set({
-					status: 'completed',
-					totalScore: input.totalScore,
-					accuracy: input.accuracy,
-					totalTimeSeconds: input.totalTimeSeconds,
-					averageTimeSeconds: input.averageTimeSeconds,
-					ratingAfter: input.ratingAfter,
-					ratingDelta: input.ratingDelta,
-					rankAfter: input.rankAfter,
-					isSuspicious: input.isSuspicious,
-					suspiciousReason: input.suspiciousReason ?? null,
-					completedAt: new Date()
-				})
-				.where(eq(challengeSessions.id, input.sessionId))
-				.returning();
+			return database.transaction(async (tx) => {
+				const [updatedSession] = await tx
+					.update(challengeSessions)
+					.set({
+						status: 'completed',
+						totalScore: input.totalScore,
+						accuracy: input.accuracy,
+						totalTimeSeconds: input.totalTimeSeconds,
+						averageTimeSeconds: input.averageTimeSeconds,
+						ratingAfter: input.ratingAfter,
+						ratingDelta: input.ratingDelta,
+						rankAfter: input.rankAfter,
+						isSuspicious: input.isSuspicious,
+						suspiciousReason: input.suspiciousReason ?? null,
+						completedAt: new Date()
+					})
+					.where(eq(challengeSessions.id, input.sessionId))
+					.returning();
 
-			if (!updatedSession) throw new Error('Could not complete session');
-			return updatedSession;
+				if (!updatedSession) throw new Error('Could not complete session');
+
+				if (updatedSession.challengeType === 'daily') {
+					await tx
+						.update(dailyChallengeAttempts)
+						.set({
+							status: 'completed',
+							score: input.totalScore,
+							accuracy: input.accuracy,
+							totalTimeSeconds: input.totalTimeSeconds,
+							completedAt: new Date()
+						})
+						.where(eq(dailyChallengeAttempts.sessionId, input.sessionId));
+				}
+
+				return updatedSession;
+			});
 		},
 
 		async completeSessionAndUpdateProfile(input) {
@@ -613,6 +630,11 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					throw new Error(`Cannot complete session with status: ${currentSession.status}`);
 				}
 
+				const isDaily = currentSession.challengeType === 'daily';
+				const finalRatingDelta = isDaily ? 0 : input.ratingDelta;
+				const finalRatingAfter = isDaily ? currentSession.ratingBefore : input.ratingAfter;
+				const finalRankAfter = isDaily ? currentSession.rankBefore : input.rankAfter;
+
 				const [updatedSession] = await tx
 					.update(challengeSessions)
 					.set({
@@ -621,9 +643,9 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 						accuracy: input.accuracy,
 						totalTimeSeconds: input.totalTimeSeconds,
 						averageTimeSeconds: input.averageTimeSeconds,
-						ratingAfter: input.ratingAfter,
-						ratingDelta: input.ratingDelta,
-						rankAfter: input.rankAfter,
+						ratingAfter: finalRatingAfter,
+						ratingDelta: finalRatingDelta,
+						rankAfter: finalRankAfter,
 						isSuspicious: input.isSuspicious,
 						suspiciousReason: input.suspiciousReason ?? null,
 						completedAt: new Date()
@@ -640,10 +662,25 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					throw new Error('Could not complete session');
 				}
 
-				await tx
-					.update(usersProfile)
-					.set({ rating: input.profileRating, rank: input.profileRank })
-					.where(eq(usersProfile.id, input.userId));
+				if (isDaily) {
+					// Atomic update of daily_challenge_attempt inside this single transaction
+					await tx
+						.update(dailyChallengeAttempts)
+						.set({
+							status: 'completed',
+							score: input.totalScore,
+							accuracy: input.accuracy,
+							totalTimeSeconds: input.totalTimeSeconds,
+							completedAt: new Date()
+						})
+						.where(eq(dailyChallengeAttempts.sessionId, input.sessionId));
+				} else {
+					// Daily Challenge must NEVER modify competitive Logic Rating or rank!
+					await tx
+						.update(usersProfile)
+						.set({ rating: input.profileRating, rank: input.profileRank })
+						.where(eq(usersProfile.id, input.userId));
+				}
 
 				return updatedSession;
 			});
@@ -818,13 +855,17 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				const sessionIds = unclaimedSessions.map((s) => s.id);
 
 				for (const session of unclaimedSessions) {
-					let sessionRatingBefore = profile.rating;
-					let sessionRatingAfter = profile.rating;
-					let sessionRatingDelta = 0;
-					let sessionRankBefore = profile.rank;
-					let sessionRankAfter = profile.rank;
+					let sessionRatingBefore: number;
+					let sessionRatingAfter: number;
+					let sessionRatingDelta: number;
+					let sessionRankBefore: (typeof profile)['rank'];
+					let sessionRankAfter: (typeof profile)['rank'];
 
-					if (session.status === 'completed' && !session.isSuspicious) {
+					if (
+						session.status === 'completed' &&
+						!session.isSuspicious &&
+						session.challengeType !== 'daily'
+					) {
 						completedCountDelta += 1;
 
 						if (isProvisional) {
@@ -843,6 +884,13 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 							sessionRankBefore = profile.rank;
 							sessionRankAfter = profile.rank;
 						}
+					} else {
+						// Daily challenges or suspicious sessions always contribute 0 rating delta
+						sessionRatingBefore = profile.rating;
+						sessionRatingAfter = profile.rating;
+						sessionRatingDelta = 0;
+						sessionRankBefore = profile.rank;
+						sessionRankAfter = profile.rank;
 					}
 
 					const [updatedSession] = await tx
@@ -881,6 +929,50 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 									questionRows.map((q) => q.id)
 								)
 							);
+					}
+				}
+
+				// 4b. Reassign or demote guest daily challenge attempts
+				const guestDailyAttempts = await tx
+					.select()
+					.from(dailyChallengeAttempts)
+					.where(
+						and(
+							eq(dailyChallengeAttempts.guestTokenHash, hashedToken),
+							isNull(dailyChallengeAttempts.userId)
+						)
+					);
+
+				for (const guestAttempt of guestDailyAttempts) {
+					const [existingUserAttempt] = await tx
+						.select({ id: dailyChallengeAttempts.id })
+						.from(dailyChallengeAttempts)
+						.where(
+							and(
+								eq(dailyChallengeAttempts.dailyChallengeId, guestAttempt.dailyChallengeId),
+								eq(dailyChallengeAttempts.userId, profile.id)
+							)
+						)
+						.limit(1);
+
+					if (existingUserAttempt) {
+						// Conflict: existing user official attempt wins. Demote guest attempt to non-official.
+						await tx
+							.update(dailyChallengeAttempts)
+							.set({
+								userId: profile.id,
+								isOfficial: false
+							})
+							.where(eq(dailyChallengeAttempts.id, guestAttempt.id));
+					} else {
+						// No conflict: transfer as official attempt
+						await tx
+							.update(dailyChallengeAttempts)
+							.set({
+								userId: profile.id,
+								isOfficial: true
+							})
+							.where(eq(dailyChallengeAttempts.id, guestAttempt.id));
 					}
 				}
 
@@ -947,10 +1039,20 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 		},
 
 		async abandonSession(sessionId) {
-			await database
-				.update(challengeSessions)
-				.set({ status: 'abandoned', completedAt: new Date() })
-				.where(eq(challengeSessions.id, sessionId));
+			await database.transaction(async (tx) => {
+				const [updated] = await tx
+					.update(challengeSessions)
+					.set({ status: 'abandoned', completedAt: new Date() })
+					.where(eq(challengeSessions.id, sessionId))
+					.returning();
+
+				if (updated?.challengeType === 'daily') {
+					await tx
+						.update(dailyChallengeAttempts)
+						.set({ status: 'abandoned', completedAt: new Date() })
+						.where(eq(dailyChallengeAttempts.sessionId, sessionId));
+				}
+			});
 		},
 
 		async touchSessionUpdatedAt(sessionId) {

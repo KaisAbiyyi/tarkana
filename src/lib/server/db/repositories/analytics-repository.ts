@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, isNull, lt, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
 import {
 	analyticsEvents,
@@ -37,7 +37,6 @@ export interface RetentionResult {
 export interface AnalyticsRepository {
 	insertEvent(event: NewAnalyticsEvent): Promise<AnalyticsEvent>;
 	createAlias(alias: NewIdentityAlias): Promise<void>;
-	linkEventsToUser(anonymousId: string, userId: string): Promise<number>;
 	listEventsForDistinctId(distinctId: string): Promise<AnalyticsEvent[]>;
 	computeFunnel(
 		stages: CanonicalEventName[],
@@ -97,16 +96,6 @@ export function createAnalyticsRepository(database: Database = getDb()): Analyti
 			await database.insert(identityAliases).values(alias).onConflictDoNothing();
 		},
 
-		async linkEventsToUser(anonymousId, userId) {
-			const result = await database
-				.update(analyticsEvents)
-				.set({ userId })
-				.where(and(eq(analyticsEvents.distinctId, anonymousId), isNull(analyticsEvents.userId)))
-				.returning({ id: analyticsEvents.id });
-
-			return result.length;
-		},
-
 		async listEventsForDistinctId(distinctId) {
 			return database
 				.select()
@@ -131,11 +120,12 @@ export function createAnalyticsRepository(database: Database = getDb()): Analyti
 
 			const events = await database
 				.select({
-					actorId: sql<string>`coalesce(${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`,
+					actorId: sql<string>`coalesce(${identityAliases.userId}::text, ${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`,
 					event: analyticsEvents.event,
 					createdAt: analyticsEvents.createdAt
 				})
 				.from(analyticsEvents)
+				.leftJoin(identityAliases, eq(analyticsEvents.distinctId, identityAliases.anonymousId))
 				.where(and(...conditions))
 				.orderBy(asc(analyticsEvents.createdAt));
 
@@ -195,14 +185,21 @@ export function createAnalyticsRepository(database: Database = getDb()): Analyti
 		},
 
 		async computeRetention({ cohortStartDate, cohortEndDate }) {
-			// 1. Identify cohort actors whose first event occurred in [cohortStartDate, cohortEndDate)
+			// Retention counts meaningful product activity only: challenge_started or challenge_completed
+			const meaningfulRetentionEvents = ['challenge_started', 'challenge_completed'] as const;
+
+			// 1. Identify cohort actors whose first meaningful activity occurred in [cohortStartDate, cohortEndDate)
 			const actorFirstEvents = await database
 				.select({
-					actorId: sql<string>`coalesce(${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`,
+					actorId: sql<string>`coalesce(${identityAliases.userId}::text, ${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`,
 					firstSeen: sql<Date>`min(${analyticsEvents.createdAt})`
 				})
 				.from(analyticsEvents)
-				.groupBy(sql`coalesce(${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`);
+				.leftJoin(identityAliases, eq(analyticsEvents.distinctId, identityAliases.anonymousId))
+				.where(inArray(analyticsEvents.event, [...meaningfulRetentionEvents]))
+				.groupBy(
+					sql`coalesce(${identityAliases.userId}::text, ${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`
+				);
 
 			const cohortActors = new Map<string, Date>();
 			for (const row of actorFirstEvents) {
@@ -225,18 +222,19 @@ export function createAnalyticsRepository(database: Database = getDb()): Analyti
 				};
 			}
 
-			// 2. Fetch subsequent events for cohort actors up to Day 8
+			// 2. Fetch subsequent meaningful events for cohort actors up to Day 8
 			const maxCheckDate = new Date(cohortEndDate.getTime() + 8 * 24 * 60 * 60 * 1000);
 
-			// Query subsequent events
 			const subsequentEvents = await database
 				.select({
-					actorId: sql<string>`coalesce(${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`,
+					actorId: sql<string>`coalesce(${identityAliases.userId}::text, ${analyticsEvents.userId}::text, ${analyticsEvents.distinctId})`,
 					createdAt: analyticsEvents.createdAt
 				})
 				.from(analyticsEvents)
+				.leftJoin(identityAliases, eq(analyticsEvents.distinctId, identityAliases.anonymousId))
 				.where(
 					and(
+						inArray(analyticsEvents.event, [...meaningfulRetentionEvents]),
 						gte(analyticsEvents.createdAt, cohortStartDate),
 						lt(analyticsEvents.createdAt, maxCheckDate)
 					)

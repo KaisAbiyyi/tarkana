@@ -18,7 +18,8 @@ import {
 	CHALLENGE_TYPES,
 	DIFFICULTY_BANDS,
 	QUESTION_TYPES,
-	SESSION_STATUSES
+	SESSION_STATUSES,
+	type QuestionType
 } from '$lib/shared/constants/challenge';
 import { RANK_NAMES } from '$lib/shared/constants/rank';
 
@@ -116,12 +117,48 @@ export const challengeConfigs = pgTable(
 	]
 );
 
+export type DailyPuzzleSnapshotQuestion = {
+	orderIndex: number;
+	categoryId: string;
+	questionType: QuestionType;
+	prompt: string;
+	choices: string[];
+	correctAnswer: string;
+	explanation: string;
+	difficultyScore: number;
+	timeLimitSeconds: number;
+	metadata: Record<string, unknown>;
+	generatedSeed: string;
+};
+
+export const dailyChallenges = pgTable(
+	'daily_challenges',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		challengeDate: varchar('challenge_date', { length: 10 }).notNull(),
+		configVersion: integer('config_version').notNull().default(1),
+		generatorVersion: integer('generator_version').notNull().default(1),
+		seed: varchar('seed', { length: 128 }).notNull(),
+		totalQuestions: integer('total_questions').notNull().default(10),
+		puzzleSnapshot: jsonb('puzzle_snapshot').$type<DailyPuzzleSnapshotQuestion[]>().notNull(),
+		createdAt: now(),
+		generatedAt: now()
+	},
+	(table) => [
+		uniqueIndex('daily_challenges_challenge_date_uidx').on(table.challengeDate),
+		index('daily_challenges_config_version_idx').on(table.configVersion, table.generatorVersion)
+	]
+);
+
 export const challengeSessions = pgTable(
 	'challenge_sessions',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
 		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'cascade' }),
 		guestToken: varchar('guest_token', { length: 64 }),
+		dailyChallengeId: uuid('daily_challenge_id').references(() => dailyChallenges.id, {
+			onDelete: 'set null'
+		}),
 		claimedAt: timestamp('claimed_at', { withTimezone: true }),
 		challengeType: challengeTypeEnum('challenge_type').notNull(),
 		status: sessionStatusEnum('status').notNull().default('created'),
@@ -144,6 +181,7 @@ export const challengeSessions = pgTable(
 	(table) => [
 		index('challenge_sessions_user_id_idx').on(table.userId),
 		index('challenge_sessions_guest_token_idx').on(table.guestToken),
+		index('challenge_sessions_daily_challenge_id_idx').on(table.dailyChallengeId),
 		index('challenge_sessions_created_at_idx').on(table.createdAt),
 		index('challenge_sessions_is_suspicious_idx').on(table.isSuspicious),
 		index('challenge_sessions_user_status_created_idx').on(
@@ -151,6 +189,42 @@ export const challengeSessions = pgTable(
 			table.status,
 			table.createdAt
 		)
+	]
+);
+
+export const dailyChallengeAttempts = pgTable(
+	'daily_challenge_attempts',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		dailyChallengeId: uuid('daily_challenge_id')
+			.notNull()
+			.references(() => dailyChallenges.id, { onDelete: 'cascade' }),
+		sessionId: uuid('session_id').references(() => challengeSessions.id, {
+			onDelete: 'set null'
+		}),
+		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'cascade' }),
+		guestTokenHash: varchar('guest_token_hash', { length: 64 }),
+		distinctId: varchar('distinct_id', { length: 64 }).notNull(),
+		isOfficial: boolean('is_official').notNull().default(true),
+		status: sessionStatusEnum('status').notNull().default('in_progress'),
+		score: integer('score').notNull().default(0),
+		accuracy: doublePrecision('accuracy').notNull().default(0),
+		totalTimeSeconds: integer('total_time_seconds').notNull().default(0),
+		createdAt: now(),
+		completedAt: timestamp('completed_at', { withTimezone: true })
+	},
+	(table) => [
+		index('daily_attempts_challenge_id_idx').on(table.dailyChallengeId),
+		index('daily_attempts_user_id_idx').on(table.userId),
+		index('daily_attempts_guest_token_hash_idx').on(table.guestTokenHash),
+		index('daily_attempts_distinct_id_idx').on(table.distinctId),
+		index('daily_attempts_session_id_idx').on(table.sessionId),
+		uniqueIndex('daily_attempts_user_official_uidx')
+			.on(table.dailyChallengeId, table.userId)
+			.where(sql`user_id IS NOT NULL AND is_official = true`),
+		uniqueIndex('daily_attempts_guest_official_uidx')
+			.on(table.dailyChallengeId, table.guestTokenHash)
+			.where(sql`guest_token_hash IS NOT NULL AND is_official = true`)
 	]
 );
 
@@ -288,3 +362,7 @@ export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
 export type IdentityAlias = typeof identityAliases.$inferSelect;
 export type NewIdentityAlias = typeof identityAliases.$inferInsert;
+export type DailyChallenge = typeof dailyChallenges.$inferSelect;
+export type NewDailyChallenge = typeof dailyChallenges.$inferInsert;
+export type DailyChallengeAttempt = typeof dailyChallengeAttempts.$inferSelect;
+export type NewDailyChallengeAttempt = typeof dailyChallengeAttempts.$inferInsert;

@@ -87,11 +87,14 @@ export function createFinishChallengeService(
 			tabSwitchCount: input.tabSwitchCount,
 			requestAnomalyFlags: input.requestAnomalyFlags
 		});
-		const ratingDelta = suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
-		const ratingAfter = applyRatingDelta(session.ratingBefore, ratingDelta);
-		const rankAfter = suspicious.isSuspicious
-			? session.rankBefore
-			: resolveCompletedRank(ratingAfter);
+		const isDaily = session.challengeType === 'daily';
+		const ratingDelta =
+			isDaily || suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
+		const ratingAfter = isDaily
+			? session.ratingBefore
+			: applyRatingDelta(session.ratingBefore, ratingDelta);
+		const rankAfter =
+			isDaily || suspicious.isSuspicious ? session.rankBefore : resolveCompletedRank(ratingAfter);
 
 		await sessionRepository.markCompleted({
 			sessionId: session.id,
@@ -195,13 +198,16 @@ export function createFinishChallengeService(
 				tabSwitchCount: input.tabSwitchCount,
 				requestAnomalyFlags: input.requestAnomalyFlags
 			});
-			const ratingDelta = suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
+			const isDaily = session.challengeType === 'daily';
+			const ratingDelta =
+				isDaily || suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
 
 			if (profile) {
-				const ratingAfter = applyRatingDelta(profile.rating, ratingDelta);
-				const rankAfter = suspicious.isSuspicious
-					? profile.rank
-					: resolveCompletedRank(ratingAfter);
+				const ratingAfter = isDaily
+					? profile.rating
+					: applyRatingDelta(profile.rating, ratingDelta);
+				const rankAfter =
+					isDaily || suspicious.isSuspicious ? profile.rank : resolveCompletedRank(ratingAfter);
 
 				const completedSession = await sessionRepository.completeSessionAndUpdateProfile({
 					sessionId: session.id,
@@ -215,8 +221,8 @@ export function createFinishChallengeService(
 					rankAfter,
 					isSuspicious: suspicious.isSuspicious,
 					suspiciousReason: suspicious.reasons.join(', ') || null,
-					profileRating: ratingAfter,
-					profileRank: rankAfter
+					profileRating: isDaily ? profile.rating : ratingAfter,
+					profileRank: isDaily ? profile.rank : rankAfter
 				});
 
 				const finishResult = {
@@ -255,10 +261,13 @@ export function createFinishChallengeService(
 
 				return finishResult;
 			} else {
-				const ratingAfter = applyRatingDelta(session.ratingBefore, ratingDelta);
-				const rankAfter = suspicious.isSuspicious
-					? session.rankBefore
-					: resolveCompletedRank(ratingAfter);
+				const ratingAfter = isDaily
+					? session.ratingBefore
+					: applyRatingDelta(session.ratingBefore, ratingDelta);
+				const rankAfter =
+					isDaily || suspicious.isSuspicious
+						? session.rankBefore
+						: resolveCompletedRank(ratingAfter);
 
 				const completedSession = await sessionRepository.markCompleted({
 					sessionId: session.id,

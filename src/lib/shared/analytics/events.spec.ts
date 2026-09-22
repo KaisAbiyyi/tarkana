@@ -96,6 +96,18 @@ describe('Analytics Events & Zero-PII Sanitizer', () => {
 			expect(sanitized).not.toHaveProperty('referrer');
 		});
 
+		it('sanitizes referrer to hostname only, discarding URL paths and query strings', () => {
+			const sanitized = sanitizeEventProperties('landing_view', {
+				locale: 'en',
+				referrer: 'https://news.ycombinator.com/item?id=12345&utm_source=twitter'
+			});
+
+			expect(sanitized).toEqual({
+				locale: 'en',
+				referrer: 'news.ycombinator.com'
+			});
+		});
+
 		it('throws in strict mode when PII or forbidden keys are present', () => {
 			expect(() =>
 				sanitizeEventProperties(

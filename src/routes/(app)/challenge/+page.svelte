@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { goto, replaceState } from '$app/navigation';
 	import { gsap } from 'gsap';
 
@@ -15,6 +16,7 @@
 	} from '$lib/shared/constants/round-preparation';
 	import { createArenaLabels } from '$lib/shared/presentation/arena-labels';
 	import { getI18nContext } from '$lib/i18n/context';
+	import { analytics } from '$lib/client/analytics';
 
 	import Badge from '$lib/components/primitives/Badge.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
@@ -35,6 +37,7 @@
 		questionType: QuestionType;
 		prompt: string;
 		choices: string[];
+		difficultyScore: number;
 		timeLimitSeconds: number;
 		metadata: Record<string, unknown>;
 		generatedSeed: string;
@@ -86,6 +89,23 @@
 	let tabSwitchCount = 0;
 	let mounted = false;
 	const MEMORY_CELLS = Array.from({ length: 9 }, (_, index) => index);
+	const trackedFirstQuestionSessions = new SvelteSet<string>();
+
+	$effect(() => {
+		if (
+			currentQuestion &&
+			currentQuestion.orderIndex === 0 &&
+			sessionId &&
+			!trackedFirstQuestionSessions.has(sessionId)
+		) {
+			trackedFirstQuestionSessions.add(sessionId);
+			analytics.track('first_question_seen', {
+				session_id: sessionId,
+				question_type: currentQuestion.questionType,
+				difficulty: currentQuestion.difficultyScore
+			});
+		}
+	});
 
 	let availableModes = $derived.by(() => {
 		const supported = ROUND_MODE_OPTIONS.filter(
