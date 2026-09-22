@@ -65,17 +65,39 @@ describe('start challenge service', () => {
 		).rejects.toThrow();
 	});
 
-	it('rejects unauthenticated starts', async () => {
-		const service = createStartChallengeService(
-			createSessionRepositoryFake(),
-			createProfileRepositoryFake(null)
-		);
+	it('allows unauthenticated starts and creates a guest session with guest cookie', async () => {
+		const repository = createSessionRepositoryFake({
+			categories: [
+				{
+					id: '11111111-1111-4111-8111-111111111111',
+					name: 'Number',
+					slug: 'number',
+					description: null,
+					isActive: true,
+					createdAt: new Date(),
+					updatedAt: new Date()
+				}
+			],
+			rules: [
+				createQuestionRule({
+					categoryId: '11111111-1111-4111-8111-111111111111',
+					ruleType: 'arithmetic_sequence'
+				})
+			]
+		});
+		const service = createStartChallengeService(repository, createProfileRepositoryFake(null));
+		const event = createFakeEvent(null);
 
-		await expect(
-			service.start(createFakeEvent(null), {
-				challengeType: 'quick',
-				seed: 'start-seed'
-			})
-		).rejects.toMatchObject({ status: 401 });
+		const result = await service.start(event, {
+			challengeType: 'quick',
+			selectedMode: 'number_sequence',
+			seed: 'guest-seed'
+		});
+
+		expect(result.isGuest).toBe(true);
+		expect(repository.createdSessions).toHaveLength(1);
+		expect(repository.createdSessions[0].userId).toBeNull();
+		expect(repository.createdSessions[0].guestToken).toBeDefined();
+		expect(event.cookies.get('tarkana_guest_token')).toBe(repository.createdSessions[0].guestToken);
 	});
 });

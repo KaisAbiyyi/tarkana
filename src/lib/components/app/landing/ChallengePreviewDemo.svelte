@@ -185,7 +185,7 @@
 						<p>{t('demo.explanation')}</p>
 					</div>
 					<div class="result-actions">
-						<Button href="/auth/register" size="sm">{t('demo.playFull')}</Button>
+						<Button href="/challenge" size="sm">{t('demo.playFull')}</Button>
 						<button type="button" class="reset-button" onclick={resetDemo}>{t('demo.retry')}</button
 						>
 					</div>

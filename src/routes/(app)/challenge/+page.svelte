@@ -425,8 +425,13 @@
 					<p class="intro">{t('prep.configure')}</p>
 				</div>
 				<div class="header-status" aria-label={t('prep.ratingStatus')}>
-					<Badge tone="success">{t('prep.verifiedResult')}</Badge>
-					<span>{t('prep.ratingAfter')}</span>
+					{#if data.isGuest}
+						<Badge tone="neutral">{t('challenge.guestMode')}</Badge>
+						<span>{t('challenge.guestNotice')}</span>
+					{:else}
+						<Badge tone="success">{t('prep.verifiedResult')}</Badge>
+						<span>{t('prep.ratingAfter')}</span>
+					{/if}
 				</div>
 			</header>
 
@@ -529,8 +534,8 @@
 						isReady={Boolean(roundConfiguration)}
 						{loading}
 						{errorMessage}
-						rank={data.profile.rank}
-						rating={data.profile.rating}
+						rank={data.profile?.rank ?? 'Unranked'}
+						rating={data.profile?.rating ?? 0}
 						onstart={startChallenge}
 						motif={selectedMode === 'mixed'
 							? mixedMotif

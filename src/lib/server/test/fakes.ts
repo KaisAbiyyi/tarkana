@@ -16,14 +16,29 @@ export function createFakeUser(overrides: Partial<User> = {}): User {
 	} as User;
 }
 
-export function createFakeEvent(user: User | null): RequestEvent {
+export function createFakeEvent(
+	user: User | null,
+	initialCookies: Record<string, string> = {}
+): RequestEvent {
+	const cookieJar = new Map<string, string>(Object.entries(initialCookies));
 	return {
 		locals: {
 			getUser: async () => user,
 			getSession: async () => null,
 			profile: null
+		},
+		url: new URL('http://localhost:5173/'),
+		cookies: {
+			get: (name: string) => cookieJar.get(name),
+			set: (name: string, value: string) => {
+				cookieJar.set(name, value);
+			},
+			delete: (name: string) => {
+				cookieJar.delete(name);
+			},
+			getAll: () => Array.from(cookieJar.entries()).map(([name, value]) => ({ name, value }))
 		}
-	} as RequestEvent;
+	} as unknown as RequestEvent;
 }
 
 export function createProfile(overrides: Partial<UserProfile> = {}): UserProfile {

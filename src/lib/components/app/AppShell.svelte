@@ -11,11 +11,11 @@
 
 	type Props = {
 		children?: Snippet;
-		profile: ProfileSummary;
+		profile?: ProfileSummary | null;
 		section?: 'app' | 'admin';
 	};
 
-	let { children, profile, section = 'app' }: Props = $props();
+	let { children, profile = null, section = 'app' }: Props = $props();
 	const { t } = getI18nContext();
 
 	const appLinks = [
@@ -26,6 +26,11 @@
 		{ href: '/profile', label: t('nav.profile') }
 	] as const;
 
+	const guestLinks = [
+		{ href: '/challenge', label: t('nav.challenge') },
+		{ href: '/leaderboard', label: t('nav.leaderboard') }
+	] as const;
+
 	const adminLinks = [
 		{ href: '/admin', label: t('nav.overview') },
 		{ href: '/admin/categories', label: t('nav.categories') },
@@ -34,7 +39,7 @@
 		{ href: '/admin/sessions', label: t('nav.sessions') }
 	] as const;
 
-	let links = $derived(section === 'admin' ? adminLinks : appLinks);
+	let links = $derived(section === 'admin' ? adminLinks : profile ? appLinks : guestLinks);
 	let activePath = $derived(page.url.pathname);
 	let menuOpen = $state(false);
 
@@ -56,15 +61,17 @@
 		>
 			<div class="flex items-center gap-3">
 				<BrandLogo
-					href={resolve('/dashboard')}
+					href={resolve(profile ? '/dashboard' : '/')}
 					size="sm"
 					text="Tarkana"
-					label="Tarkana dashboard"
+					label="Tarkana"
 				/>
 				{#if section === 'admin'}
 					<Badge tone="warning">{t('common.admin')}</Badge>
-				{:else if profile.rank !== 'Unranked'}
+				{:else if profile?.rank && profile.rank !== 'Unranked'}
 					<RankBadge rank={profile.rank} />
+				{:else if !profile}
+					<Badge tone="neutral">{t('challenge.guestMode')}</Badge>
 				{/if}
 			</div>
 
@@ -104,7 +111,7 @@
 							{link.label}
 						</a>
 					{/each}
-					{#if profile.role === 'admin' && section !== 'admin'}
+					{#if profile?.role === 'admin' && section !== 'admin'}
 						<a
 							class="border-2 border-[var(--color-border)] bg-[var(--color-primary)] px-3 py-2 text-sm font-black no-underline"
 							href={resolve('/admin')}
@@ -118,28 +125,47 @@
 					class="mt-4 flex flex-col gap-3 border-t-2 border-[var(--color-border)] pt-4 lg:mt-0 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end lg:border-none lg:pt-0"
 				>
 					<LanguageSelector />
-					<div
-						class="min-w-0 leading-tight lg:border-l-[3px] lg:border-[var(--color-border)] lg:pl-3"
-						aria-label={t('nav.profileSummary')}
-					>
-						<p class="truncate text-sm font-black">{profile.displayName}</p>
-						<div class="mt-1 flex items-center gap-2">
-							{#if profile.rank !== 'Unranked'}
-								<p class="text-xs font-bold text-[var(--color-muted)]">
-									{t('common.logicRating')}
-									{profile.rating}
-								</p>
-								<span class="text-xs text-[var(--color-muted)]" aria-hidden="true">&middot;</span>
-							{/if}
-							<form method="POST" action="/auth/logout" class="inline">
-								<button
-									type="submit"
-									class="text-xs font-bold text-[var(--color-muted)] underline hover:text-black focus-visible:text-black"
-									>{t('nav.logout')}</button
-								>
-							</form>
+					{#if profile}
+						<div
+							class="min-w-0 leading-tight lg:border-l-[3px] lg:border-[var(--color-border)] lg:pl-3"
+							aria-label={t('nav.profileSummary')}
+						>
+							<p class="truncate text-sm font-black">{profile.displayName}</p>
+							<div class="mt-1 flex items-center gap-2">
+								{#if profile.rank !== 'Unranked'}
+									<p class="text-xs font-bold text-[var(--color-muted)]">
+										{t('common.logicRating')}
+										{profile.rating}
+									</p>
+									<span class="text-xs text-[var(--color-muted)]" aria-hidden="true">&middot;</span>
+								{/if}
+								<form method="POST" action="/auth/logout" class="inline">
+									<button
+										type="submit"
+										class="text-xs font-bold text-[var(--color-muted)] underline hover:text-black focus-visible:text-black"
+										>{t('nav.logout')}</button
+									>
+								</form>
+							</div>
 						</div>
-					</div>
+					{:else}
+						<div
+							class="flex items-center gap-2 lg:border-l-[3px] lg:border-[var(--color-border)] lg:pl-3"
+						>
+							<a
+								href={resolve('/auth/login')}
+								class="border-2 border-transparent px-3 py-1.5 text-xs font-black no-underline hover:border-[var(--color-border)] hover:bg-[var(--color-paper)]"
+							>
+								{t('nav.login')}
+							</a>
+							<a
+								href={resolve('/auth/register')}
+								class="border-2 border-[var(--color-border)] bg-[var(--color-primary)] px-3 py-1.5 text-xs font-black no-underline shadow-[var(--shadow-hard-sm)] hover:-translate-y-0.5"
+							>
+								{t('nav.register')}
+							</a>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</div>

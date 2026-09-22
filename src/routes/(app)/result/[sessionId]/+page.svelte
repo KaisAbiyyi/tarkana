@@ -32,6 +32,35 @@
 		</div>
 	</header>
 
+	{#if result.canClaim}
+		<div
+			data-testid="guest-claim-banner"
+			class="border-[3px] border-[var(--color-border)] bg-[var(--color-primary)] p-6 shadow-[var(--shadow-hard)]"
+		>
+			<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+				<div>
+					<span
+						class="mb-2 inline-block border-2 border-[var(--color-border)] bg-black px-2 py-0.5 text-xs font-black text-white uppercase"
+					>
+						{t('challenge.guestMode')}
+					</span>
+					<h2 class="text-xl font-black text-black">{t('result.saveProgress')}</h2>
+					<p class="mt-1 max-w-xl text-sm font-bold text-black/80">
+						{t('result.guestClaimPrompt')}
+					</p>
+				</div>
+				<div class="flex shrink-0 flex-wrap gap-2">
+					<Button href={`/auth/register?claimSession=${result.sessionId}`}>
+						{t('nav.register')}
+					</Button>
+					<Button href={`/auth/login?claimSession=${result.sessionId}`} variant="secondary">
+						{t('nav.login')}
+					</Button>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<ResultSummary
 		totalScore={result.totalScore}
 		accuracy={result.accuracy}

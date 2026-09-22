@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { translate } from '$lib/i18n';
+import { tryClaimGuestSessionOnAuth } from '$lib/server/sessions/auth-guest-claim';
 
 export const load: PageServerLoad = async (event) => {
 	const user = await event.locals.getUser();
@@ -37,7 +38,15 @@ export const actions = {
 			return fail(400, { email, message: t('auth.invalidCredentials') });
 		}
 
-		redirect(303, '/dashboard');
+		const user = await event.locals.getUser();
+		let redirectUrl = '/dashboard';
+		if (user) {
+			const claimSession = event.url.searchParams.get('claimSession');
+			const claimedId = await tryClaimGuestSessionOnAuth(event, user, claimSession);
+			if (claimedId) redirectUrl = `/result/${claimedId}`;
+		}
+
+		redirect(303, redirectUrl);
 	},
 
 	google: async (event) => {

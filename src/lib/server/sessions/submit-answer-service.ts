@@ -1,7 +1,8 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { requireProfile } from '$lib/server/auth/guards';
+import { getOptionalProfile } from '$lib/server/auth/guards';
+import { getGuestToken } from '$lib/server/sessions/guest-token';
 import { answersMatch } from '$lib/server/challenge/normalization';
-import { badRequest, conflict, forbidden, notFound } from '$lib/server/errors';
+import { badRequest, conflict, forbidden, notFound, unauthorized } from '$lib/server/errors';
 import {
 	createProfileRepository,
 	type ProfileRepository
@@ -40,18 +41,28 @@ export function createSubmitAnswerService(
 		async submit(event, input) {
 			validateInput(input);
 
-			const profile = await requireProfile(event, profileRepository);
+			const profile = await getOptionalProfile(event, profileRepository);
 
-			const [session, question, existingAnswer, questions, answers] = await Promise.all([
-				sessionRepository.findOwnedSession(input.sessionId, profile.id),
-				sessionRepository.findQuestionById(input.sessionQuestionId),
-				sessionRepository.findAnswerForQuestion(input.sessionQuestionId, profile.id),
-				sessionRepository.listSessionQuestions(input.sessionId),
-				sessionRepository.listSessionAnswers(input.sessionId, profile.id)
-			]);
+			let session;
+			if (profile) {
+				session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
+			} else {
+				const guestToken = getGuestToken(event);
+				if (!guestToken) {
+					throw unauthorized('Unauthorized or guest token missing');
+				}
+				session = await sessionRepository.findGuestSession(input.sessionId, guestToken);
+			}
 
 			if (!session) throw notFound('Challenge session was not found');
 			if (session.status !== 'in_progress') throw conflict('Challenge session is not in progress');
+
+			const [question, existingAnswer, questions, answers] = await Promise.all([
+				sessionRepository.findQuestionById(input.sessionQuestionId),
+				sessionRepository.findAnswerForQuestion(input.sessionQuestionId, profile?.id),
+				sessionRepository.listSessionQuestions(input.sessionId),
+				sessionRepository.listSessionAnswers(input.sessionId, profile?.id)
+			]);
 
 			if (!question || question.sessionId !== session.id) {
 				throw forbidden('Question does not belong to this session');
@@ -92,7 +103,7 @@ export function createSubmitAnswerService(
 			await Promise.all([
 				sessionRepository.addAnswer({
 					sessionQuestionId: question.id,
-					userId: profile.id,
+					userId: profile?.id ?? null,
 					selectedAnswer: input.selectedAnswer.trim(),
 					isCorrect,
 					timeSpentSeconds,

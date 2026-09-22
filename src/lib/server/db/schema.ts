@@ -120,9 +120,9 @@ export const challengeSessions = pgTable(
 	'challenge_sessions',
 	{
 		id: uuid('id').defaultRandom().primaryKey(),
-		userId: uuid('user_id')
-			.notNull()
-			.references(() => usersProfile.id, { onDelete: 'cascade' }),
+		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'cascade' }),
+		guestToken: varchar('guest_token', { length: 64 }),
+		claimedAt: timestamp('claimed_at', { withTimezone: true }),
 		challengeType: challengeTypeEnum('challenge_type').notNull(),
 		status: sessionStatusEnum('status').notNull().default('created'),
 		totalQuestions: integer('total_questions').notNull(),
@@ -143,6 +143,7 @@ export const challengeSessions = pgTable(
 	},
 	(table) => [
 		index('challenge_sessions_user_id_idx').on(table.userId),
+		index('challenge_sessions_guest_token_idx').on(table.guestToken),
 		index('challenge_sessions_created_at_idx').on(table.createdAt),
 		index('challenge_sessions_is_suspicious_idx').on(table.isSuspicious),
 		index('challenge_sessions_user_status_created_idx').on(
@@ -189,9 +190,7 @@ export const sessionAnswers = pgTable(
 		sessionQuestionId: uuid('session_question_id')
 			.notNull()
 			.references(() => sessionQuestions.id, { onDelete: 'cascade' }),
-		userId: uuid('user_id')
-			.notNull()
-			.references(() => usersProfile.id, { onDelete: 'cascade' }),
+		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'cascade' }),
 		selectedAnswer: text('selected_answer').notNull(),
 		isCorrect: boolean('is_correct').notNull(),
 		timeSpentSeconds: integer('time_spent_seconds').notNull(),
@@ -201,7 +200,7 @@ export const sessionAnswers = pgTable(
 	(table) => [
 		index('session_answers_session_question_id_idx').on(table.sessionQuestionId),
 		index('session_answers_user_id_idx').on(table.userId),
-		uniqueIndex('session_answers_question_user_uidx').on(table.sessionQuestionId, table.userId)
+		uniqueIndex('session_answers_question_uidx').on(table.sessionQuestionId)
 	]
 );
 

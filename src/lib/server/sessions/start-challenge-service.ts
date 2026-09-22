@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto';
 import type { RequestEvent } from '@sveltejs/kit';
 import { DEFAULT_CHALLENGE_QUESTION_COUNTS, QUESTION_TYPES } from '$lib/shared/constants/challenge';
 import type { ChallengeType, QuestionType } from '$lib/shared/constants/challenge';
-import { requireProfile } from '$lib/server/auth/guards';
+import { getOptionalProfile } from '$lib/server/auth/guards';
+import {
+	generateGuestToken,
+	getGuestToken,
+	setGuestTokenCookie
+} from '$lib/server/sessions/guest-token';
 import { badRequest, notFound } from '$lib/server/errors';
 import { buildChallengeQuestions, toRuleDefinition } from '$lib/server/challenge/challenge-builder';
 import type {
@@ -31,6 +36,7 @@ export type StartChallengeResult = {
 	sessionId: string;
 	totalQuestions: number;
 	currentQuestion: ReturnType<typeof toActiveQuestionDto>;
+	isGuest: boolean;
 };
 
 export type StartChallengeService = {
@@ -47,7 +53,23 @@ export function createStartChallengeService(
 				throw badRequest('selectedMode is invalid');
 			}
 
-			const profile = await requireProfile(event, profileRepository);
+			const profile = await getOptionalProfile(event, profileRepository);
+			const isGuest = !profile;
+
+			let guestToken: string | null = null;
+			let userRating = 0;
+			let userRank:
+				| 'Unranked'
+				| (typeof profile extends null ? never : NonNullable<typeof profile>['rank']) = 'Unranked';
+
+			if (profile) {
+				userRating = profile.rating;
+				userRank = profile.rank;
+			} else {
+				guestToken = getGuestToken(event) ?? generateGuestToken();
+				setGuestTokenCookie(event, guestToken);
+			}
+
 			const [config, categories, rawRules] = await Promise.all([
 				sessionRepository.findActiveConfig(input.challengeType),
 				sessionRepository.listActiveCategories(),
@@ -64,20 +86,21 @@ export function createStartChallengeService(
 				config: challengeConfig,
 				categories: challengeCategories,
 				rules,
-				userRating: profile.rating,
+				userRating,
 				selectedMode: input.selectedMode,
 				seed: input.seed ?? randomUUID()
 			});
 
 			const session = await sessionRepository.createSession({
-				userId: profile.id,
+				userId: profile?.id ?? null,
+				guestToken,
 				challengeType: input.challengeType,
 				status: 'in_progress',
 				totalQuestions: builtQuestions.length,
-				ratingBefore: profile.rating,
-				ratingAfter: profile.rating,
-				rankBefore: profile.rank,
-				rankAfter: profile.rank
+				ratingBefore: userRating,
+				ratingAfter: userRating,
+				rankBefore: userRank,
+				rankAfter: userRank
 			});
 
 			const persistedQuestions = await sessionRepository.addQuestions(
@@ -103,7 +126,8 @@ export function createStartChallengeService(
 			return {
 				sessionId: session.id,
 				totalQuestions: persistedQuestions.length,
-				currentQuestion: toActiveQuestionDto(firstQuestion)
+				currentQuestion: toActiveQuestionDto(firstQuestion),
+				isGuest
 			};
 		}
 	};

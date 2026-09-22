@@ -36,6 +36,13 @@
       "when": 1790002769749,
       "tag": "0004_abnormal_bishop",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790052387135,
+      "tag": "0005_shiny_patriot",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, inArray, max, sql, exists } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
+import { resolveCompletedRank } from '$lib/server/scoring/rank';
 import {
 	categories,
 	challengeConfigs,
@@ -31,10 +32,11 @@ export type SessionRepository = {
 	): Promise<ChallengeConfig | null>;
 	findSessionById(sessionId: string): Promise<ChallengeSession | null>;
 	findOwnedSession(sessionId: string, userId: string): Promise<ChallengeSession | null>;
+	findGuestSession(sessionId: string, guestToken: string): Promise<ChallengeSession | null>;
 	listSessionQuestions(sessionId: string): Promise<SessionQuestion[]>;
-	listSessionAnswers(sessionId: string, userId: string): Promise<SessionAnswer[]>;
+	listSessionAnswers(sessionId: string, userId?: string): Promise<SessionAnswer[]>;
 	findQuestionById(questionId: string): Promise<SessionQuestion | null>;
-	findAnswerForQuestion(questionId: string, userId: string): Promise<SessionAnswer | null>;
+	findAnswerForQuestion(questionId: string, userId?: string): Promise<SessionAnswer | null>;
 	listHistory(input: ListHistoryInput): Promise<{
 		items: (ChallengeSession & { mode: 'mixed' | QuestionType; validAchievements: string[] })[];
 		total: number;
@@ -51,8 +53,24 @@ export type SessionRepository = {
 	markCompleted(input: CompleteSessionInput): Promise<ChallengeSession>;
 	completeSessionAndUpdateProfile(input: CompleteSessionAndProfileInput): Promise<ChallengeSession>;
 	findActiveSession(userId: string): Promise<ChallengeSession | null>;
+	findActiveGuestSession(guestToken: string): Promise<ChallengeSession | null>;
+	findLatestGuestSession(guestToken: string): Promise<ChallengeSession | null>;
+	claimGuestSession(input: ClaimGuestSessionInput): Promise<ClaimGuestSessionResult>;
 	abandonSession(sessionId: string): Promise<void>;
 	touchSessionUpdatedAt(sessionId: string): Promise<void>;
+};
+
+export type ClaimGuestSessionInput = {
+	sessionId: string;
+	guestToken: string;
+	userId: string;
+};
+
+export type ClaimGuestSessionResult = {
+	session: ChallengeSession;
+	profileRating: number;
+	profileRank: ChallengeSession['rankAfter'];
+	alreadyClaimed?: boolean;
 };
 
 export type ListHistoryInput = {
@@ -153,6 +171,18 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 			return session ?? null;
 		},
 
+		async findGuestSession(sessionId, guestToken) {
+			const [session] = await database
+				.select()
+				.from(challengeSessions)
+				.where(
+					and(eq(challengeSessions.id, sessionId), eq(challengeSessions.guestToken, guestToken))
+				)
+				.limit(1);
+
+			return session ?? null;
+		},
+
 		async listSessionQuestions(sessionId) {
 			return database
 				.select()
@@ -162,6 +192,11 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 		},
 
 		async listSessionAnswers(sessionId, userId) {
+			const conditions = [eq(sessionQuestions.sessionId, sessionId)];
+			if (userId) {
+				conditions.push(eq(sessionAnswers.userId, userId));
+			}
+
 			return database
 				.select({
 					id: sessionAnswers.id,
@@ -175,7 +210,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				})
 				.from(sessionAnswers)
 				.innerJoin(sessionQuestions, eq(sessionAnswers.sessionQuestionId, sessionQuestions.id))
-				.where(and(eq(sessionQuestions.sessionId, sessionId), eq(sessionAnswers.userId, userId)))
+				.where(and(...conditions))
 				.orderBy(asc(sessionAnswers.createdAt));
 		},
 
@@ -190,12 +225,15 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 		},
 
 		async findAnswerForQuestion(questionId, userId) {
+			const conditions = [eq(sessionAnswers.sessionQuestionId, questionId)];
+			if (userId) {
+				conditions.push(eq(sessionAnswers.userId, userId));
+			}
+
 			const [answer] = await database
 				.select()
 				.from(sessionAnswers)
-				.where(
-					and(eq(sessionAnswers.sessionQuestionId, questionId), eq(sessionAnswers.userId, userId))
-				)
+				.where(and(...conditions))
 				.limit(1);
 
 			return answer ?? null;
@@ -583,6 +621,143 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				.limit(1);
 
 			return session ?? null;
+		},
+
+		async findActiveGuestSession(guestToken) {
+			const [session] = await database
+				.select()
+				.from(challengeSessions)
+				.where(
+					and(
+						eq(challengeSessions.guestToken, guestToken),
+						eq(challengeSessions.status, 'in_progress')
+					)
+				)
+				.orderBy(desc(challengeSessions.createdAt))
+				.limit(1);
+
+			return session ?? null;
+		},
+
+		async findLatestGuestSession(guestToken) {
+			const [session] = await database
+				.select()
+				.from(challengeSessions)
+				.where(
+					and(
+						eq(challengeSessions.guestToken, guestToken),
+						sql`${challengeSessions.userId} is null`
+					)
+				)
+				.orderBy(desc(challengeSessions.createdAt))
+				.limit(1);
+
+			return session ?? null;
+		},
+
+		async claimGuestSession(input) {
+			return database.transaction(async (tx) => {
+				// 1. Lock guest session to serialize concurrent claiming
+				const [session] = await tx
+					.select()
+					.from(challengeSessions)
+					.where(
+						and(
+							eq(challengeSessions.id, input.sessionId),
+							eq(challengeSessions.guestToken, input.guestToken)
+						)
+					)
+					.for('update')
+					.limit(1);
+
+				if (!session) {
+					throw new Error('Guest session not found or token mismatch');
+				}
+
+				// If already claimed by the exact same user, return idempotently
+				if (session.claimedAt && session.userId === input.userId) {
+					const [userProfile] = await tx
+						.select()
+						.from(usersProfile)
+						.where(eq(usersProfile.id, input.userId))
+						.limit(1);
+					return {
+						session,
+						profileRating: userProfile?.rating ?? 0,
+						profileRank: userProfile?.rank ?? 'Unranked',
+						alreadyClaimed: true
+					};
+				}
+
+				// If claimed by another user
+				if (session.claimedAt || session.userId) {
+					throw new Error('Session has already been claimed');
+				}
+
+				// 2. Lock the claiming user's profile
+				const [profile] = await tx
+					.select()
+					.from(usersProfile)
+					.where(eq(usersProfile.id, input.userId))
+					.for('update')
+					.limit(1);
+
+				if (!profile) {
+					throw new Error('User profile not found');
+				}
+
+				// 3. Calculate rating and rank updates
+				let newRating = profile.rating;
+				let newRank = profile.rank;
+
+				if (session.status === 'completed' && !session.isSuspicious) {
+					newRating = Math.max(0, profile.rating + session.ratingDelta);
+					newRank = resolveCompletedRank(newRating);
+				}
+
+				// 4. Update session
+				const [claimedSession] = await tx
+					.update(challengeSessions)
+					.set({
+						userId: profile.id,
+						claimedAt: new Date(),
+						ratingBefore: profile.rating,
+						ratingAfter: newRating,
+						rankBefore: profile.rank,
+						rankAfter: newRank
+					})
+					.where(eq(challengeSessions.id, session.id))
+					.returning();
+
+				// 5. Reassign question answers to user
+				await tx
+					.update(sessionAnswers)
+					.set({ userId: profile.id })
+					.where(
+						inArray(
+							sessionAnswers.sessionQuestionId,
+							tx
+								.select({ id: sessionQuestions.id })
+								.from(sessionQuestions)
+								.where(eq(sessionQuestions.sessionId, session.id))
+						)
+					);
+
+				// 6. Update user profile rating and rank
+				if (session.status === 'completed' && !session.isSuspicious) {
+					await tx
+						.update(usersProfile)
+						.set({ rating: newRating, rank: newRank })
+						.where(eq(usersProfile.id, profile.id));
+				}
+
+				return {
+					session: claimedSession,
+					profileRating: newRating,
+					profileRank: newRank,
+					alreadyClaimed: false
+				};
+			});
 		},
 
 		async abandonSession(sessionId) {

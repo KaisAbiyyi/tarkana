@@ -21,6 +21,17 @@ export async function requireProfile(
 	return profile;
 }
 
+export async function getOptionalProfile(
+	event: RequestEvent,
+	repository?: ProfileRepository
+): Promise<ProfileSummary | null> {
+	const user = await event.locals.getUser();
+	if (!user) return null;
+	const profile = await provisionProfile({ user, repository });
+	event.locals.profile = profile;
+	return profile;
+}
+
 export async function requireAdmin(
 	event: RequestEvent,
 	repository?: ProfileRepository

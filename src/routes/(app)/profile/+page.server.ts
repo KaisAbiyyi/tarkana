@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { createProfileService } from '$lib/server/profile/profile-service';
 
@@ -6,8 +6,10 @@ import { createSessionRepository } from '$lib/server/db/repositories/session-rep
 import { translate } from '$lib/i18n';
 
 export const load: PageServerLoad = async (event) => {
-	const profile = await createProfileService().getProfile(event);
 	const user = await event.locals.getUser();
+	if (!user) redirect(303, '/auth/login');
+
+	const profile = await createProfileService().getProfile(event);
 	const stats = await createSessionRepository().getDashboardStats(profile.id);
 
 	return {

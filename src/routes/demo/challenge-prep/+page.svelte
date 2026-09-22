@@ -19,7 +19,8 @@
 			'mini_deduction',
 			'memory_pattern'
 		] as const,
-		activeChallenge: null as any
+		activeChallenge: null as any,
+		isGuest: false
 	};
 </script>
 
