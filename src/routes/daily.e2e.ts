@@ -80,7 +80,7 @@ test.describe('P1.3 Daily Challenge E2E', () => {
 			});
 			expect(abandonRes.status()).toBe(200);
 			const abandonBody = await abandonRes.json();
-			expect(abandonBody.ok).toBe(true);
+			expect(abandonBody.success).toBe(true);
 
 			// 3. Attempting to start again must be rejected with 409 Conflict
 			const retryRes = await freshContext.post('/api/challenge/daily/start');
