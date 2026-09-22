@@ -103,7 +103,7 @@
 
 <section class="grid gap-8">
 	<!-- Tab Navigation -->
-	<div class="flex border-b-[3px] border-[var(--color-border)]">
+	<nav aria-label="Leaderboard views" class="flex border-b-[3px] border-[var(--color-border)]">
 		<button
 			type="button"
 			class="px-6 py-3 text-base font-black uppercase transition-colors
@@ -124,7 +124,7 @@
 		>
 			{t('leaderboard.tabGlobal')}
 		</button>
-	</div>
+	</nav>
 
 	{#if activeTab === 'daily'}
 		<!-- Daily Leaderboard View -->
