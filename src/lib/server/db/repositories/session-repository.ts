@@ -709,6 +709,46 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					throw new Error('User profile not found');
 				}
 
+				// If a specific session ID is targeted, validate ownership and token affinity up front
+				if (input.specificSessionId) {
+					const [targetedSession] = await tx
+						.select()
+						.from(challengeSessions)
+						.where(eq(challengeSessions.id, input.specificSessionId))
+						.limit(1);
+
+					if (!targetedSession) {
+						throw new Error('Guest session not found or token mismatch');
+					}
+					if (targetedSession.userId && targetedSession.userId !== input.userId) {
+						throw new Error('Session has already been claimed by another account');
+					}
+					if (targetedSession.guestToken !== hashedToken) {
+						throw new Error('Guest session not found or token mismatch');
+					}
+					if (targetedSession.userId === input.userId) {
+						const alreadyClaimedSessions = await tx
+							.select()
+							.from(challengeSessions)
+							.where(
+								and(
+									eq(challengeSessions.guestToken, hashedToken),
+									eq(challengeSessions.userId, input.userId)
+								)
+							)
+							.orderBy(desc(challengeSessions.createdAt));
+
+						return {
+							claimedSessions: alreadyClaimedSessions,
+							primarySession: targetedSession,
+							profileRating: profile.rating,
+							profileRank: profile.rank,
+							isProvisional: false,
+							alreadyClaimed: true
+						};
+					}
+				}
+
 				// 2. Lock and find all unclaimed guest sessions matching this hashed token
 				const unclaimedSessions = await tx
 					.select()
@@ -749,23 +789,6 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 							isProvisional: false,
 							alreadyClaimed: true
 						};
-					}
-
-					// If specificSessionId was passed, check if claimed by another user
-					if (input.specificSessionId) {
-						const [conflictSession] = await tx
-							.select()
-							.from(challengeSessions)
-							.where(eq(challengeSessions.id, input.specificSessionId))
-							.limit(1);
-
-						if (
-							conflictSession &&
-							conflictSession.userId &&
-							conflictSession.userId !== input.userId
-						) {
-							throw new Error('Session has already been claimed by another account');
-						}
 					}
 
 					throw new Error('Guest session not found or token mismatch');
