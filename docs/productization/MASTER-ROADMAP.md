@@ -46,11 +46,11 @@ Tarkana should become a product that a user can discover, try immediately, retur
 
 ### Activation
 
-- [ ] Guest challenge mode.
-- [ ] Preserve guest result until signup.
-- [ ] Convert guest state into user-owned state after account creation.
-- [ ] Make landing-page challenge genuinely playable.
-- [ ] Reduce time-to-first-challenge.
+- [x] Guest challenge mode.
+- [x] Preserve guest result until signup.
+- [x] Convert guest state into user-owned state after account creation.
+- [x] Make landing-page challenge genuinely playable.
+- [x] Reduce time-to-first-challenge.
 
 ### Retention
 
