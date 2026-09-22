@@ -64,7 +64,7 @@ describe('Real Database Guest Claim Concurrency Integration', () => {
 		const userAId = '00000000-0000-4000-8000-000000000010';
 		const userBId = '00000000-0000-4000-8000-000000000011';
 		const guestSessionId = '00000000-0000-4000-8000-000000000012';
-		const guestToken = 'guest_token_concurrent_test_1234567890abcdef1234567890abcdef12345678';
+		const guestToken = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
 		// Clean up any test records from prior runs
 		await db
