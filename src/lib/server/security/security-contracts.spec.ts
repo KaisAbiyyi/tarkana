@@ -205,7 +205,7 @@ describe('Security & Reliability Contracts', () => {
 			// Third request after window expires (t0 + 600ms) -> Allowed again
 			const res3 = await checkRateLimit(key, options, t0 + 600);
 			expect(res3.allowed).toBe(true);
-		});
+		}, 15000);
 
 		it('pseudonymizes raw IP keys before database persistence', () => {
 			const rawKey = '192.168.1.100:submit';

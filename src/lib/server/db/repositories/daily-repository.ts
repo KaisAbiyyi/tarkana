@@ -420,18 +420,14 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 					};
 				});
 			} catch (err: unknown) {
-				const isUniqueViolation =
-					(typeof err === 'object' &&
-						err !== null &&
-						'code' in err &&
-						(err as { code: string }).code === '23505') ||
-					(err instanceof Error && /unique constraint|daily_attempts_/i.test(err.message));
-
-				if (isUniqueViolation) {
+				if (isUniqueConstraintError(err)) {
 					// A concurrent transaction committed first. Reselect the canonical attempt.
-					const fallbackResult = await checkAttempt(database);
-					if (fallbackResult) {
-						return fallbackResult;
+					for (let attempt = 0; attempt < 5; attempt++) {
+						const fallbackResult = await checkAttempt(database);
+						if (fallbackResult) {
+							return fallbackResult;
+						}
+						await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
 					}
 				}
 
@@ -439,4 +435,26 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 			}
 		}
 	};
+}
+
+function isUniqueConstraintError(err: unknown): boolean {
+	let current: unknown = err;
+	while (current && typeof current === 'object') {
+		const candidate = current as Record<string, unknown>;
+		if (candidate.code === '23505') return true;
+		if (
+			typeof candidate.message === 'string' &&
+			/unique constraint|duplicate key|daily_attempts_/i.test(candidate.message)
+		) {
+			return true;
+		}
+		if (typeof candidate.detail === 'string' && /already exists/i.test(candidate.detail)) {
+			return true;
+		}
+		if (typeof candidate.constraint === 'string' && /daily_attempts_/i.test(candidate.constraint)) {
+			return true;
+		}
+		current = candidate.cause;
+	}
+	return false;
 }
