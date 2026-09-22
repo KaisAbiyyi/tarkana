@@ -24,24 +24,14 @@ export async function tryClaimGuestSessionOnAuth(
 
 		const profile = await provisionProfile({ user, repository: profileRepository });
 
-		let targetSessionId = preferredSessionId ?? null;
-		if (!targetSessionId) {
-			const latestGuestSession = await sessionRepository.findLatestGuestSession(guestToken);
-			if (latestGuestSession && latestGuestSession.status === 'completed') {
-				targetSessionId = latestGuestSession.id;
-			}
-		}
-
-		if (!targetSessionId) return null;
-
-		await sessionRepository.claimGuestSession({
-			sessionId: targetSessionId,
+		const result = await sessionRepository.claimAllGuestSessions({
 			guestToken,
-			userId: profile.id
+			userId: profile.id,
+			specificSessionId: preferredSessionId ?? undefined
 		});
 
 		clearGuestTokenCookie(event);
-		return targetSessionId;
+		return result.primarySession?.id ?? preferredSessionId ?? null;
 	} catch {
 		return null;
 	}
