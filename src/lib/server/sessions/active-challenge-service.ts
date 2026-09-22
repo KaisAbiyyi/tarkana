@@ -1,5 +1,6 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { requireProfile } from '$lib/server/auth/guards';
+import { getOptionalProfile } from '$lib/server/auth/guards';
+import { getGuestToken } from '$lib/server/sessions/guest-token';
 import {
 	createSessionRepository,
 	type SessionRepository
@@ -17,6 +18,7 @@ export type ActiveChallengeResult = {
 	totalQuestions?: number;
 	currentQuestion?: ReturnType<typeof toActiveQuestionDto> | null;
 	challengeType?: string;
+	isGuest?: boolean;
 };
 
 export type ActiveChallengeService = {
@@ -30,8 +32,16 @@ export function createActiveChallengeService(
 ): ActiveChallengeService {
 	return {
 		async getActive(event) {
-			const profile = await requireProfile(event, profileRepository);
-			const session = await sessionRepository.findActiveSession(profile.id);
+			const profile = await getOptionalProfile(event, profileRepository);
+			const isGuest = !profile;
+
+			let session;
+			if (profile) {
+				session = await sessionRepository.findActiveSession(profile.id);
+			} else {
+				const guestToken = getGuestToken(event);
+				session = guestToken ? await sessionRepository.findActiveGuestSession(guestToken) : null;
+			}
 
 			if (!session) {
 				return { hasActive: false };
@@ -47,7 +57,7 @@ export function createActiveChallengeService(
 
 			const [questions, answers] = await Promise.all([
 				sessionRepository.listSessionQuestions(session.id),
-				sessionRepository.listSessionAnswers(session.id, profile.id)
+				sessionRepository.listSessionAnswers(session.id, profile?.id)
 			]);
 
 			const answeredQuestionIds = new Set(answers.map((answer) => answer.sessionQuestionId));
@@ -58,7 +68,8 @@ export function createActiveChallengeService(
 					hasActive: true,
 					isComplete: true,
 					sessionId: session.id,
-					challengeType: session.challengeType
+					challengeType: session.challengeType,
+					isGuest
 				};
 			}
 
@@ -68,7 +79,8 @@ export function createActiveChallengeService(
 				sessionId: session.id,
 				totalQuestions: questions.length,
 				currentQuestion: toActiveQuestionDto(currentQuestion),
-				challengeType: session.challengeType
+				challengeType: session.challengeType,
+				isGuest
 			};
 		}
 	};

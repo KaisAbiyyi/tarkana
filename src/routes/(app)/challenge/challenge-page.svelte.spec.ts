@@ -14,7 +14,8 @@ const mockData = {
 		rank: 'Bronze Mind',
 		rating: 105
 	},
-	activeChallenge: null as any
+	activeChallenge: null as any,
+	isGuest: false
 } as const;
 
 describe('challenge preparation page', () => {

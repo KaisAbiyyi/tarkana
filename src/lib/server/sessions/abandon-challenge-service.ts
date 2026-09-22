@@ -1,6 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { requireProfile } from '$lib/server/auth/guards';
-import { badRequest, notFound } from '$lib/server/errors';
+import { getOptionalProfile } from '$lib/server/auth/guards';
+import { getGuestToken } from '$lib/server/sessions/guest-token';
+import { badRequest, notFound, unauthorized } from '$lib/server/errors';
 import {
 	createSessionRepository,
 	type SessionRepository
@@ -32,8 +33,18 @@ export function createAbandonChallengeService(
 				throw badRequest('sessionId is required');
 			}
 
-			const profile = await requireProfile(event, profileRepository);
-			const session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
+			const profile = await getOptionalProfile(event, profileRepository);
+
+			let session;
+			if (profile) {
+				session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
+			} else {
+				const guestToken = getGuestToken(event);
+				if (!guestToken) {
+					throw unauthorized('Unauthorized or guest token missing');
+				}
+				session = await sessionRepository.findGuestSession(input.sessionId, guestToken);
+			}
 
 			if (!session) {
 				throw notFound('Challenge session was not found');

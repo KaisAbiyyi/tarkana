@@ -2,6 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { parseDisplayName } from '$lib/shared/validation/common';
 import { translate } from '$lib/i18n';
+import { tryClaimGuestSessionOnAuth } from '$lib/server/sessions/auth-guest-claim';
 
 export const load: PageServerLoad = async (event) => {
 	const user = await event.locals.getUser();
@@ -60,7 +61,11 @@ export const actions = {
 			}
 			return fail(400, { displayName, email, message: t('auth.requestFailed'), errors: {} });
 		}
-		if (data.session) redirect(303, '/dashboard');
+		if (data.session) {
+			const claimSession = event.url.searchParams.get('claimSession');
+			const claimedId = await tryClaimGuestSessionOnAuth(event, data.session.user, claimSession);
+			redirect(303, claimedId ? `/result/${claimedId}` : '/dashboard');
+		}
 
 		return {
 			success: true,

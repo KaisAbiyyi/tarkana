@@ -1,6 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { requireProfile } from '$lib/server/auth/guards';
-import { badRequest, notFound } from '$lib/server/errors';
+import { getOptionalProfile } from '$lib/server/auth/guards';
+import { clearGuestTokenCookie, getGuestToken } from '$lib/server/sessions/guest-token';
+import { badRequest, notFound, unauthorized } from '$lib/server/errors';
 import {
 	createProfileRepository,
 	type ProfileRepository
@@ -40,6 +41,8 @@ export type FinishChallengeResult = {
 	isSuspicious: boolean;
 	suspiciousReasons: string[];
 	review: ReturnType<typeof toResultQuestionReviewDto>[];
+	isGuest?: boolean;
+	canClaim?: boolean;
 };
 
 export type FinishChallengeService = {
@@ -50,20 +53,109 @@ export function createFinishChallengeService(
 	sessionRepository: SessionRepository = createSessionRepository(),
 	profileRepository: ProfileRepository = createProfileRepository()
 ): FinishChallengeService {
+	async function finishGuestSession(session: ChallengeSession, input: FinishChallengeInput) {
+		const [questions, answers] = await Promise.all([
+			sessionRepository.listSessionQuestions(session.id),
+			sessionRepository.listSessionAnswers(session.id)
+		]);
+		if (questions.length === 0 || answers.length !== questions.length) return;
+
+		const answerByQuestionId = new Map(answers.map((answer) => [answer.sessionQuestionId, answer]));
+		const scoreSummary = calculateSessionScore(
+			questions.map((question) => {
+				const answer = answerByQuestionId.get(question.id);
+				return {
+					isCorrect: answer?.isCorrect ?? false,
+					difficultyScore: question.difficultyScore,
+					timeSpentSeconds: answer?.timeSpentSeconds ?? 0,
+					timeLimitSeconds: question.timeLimitSeconds,
+					scoreEarned: answer?.scoreEarned ?? 0
+				};
+			})
+		);
+		const suspicious = detectSuspiciousSession({
+			answers: answers.map((answer) => {
+				const question = questions.find((item) => item.id === answer.sessionQuestionId);
+				return {
+					orderIndex: question?.orderIndex ?? 0,
+					timeSpentSeconds: answer.timeSpentSeconds,
+					timeLimitSeconds: question?.timeLimitSeconds ?? 30
+				};
+			}),
+			tabSwitchCount: input.tabSwitchCount,
+			requestAnomalyFlags: input.requestAnomalyFlags
+		});
+		const ratingDelta = suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
+		const ratingAfter = applyRatingDelta(session.ratingBefore, ratingDelta);
+		const rankAfter = suspicious.isSuspicious
+			? session.rankBefore
+			: resolveCompletedRank(ratingAfter);
+
+		await sessionRepository.markCompleted({
+			sessionId: session.id,
+			totalScore: scoreSummary.totalScore,
+			accuracy: scoreSummary.accuracy,
+			totalTimeSeconds: scoreSummary.totalTimeSeconds,
+			averageTimeSeconds: scoreSummary.averageTimeSeconds,
+			ratingAfter,
+			ratingDelta,
+			rankAfter,
+			isSuspicious: suspicious.isSuspicious,
+			suspiciousReason: suspicious.reasons.join(', ') || null
+		});
+	}
+
 	return {
 		async finish(event, input) {
-			const profile = await requireProfile(event, profileRepository);
-			const session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
+			const profile = await getOptionalProfile(event, profileRepository);
+			const guestToken = getGuestToken(event);
+
+			let session: ChallengeSession | null;
+			let isGuest = !profile;
+
+			if (profile) {
+				session = await sessionRepository.findOwnedSession(input.sessionId, profile.id);
+				// If not found in owned sessions, but user has a guest token for this session, claim it!
+				if (!session && guestToken) {
+					const guestSession = await sessionRepository.findGuestSession(
+						input.sessionId,
+						guestToken
+					);
+					if (guestSession && !guestSession.claimedAt) {
+						// Complete first if in_progress
+						if (guestSession.status === 'in_progress') {
+							await finishGuestSession(guestSession, input);
+						}
+						const claimResult = await sessionRepository.claimGuestSession({
+							sessionId: guestSession.id,
+							guestToken,
+							userId: profile.id
+						});
+						session = claimResult.session;
+						clearGuestTokenCookie(event);
+						isGuest = false;
+					}
+				}
+			} else {
+				if (!guestToken) throw unauthorized('Unauthorized or guest token missing');
+				session = await sessionRepository.findGuestSession(input.sessionId, guestToken);
+			}
+
 			if (!session) throw notFound('Challenge session was not found');
 			if (session.status === 'abandoned') throw badRequest('Challenge session is abandoned');
 
 			const [questions, answers] = await Promise.all([
 				sessionRepository.listSessionQuestions(session.id),
-				sessionRepository.listSessionAnswers(session.id, profile.id)
+				sessionRepository.listSessionAnswers(session.id, profile?.id)
 			]);
 
 			if (session.status === 'completed') {
-				return toFinishResult({ session, questions, answers, suspiciousReasons: [] });
+				const result = toFinishResult({ session, questions, answers, suspiciousReasons: [] });
+				return {
+					...result,
+					isGuest,
+					canClaim: isGuest && !session.claimedAt
+				};
 			}
 			if (session.status !== 'in_progress') throw badRequest('Challenge session is not active');
 
@@ -102,31 +194,69 @@ export function createFinishChallengeService(
 				requestAnomalyFlags: input.requestAnomalyFlags
 			});
 			const ratingDelta = suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
-			const ratingAfter = applyRatingDelta(profile.rating, ratingDelta);
-			const rankAfter = suspicious.isSuspicious ? profile.rank : resolveCompletedRank(ratingAfter);
 
-			const completedSession = await sessionRepository.completeSessionAndUpdateProfile({
-				sessionId: session.id,
-				userId: profile.id,
-				totalScore: scoreSummary.totalScore,
-				accuracy: scoreSummary.accuracy,
-				totalTimeSeconds: scoreSummary.totalTimeSeconds,
-				averageTimeSeconds: scoreSummary.averageTimeSeconds,
-				ratingAfter,
-				ratingDelta,
-				rankAfter,
-				isSuspicious: suspicious.isSuspicious,
-				suspiciousReason: suspicious.reasons.join(', ') || null,
-				profileRating: ratingAfter,
-				profileRank: rankAfter
-			});
+			if (profile) {
+				const ratingAfter = applyRatingDelta(profile.rating, ratingDelta);
+				const rankAfter = suspicious.isSuspicious
+					? profile.rank
+					: resolveCompletedRank(ratingAfter);
 
-			return toFinishResult({
-				session: completedSession,
-				questions,
-				answers,
-				suspiciousReasons: suspicious.reasons
-			});
+				const completedSession = await sessionRepository.completeSessionAndUpdateProfile({
+					sessionId: session.id,
+					userId: profile.id,
+					totalScore: scoreSummary.totalScore,
+					accuracy: scoreSummary.accuracy,
+					totalTimeSeconds: scoreSummary.totalTimeSeconds,
+					averageTimeSeconds: scoreSummary.averageTimeSeconds,
+					ratingAfter,
+					ratingDelta,
+					rankAfter,
+					isSuspicious: suspicious.isSuspicious,
+					suspiciousReason: suspicious.reasons.join(', ') || null,
+					profileRating: ratingAfter,
+					profileRank: rankAfter
+				});
+
+				return {
+					...toFinishResult({
+						session: completedSession,
+						questions,
+						answers,
+						suspiciousReasons: suspicious.reasons
+					}),
+					isGuest: false,
+					canClaim: false
+				};
+			} else {
+				const ratingAfter = applyRatingDelta(session.ratingBefore, ratingDelta);
+				const rankAfter = suspicious.isSuspicious
+					? session.rankBefore
+					: resolveCompletedRank(ratingAfter);
+
+				const completedSession = await sessionRepository.markCompleted({
+					sessionId: session.id,
+					totalScore: scoreSummary.totalScore,
+					accuracy: scoreSummary.accuracy,
+					totalTimeSeconds: scoreSummary.totalTimeSeconds,
+					averageTimeSeconds: scoreSummary.averageTimeSeconds,
+					ratingAfter,
+					ratingDelta,
+					rankAfter,
+					isSuspicious: suspicious.isSuspicious,
+					suspiciousReason: suspicious.reasons.join(', ') || null
+				});
+
+				return {
+					...toFinishResult({
+						session: completedSession,
+						questions,
+						answers,
+						suspiciousReasons: suspicious.reasons
+					}),
+					isGuest: true,
+					canClaim: true
+				};
+			}
 		}
 	};
 }

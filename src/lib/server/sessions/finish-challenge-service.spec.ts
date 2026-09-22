@@ -108,4 +108,60 @@ describe('finish challenge service', () => {
 			})
 		).rejects.toMatchObject({ status: 400 });
 	});
+
+	it('finishes guest challenges without updating user profiles and marks them claimable', async () => {
+		const guestToken = 'guest-token-123456789012345678901234567890123456789012345678901234567890';
+		const session = createChallengeSession({
+			userId: null,
+			guestToken,
+			ratingBefore: 0,
+			ratingAfter: 0,
+			rankBefore: 'Unranked',
+			rankAfter: 'Unranked',
+			totalQuestions: 1
+		});
+		const question = createSessionQuestion({ sessionId: session.id, orderIndex: 0 });
+		const repository = createSessionRepositoryFake({
+			session,
+			questions: [question],
+			answers: [createSessionAnswer({ sessionQuestionId: question.id, userId: null })]
+		});
+		const service = createFinishChallengeService(repository, createProfileRepositoryFake(null));
+
+		const event = createFakeEvent(null, { tarkana_guest_token: guestToken });
+		const result = await service.finish(event, { sessionId: session.id });
+
+		expect(result.isGuest).toBe(true);
+		expect(result.canClaim).toBe(true);
+		expect(result.accuracy).toBe(100);
+		expect(repository.completedSessions).toHaveLength(0);
+	});
+
+	it('auto-claims guest session when an authenticated user visits the finished result', async () => {
+		const guestToken = 'guest-token-123456789012345678901234567890123456789012345678901234567890';
+		const profile = createProfile({ rating: 100, rank: 'Bronze Mind' });
+		const session = createChallengeSession({
+			userId: null,
+			guestToken,
+			status: 'completed',
+			totalScore: 150,
+			accuracy: 100,
+			ratingDelta: 40
+		});
+		const question = createSessionQuestion({ sessionId: session.id, orderIndex: 0 });
+		const repository = createSessionRepositoryFake({
+			session,
+			questions: [question],
+			answers: [createSessionAnswer({ sessionQuestionId: question.id, userId: null })]
+		});
+		const service = createFinishChallengeService(repository, createProfileRepositoryFake(profile));
+
+		const event = createFakeEvent(createFakeUser({ id: profile.id }), {
+			tarkana_guest_token: guestToken
+		});
+		const result = await service.finish(event, { sessionId: session.id });
+
+		expect(result.isGuest).toBe(false);
+		expect(result.canClaim).toBe(false);
+	});
 });

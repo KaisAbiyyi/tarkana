@@ -163,4 +163,62 @@ describe('submit answer service', () => {
 			timeSpentSeconds: 15
 		});
 	});
+
+	it('accepts answers from guest sessions with matching guest token', async () => {
+		const guestToken = 'guest-token-123456789012345678901234567890123456789012345678901234567890';
+		const session = createChallengeSession({ userId: null, guestToken });
+		const question = createSessionQuestion({ sessionId: session.id, orderIndex: 0 });
+		const repository = createSessionRepositoryFake({
+			session,
+			questions: [question]
+		});
+		const service = createSubmitAnswerService(
+			repository,
+			createProfileRepositoryFake(null),
+			() => new Date('2026-01-01T00:00:05.000Z')
+		);
+
+		const event = createFakeEvent(null, { tarkana_guest_token: guestToken });
+		const result = await service.submit(event, {
+			sessionId: session.id,
+			sessionQuestionId: question.id,
+			selectedAnswer: question.correctAnswer,
+			timeSpentSeconds: 5
+		});
+
+		expect(result).toMatchObject({ isCorrect: true, scoreEarned: 150, isComplete: true });
+	});
+
+	it('rejects guest submissions when guest token is missing or mismatched', async () => {
+		const guestToken = 'guest-token-123456789012345678901234567890123456789012345678901234567890';
+		const session = createChallengeSession({ userId: null, guestToken });
+		const question = createSessionQuestion({ sessionId: session.id, orderIndex: 0 });
+		const repository = createSessionRepositoryFake({
+			session,
+			questions: [question]
+		});
+		const service = createSubmitAnswerService(
+			repository,
+			createProfileRepositoryFake(null),
+			() => new Date('2026-01-01T00:00:05.000Z')
+		);
+
+		await expect(
+			service.submit(createFakeEvent(null), {
+				sessionId: session.id,
+				sessionQuestionId: question.id,
+				selectedAnswer: question.correctAnswer,
+				timeSpentSeconds: 5
+			})
+		).rejects.toMatchObject({ status: 401 });
+
+		await expect(
+			service.submit(createFakeEvent(null, { tarkana_guest_token: 'wrong-token' }), {
+				sessionId: session.id,
+				sessionQuestionId: question.id,
+				selectedAnswer: question.correctAnswer,
+				timeSpentSeconds: 5
+			})
+		).rejects.toMatchObject({ status: 404 });
+	});
 });

@@ -23,6 +23,8 @@ export function createChallengeSession(
 	return {
 		id: '11111111-1111-4111-8111-111111111111',
 		userId: '11111111-1111-4111-8111-111111111111',
+		guestToken: null,
+		claimedAt: null,
 		challengeType: 'quick',
 		status: 'in_progress',
 		totalQuestions: 1,
@@ -153,19 +155,23 @@ export function createSessionRepositoryFake(
 		async findOwnedSession(sessionId: string, userId: string) {
 			return session.id === sessionId && session.userId === userId ? session : null;
 		},
+		async findGuestSession(sessionId: string, guestToken: string) {
+			return session.id === sessionId && session.guestToken === guestToken ? session : null;
+		},
 		async listSessionQuestions(sessionId: string) {
 			return questions.filter((question) => question.sessionId === sessionId);
 		},
-		async listSessionAnswers(_sessionId: string, userId: string) {
-			return answers.filter((answer) => answer.userId === userId);
+		async listSessionAnswers(_sessionId: string, userId?: string) {
+			return userId ? answers.filter((answer) => answer.userId === userId) : answers;
 		},
 		async findQuestionById(questionId: string) {
 			return questions.find((question) => question.id === questionId) ?? null;
 		},
-		async findAnswerForQuestion(questionId: string, userId: string) {
+		async findAnswerForQuestion(questionId: string, userId?: string) {
 			return (
 				answers.find(
-					(answer) => answer.sessionQuestionId === questionId && answer.userId === userId
+					(answer) =>
+						answer.sessionQuestionId === questionId && (!userId || answer.userId === userId)
 				) ?? null
 			);
 		},
@@ -218,6 +224,38 @@ export function createSessionRepositoryFake(
 		},
 		async findActiveSession(userId: string) {
 			return session.userId === userId && session.status === 'in_progress' ? session : null;
+		},
+		async findActiveGuestSession(guestToken: string) {
+			return session.guestToken === guestToken && session.status === 'in_progress' ? session : null;
+		},
+		async findLatestGuestSession(guestToken: string) {
+			return session.guestToken === guestToken && !session.userId ? session : null;
+		},
+		async claimGuestSession(input) {
+			if (session.id !== input.sessionId || session.guestToken !== input.guestToken) {
+				throw new Error('Guest session not found or token mismatch');
+			}
+			if (session.claimedAt && session.userId === input.userId) {
+				return { session, profileRating: 1200, profileRank: 'Bronze Mind', alreadyClaimed: true };
+			}
+			if (session.claimedAt || session.userId) {
+				throw new Error('Session has already been claimed');
+			}
+			session = createChallengeSession({
+				...session,
+				userId: input.userId,
+				claimedAt: new Date(),
+				ratingBefore: 0,
+				ratingAfter: session.status === 'completed' ? 1200 : 0,
+				rankBefore: 'Unranked',
+				rankAfter: session.status === 'completed' ? 'Bronze Mind' : 'Unranked'
+			});
+			return {
+				session,
+				profileRating: session.status === 'completed' ? 1200 : 0,
+				profileRank: session.status === 'completed' ? 'Bronze Mind' : 'Unranked',
+				alreadyClaimed: false
+			};
 		},
 		async abandonSession(sessionId: string) {
 			if (session.id === sessionId) {

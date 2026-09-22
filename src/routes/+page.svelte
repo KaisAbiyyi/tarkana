@@ -132,7 +132,7 @@
 					</p>
 
 					<div class="hero-actions hero-entrance">
-						<Button href="/auth/register" size="lg">{t('landing.freeCta')}</Button>
+						<Button href="/challenge" size="lg">{t('landing.freeCta')}</Button>
 						<a class="secondary-cta" href="#cara-kerja">{t('landing.seeHow')}</a>
 					</div>
 
