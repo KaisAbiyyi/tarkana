@@ -223,7 +223,17 @@ export const dailyChallengeAttempts = pgTable(
 			.where(sql`user_id IS NOT NULL AND is_official = true`),
 		uniqueIndex('daily_attempts_guest_official_uidx')
 			.on(table.dailyChallengeId, table.guestTokenHash)
-			.where(sql`guest_token_hash IS NOT NULL AND is_official = true`)
+			.where(sql`guest_token_hash IS NOT NULL AND is_official = true`),
+		index('daily_attempts_leaderboard_rank_idx')
+			.on(
+				table.dailyChallengeId,
+				table.score,
+				table.accuracy,
+				table.totalTimeSeconds,
+				table.completedAt,
+				table.id
+			)
+			.where(sql`user_id IS NOT NULL AND is_official = true AND status = 'completed'`)
 	]
 );
 

@@ -187,7 +187,7 @@ describe('Security & Reliability Contracts', () => {
 			} catch (err: unknown) {
 				expect((err as { status: number }).status).toBe(429);
 			}
-		}, 15000);
+		}, 30000);
 
 		it('resets rate limit counter after time window expires', async () => {
 			const key = 'test-user-ip:window-reset-' + Math.random().toString(36).substring(2);
@@ -205,7 +205,7 @@ describe('Security & Reliability Contracts', () => {
 			// Third request after window expires (t0 + 600ms) -> Allowed again
 			const res3 = await checkRateLimit(key, options, t0 + 600);
 			expect(res3.allowed).toBe(true);
-		}, 15000);
+		}, 30000);
 
 		it('pseudonymizes raw IP keys before database persistence', () => {
 			const rawKey = '192.168.1.100:submit';

@@ -166,6 +166,19 @@
 		</div>
 	</header>
 
+	<!-- Leaderboard Link Banner -->
+	<aside
+		class="flex flex-col gap-4 border-[3px] border-[var(--color-border)] bg-[var(--color-paper)] p-6 shadow-[var(--shadow-hard-sm)] sm:flex-row sm:items-center sm:justify-between"
+	>
+		<div>
+			<h2 class="text-xl font-black">Today's Leaderboard</h2>
+			<p class="mt-1 text-sm font-semibold text-[var(--color-muted)]">
+				See where you rank against players worldwide on today's identical puzzle.
+			</p>
+		</div>
+		<Button href="/leaderboard?tab=daily" variant="secondary" size="md">View Leaderboard →</Button>
+	</aside>
+
 	<!-- Information Cards -->
 	<div class="grid gap-6 md:grid-cols-3">
 		<Card title="Global Determinism" description="Identical challenges worldwide">

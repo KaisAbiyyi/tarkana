@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, sql } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
 import {
 	challengeSessions,
@@ -61,6 +61,51 @@ export type StartDailySessionAtomicResult =
 			type: 'conflict_forfeited';
 	  };
 
+export interface DailyLeaderboardRow {
+	position: number;
+	userId: string;
+	displayName: string;
+	logicRank: string;
+	score: number;
+	accuracy: number;
+	totalTimeSeconds: number;
+	completedAt: Date;
+}
+
+export interface GetDailyLeaderboardInput {
+	dailyChallengeId: string;
+	limit: number;
+	offset: number;
+}
+
+export interface GetDailyLeaderboardOutput {
+	items: DailyLeaderboardRow[];
+	totalParticipants: number;
+}
+
+export interface GetUserDailyPositionInput {
+	dailyChallengeId: string;
+	userId: string;
+}
+
+export interface GetAroundMeDailyLeaderboardInput {
+	dailyChallengeId: string;
+	userId: string;
+	windowSize?: number;
+}
+
+export interface GetGuestHypotheticalPositionInput {
+	dailyChallengeId: string;
+	guestTokenHash: string;
+}
+
+export interface GuestHypotheticalPositionOutput {
+	hypotheticalPosition: number;
+	score: number;
+	accuracy: number;
+	totalTimeSeconds: number;
+}
+
 export interface DailyRepository {
 	findDailyChallengeByDate(dateString: string): Promise<DailyChallenge | null>;
 	getOrCreateDailyChallenge(challenge: NewDailyChallenge): Promise<DailyChallenge>;
@@ -82,6 +127,14 @@ export interface DailyRepository {
 	startDailySessionAtomic(
 		input: StartDailySessionAtomicInput
 	): Promise<StartDailySessionAtomicResult>;
+	getDailyLeaderboard(input: GetDailyLeaderboardInput): Promise<GetDailyLeaderboardOutput>;
+	getUserDailyPosition(input: GetUserDailyPositionInput): Promise<DailyLeaderboardRow | null>;
+	getAroundMeDailyLeaderboard(
+		input: GetAroundMeDailyLeaderboardInput
+	): Promise<DailyLeaderboardRow[]>;
+	getGuestHypotheticalPosition(
+		input: GetGuestHypotheticalPositionInput
+	): Promise<GuestHypotheticalPositionOutput | null>;
 }
 
 export function createDailyRepository(database: Database = getDb()): DailyRepository {
@@ -433,6 +486,250 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 
 				throw err;
 			}
+		},
+
+		async getDailyLeaderboard({ dailyChallengeId, limit, offset }) {
+			const query = sql`
+				WITH ranked_official_attempts AS (
+					SELECT
+						dca.id AS attempt_id,
+						dca.user_id AS user_id,
+						u.display_name AS display_name,
+						u.rank AS logic_rank,
+						dca.score AS score,
+						dca.accuracy AS accuracy,
+						dca.total_time_seconds AS total_time_seconds,
+						dca.completed_at AS completed_at,
+						ROW_NUMBER() OVER (
+							ORDER BY
+								dca.score DESC,
+								dca.accuracy DESC,
+								dca.total_time_seconds ASC,
+								dca.completed_at ASC,
+								dca.id ASC
+						) AS position,
+						COUNT(*) OVER () AS total_count
+					FROM daily_challenge_attempts dca
+					JOIN users_profile u ON u.id = dca.user_id
+					JOIN challenge_sessions cs ON cs.id = dca.session_id
+					WHERE dca.daily_challenge_id = ${dailyChallengeId}
+					  AND dca.user_id IS NOT NULL
+					  AND dca.is_official = true
+					  AND dca.status = 'completed'
+					  AND cs.is_suspicious = false
+				)
+				SELECT *
+				FROM ranked_official_attempts
+				ORDER BY position ASC
+				LIMIT ${limit}
+				OFFSET ${offset};
+			`;
+
+			const result = await database.execute(query);
+			const rows = ('rows' in result ? result.rows : result) as Record<string, unknown>[];
+
+			if (!rows || rows.length === 0) {
+				const countResult = await database.execute(sql`
+					SELECT COUNT(*) AS total
+					FROM daily_challenge_attempts dca
+					JOIN challenge_sessions cs ON cs.id = dca.session_id
+					WHERE dca.daily_challenge_id = ${dailyChallengeId}
+					  AND dca.user_id IS NOT NULL
+					  AND dca.is_official = true
+					  AND dca.status = 'completed'
+					  AND cs.is_suspicious = false;
+				`);
+				const countRows = ('rows' in countResult ? countResult.rows : countResult) as Record<
+					string,
+					unknown
+				>[];
+				const total = Number(countRows[0]?.total ?? 0);
+				return { items: [], totalParticipants: total };
+			}
+
+			const totalParticipants = Number(rows[0].total_count ?? rows.length);
+
+			const items: DailyLeaderboardRow[] = rows.map((r) => ({
+				position: Number(r.position),
+				userId: String(r.user_id),
+				displayName: String(r.display_name ?? 'Anonymous Solver'),
+				logicRank: String(r.logic_rank ?? 'Unranked'),
+				score: Number(r.score),
+				accuracy: Number(r.accuracy),
+				totalTimeSeconds: Number(r.total_time_seconds),
+				completedAt: new Date(String(r.completed_at))
+			}));
+
+			return { items, totalParticipants };
+		},
+
+		async getUserDailyPosition({ dailyChallengeId, userId }) {
+			const query = sql`
+				WITH ranked_official_attempts AS (
+					SELECT
+						dca.id AS attempt_id,
+						dca.user_id AS user_id,
+						u.display_name AS display_name,
+						u.rank AS logic_rank,
+						dca.score AS score,
+						dca.accuracy AS accuracy,
+						dca.total_time_seconds AS total_time_seconds,
+						dca.completed_at AS completed_at,
+						ROW_NUMBER() OVER (
+							ORDER BY
+								dca.score DESC,
+								dca.accuracy DESC,
+								dca.total_time_seconds ASC,
+								dca.completed_at ASC,
+								dca.id ASC
+						) AS position
+					FROM daily_challenge_attempts dca
+					JOIN users_profile u ON u.id = dca.user_id
+					JOIN challenge_sessions cs ON cs.id = dca.session_id
+					WHERE dca.daily_challenge_id = ${dailyChallengeId}
+					  AND dca.user_id IS NOT NULL
+					  AND dca.is_official = true
+					  AND dca.status = 'completed'
+					  AND cs.is_suspicious = false
+				)
+				SELECT *
+				FROM ranked_official_attempts
+				WHERE user_id = ${userId}
+				LIMIT 1;
+			`;
+
+			const result = await database.execute(query);
+			const rows = ('rows' in result ? result.rows : result) as Record<string, unknown>[];
+			if (!rows || rows.length === 0) return null;
+
+			const r = rows[0];
+			return {
+				position: Number(r.position),
+				userId: String(r.user_id),
+				displayName: String(r.display_name ?? 'Anonymous Solver'),
+				logicRank: String(r.logic_rank ?? 'Unranked'),
+				score: Number(r.score),
+				accuracy: Number(r.accuracy),
+				totalTimeSeconds: Number(r.total_time_seconds),
+				completedAt: new Date(String(r.completed_at))
+			};
+		},
+
+		async getAroundMeDailyLeaderboard({ dailyChallengeId, userId, windowSize = 2 }) {
+			const userPos = await this.getUserDailyPosition({ dailyChallengeId, userId });
+			if (!userPos) return [];
+
+			const minPos = Math.max(1, userPos.position - windowSize);
+			const maxPos = userPos.position + windowSize;
+
+			const query = sql`
+				WITH ranked_official_attempts AS (
+					SELECT
+						dca.id AS attempt_id,
+						dca.user_id AS user_id,
+						u.display_name AS display_name,
+						u.rank AS logic_rank,
+						dca.score AS score,
+						dca.accuracy AS accuracy,
+						dca.total_time_seconds AS total_time_seconds,
+						dca.completed_at AS completed_at,
+						ROW_NUMBER() OVER (
+							ORDER BY
+								dca.score DESC,
+								dca.accuracy DESC,
+								dca.total_time_seconds ASC,
+								dca.completed_at ASC,
+								dca.id ASC
+						) AS position
+					FROM daily_challenge_attempts dca
+					JOIN users_profile u ON u.id = dca.user_id
+					JOIN challenge_sessions cs ON cs.id = dca.session_id
+					WHERE dca.daily_challenge_id = ${dailyChallengeId}
+					  AND dca.user_id IS NOT NULL
+					  AND dca.is_official = true
+					  AND dca.status = 'completed'
+					  AND cs.is_suspicious = false
+				)
+				SELECT *
+				FROM ranked_official_attempts
+				WHERE position BETWEEN ${minPos} AND ${maxPos}
+				ORDER BY position ASC;
+			`;
+
+			const result = await database.execute(query);
+			const rows = ('rows' in result ? result.rows : result) as Record<string, unknown>[];
+			if (!rows) return [];
+
+			return rows.map((r) => ({
+				position: Number(r.position),
+				userId: String(r.user_id),
+				displayName: String(r.display_name ?? 'Anonymous Solver'),
+				logicRank: String(r.logic_rank ?? 'Unranked'),
+				score: Number(r.score),
+				accuracy: Number(r.accuracy),
+				totalTimeSeconds: Number(r.total_time_seconds),
+				completedAt: new Date(String(r.completed_at))
+			}));
+		},
+
+		async getGuestHypotheticalPosition({ dailyChallengeId, guestTokenHash }) {
+			const [guestAttempt] = await database
+				.select({
+					id: dailyChallengeAttempts.id,
+					score: dailyChallengeAttempts.score,
+					accuracy: dailyChallengeAttempts.accuracy,
+					totalTimeSeconds: dailyChallengeAttempts.totalTimeSeconds,
+					completedAt: dailyChallengeAttempts.completedAt
+				})
+				.from(dailyChallengeAttempts)
+				.where(
+					and(
+						eq(dailyChallengeAttempts.dailyChallengeId, dailyChallengeId),
+						eq(dailyChallengeAttempts.guestTokenHash, guestTokenHash),
+						eq(dailyChallengeAttempts.status, 'completed'),
+						isNull(dailyChallengeAttempts.userId)
+					)
+				)
+				.orderBy(desc(dailyChallengeAttempts.createdAt))
+				.limit(1);
+
+			if (!guestAttempt || !guestAttempt.completedAt) return null;
+
+			const query = sql`
+				WITH ranked_official_attempts AS (
+					SELECT
+						dca.id AS attempt_id,
+						dca.score AS score,
+						dca.accuracy AS accuracy,
+						dca.total_time_seconds AS total_time_seconds,
+						dca.completed_at AS completed_at
+					FROM daily_challenge_attempts dca
+					JOIN challenge_sessions cs ON cs.id = dca.session_id
+					WHERE dca.daily_challenge_id = ${dailyChallengeId}
+					  AND dca.user_id IS NOT NULL
+					  AND dca.is_official = true
+					  AND dca.status = 'completed'
+					  AND cs.is_suspicious = false
+				)
+				SELECT COUNT(*) AS ahead_count
+				FROM ranked_official_attempts roa
+				WHERE roa.score > ${guestAttempt.score}
+				   OR (roa.score = ${guestAttempt.score} AND roa.accuracy > ${guestAttempt.accuracy})
+				   OR (roa.score = ${guestAttempt.score} AND roa.accuracy = ${guestAttempt.accuracy} AND roa.total_time_seconds < ${guestAttempt.totalTimeSeconds})
+				   OR (roa.score = ${guestAttempt.score} AND roa.accuracy = ${guestAttempt.accuracy} AND roa.total_time_seconds = ${guestAttempt.totalTimeSeconds} AND roa.completed_at < ${guestAttempt.completedAt})
+				   OR (roa.score = ${guestAttempt.score} AND roa.accuracy = ${guestAttempt.accuracy} AND roa.total_time_seconds = ${guestAttempt.totalTimeSeconds} AND roa.completed_at = ${guestAttempt.completedAt} AND roa.attempt_id < ${guestAttempt.id});
+			`;
+
+			const result = await database.execute(query);
+			const rows = ('rows' in result ? result.rows : result) as Record<string, unknown>[];
+			const aheadCount = Number(rows[0]?.ahead_count ?? 0);
+
+			return {
+				hypotheticalPosition: aheadCount + 1,
+				score: guestAttempt.score,
+				accuracy: guestAttempt.accuracy,
+				totalTimeSeconds: guestAttempt.totalTimeSeconds
+			};
 		}
 	};
 }

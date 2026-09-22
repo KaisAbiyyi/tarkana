@@ -340,6 +340,22 @@ function createDailyRepositoryFake(
 				session,
 				currentQuestion: persistedQuestions[0]
 			};
+		},
+
+		async getDailyLeaderboard() {
+			return { items: [], totalParticipants: 0 };
+		},
+
+		async getUserDailyPosition() {
+			return null;
+		},
+
+		async getAroundMeDailyLeaderboard() {
+			return [];
+		},
+
+		async getGuestHypotheticalPosition() {
+			return null;
 		}
 	};
 }
