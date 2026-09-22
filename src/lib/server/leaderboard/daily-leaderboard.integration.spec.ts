@@ -85,6 +85,8 @@ describe('Real Database Daily Leaderboard Integration', () => {
 		const makeUserId = (num: number) => `00000000-0000-4000-8000-${String(num).padStart(12, '0')}`;
 		const makeSessionId = (num: number) =>
 			`00000000-0000-4000-8001-${String(num).padStart(12, '0')}`;
+		const makeAttemptId = (num: number) =>
+			`00000000-0000-4000-8002-${String(num).padStart(12, '0')}`;
 
 		// Clean up test users
 		for (let i = 1; i <= 10; i++) {
@@ -138,7 +140,7 @@ describe('Real Database Daily Leaderboard Integration', () => {
 			});
 
 			await db!.insert(dailyChallengeAttempts).values({
-				id: `att-integ-${num}`,
+				id: makeAttemptId(num),
 				dailyChallengeId: testDailyId,
 				sessionId: sId,
 				userId: uId,
@@ -257,7 +259,7 @@ describe('Real Database Daily Leaderboard Integration', () => {
 		});
 
 		await db.insert(dailyChallengeAttempts).values({
-			id: 'att-integ-guest-9',
+			id: makeAttemptId(99),
 			dailyChallengeId: testDailyId,
 			sessionId: guestSessionId,
 			userId: null,
@@ -367,5 +369,16 @@ describe('Real Database Daily Leaderboard Integration', () => {
 
 		expect(explainResult.rows).toBeDefined();
 		expect(explainResult.rows.length).toBeGreaterThan(0);
+
+		// Clean up after test
+		await db
+			.delete(dailyChallengeAttempts)
+			.where(eq(dailyChallengeAttempts.dailyChallengeId, testDailyId));
+		await db.delete(dailyChallenges).where(eq(dailyChallenges.id, testDailyId));
+		for (let i = 1; i <= 10; i++) {
+			await db.delete(challengeSessions).where(eq(challengeSessions.id, makeSessionId(i)));
+			await db.delete(usersProfile).where(eq(usersProfile.id, makeUserId(i)));
+		}
+		await db.delete(challengeSessions).where(eq(challengeSessions.id, guestSessionId));
 	});
 });
