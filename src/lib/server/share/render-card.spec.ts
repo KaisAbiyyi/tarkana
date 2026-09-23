@@ -9,7 +9,7 @@ describe('renderShareCard', () => {
 		challengeType: 'daily',
 		challengeDate: '2026-09-23',
 		totalScore: 920,
-		accuracy: 0.9,
+		accuracy: 90, // Realistic accuracy (0..100)
 		correctAnswers: 9,
 		totalQuestions: 10,
 		totalTimeSeconds: 45,
@@ -30,16 +30,37 @@ describe('renderShareCard', () => {
 		]
 	};
 
-	it('renders valid SVG with expected labels and tiles', () => {
-		const svg = renderShareCardSvg(mockShare);
+	it('renders valid SVG with expected labels, realistic 90% accuracy, and tiles', () => {
+		const svg = renderShareCardSvg(mockShare, 'https://play.tarkana.io');
 
 		expect(svg).toContain('TARKANA');
 		expect(svg).toContain('DAILY CHALLENGE • 2026-09-23');
 		expect(svg).toContain('LogicMaster');
 		expect(svg).toContain('920');
 		expect(svg).toContain('90%');
+		expect(svg).not.toContain('9000%');
 		expect(svg).toContain('Gold Analyst');
+		expect(svg).toContain('PLAY NOW AT PLAY.TARKANA.IO');
 		expect(svg).toContain('viewBox="0 0 1200 630"');
+	});
+
+	it('renders non-standard challenge types with accurate labels without coercing to standard', () => {
+		const quickShare: PublicShareResultDto = {
+			...mockShare,
+			challengeType: 'quick',
+			challengeDate: undefined
+		};
+		const quickSvg = renderShareCardSvg(quickShare);
+		expect(quickSvg).toContain('QUICK LOGIC CHALLENGE');
+		expect(quickSvg).not.toContain('STANDARD LOGIC CHALLENGE');
+
+		const longShare: PublicShareResultDto = {
+			...mockShare,
+			challengeType: 'long',
+			challengeDate: undefined
+		};
+		const longSvg = renderShareCardSvg(longShare);
+		expect(longSvg).toContain('LONG LOGIC CHALLENGE');
 	});
 
 	it('renders a real 1200x630 PNG buffer with PNG magic bytes', () => {

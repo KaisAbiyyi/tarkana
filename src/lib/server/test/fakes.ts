@@ -117,11 +117,16 @@ export function createShareRepositoryFake(
 	return {
 		shares,
 		async createShare(input) {
+			const existing = shares.find((s) => s.sessionId === input.sessionId && !s.isRevoked);
+			if (existing) {
+				return existing;
+			}
 			const created: import('$lib/server/db/schema').SharedResult = {
 				id: `shr-db-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
 				publicId: input.publicId,
 				sessionId: input.sessionId,
 				userId: input.userId,
+				displayName: input.displayName ?? 'Guest Solver',
 				isRevoked: false,
 				revokedAt: null,
 				createdAt: new Date(),

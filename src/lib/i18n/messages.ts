@@ -7634,6 +7634,20 @@ export const messages = {
 		'व्हाट्सएप',
 		'WhatsApp'
 	],
+	'share.shareOnLinkedIn': [
+		'LinkedIn',
+		'LinkedIn',
+		'LinkedIn',
+		'LinkedIn',
+		'LinkedIn',
+		'LinkedIn',
+		'领英',
+		'LinkedIn',
+		'LinkedIn',
+		'لينكد إن',
+		'लिंक्डइन',
+		'LinkedIn'
+	],
 	'share.shareModalTitle': [
 		'Share Your Result',
 		'Bagikan Hasil Anda',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createShareService } from './share-service';
+import { createShareService, toAnalyticsShareId } from './share-service';
 import {
 	createChallengeSession,
 	createSessionAnswer,
@@ -36,7 +36,7 @@ describe('ShareService', () => {
 			status: 'completed',
 			totalScore: 850,
 			totalQuestions: 2,
-			accuracy: 0.9,
+			accuracy: 90,
 			totalTimeSeconds: 42,
 			rankAfter: 'Silver Solver',
 			isSuspicious: false
@@ -128,6 +128,8 @@ describe('ShareService', () => {
 
 			expect(result.publicId).toMatch(/^shr_[a-zA-Z0-9_-]{12}$/);
 			expect(result.shareUrl).toContain(`/share/${result.publicId}`);
+			expect(result.analyticsShareId).toBe(toAnalyticsShareId(result.publicId));
+			expect(result.analyticsShareId).not.toBe(result.publicId);
 
 			const stored = await shareRepo.findShareByPublicId(result.publicId);
 			expect(stored).not.toBeNull();
@@ -144,7 +146,7 @@ describe('ShareService', () => {
 				guestToken: hashGuestToken(rawGuestToken),
 				status: 'completed',
 				totalScore: 700,
-				accuracy: 0.8,
+				accuracy: 80,
 				isSuspicious: false
 			});
 
@@ -231,6 +233,21 @@ describe('ShareService', () => {
 			expect(first.publicId).toBe(second.publicId);
 			expect(shareRepo.shares.filter((s) => s.sessionId === session.id)).toHaveLength(1);
 		});
+
+		it('handles concurrent createShare calls safely returning the same canonical share', async () => {
+			const { user, service, session, shareRepo } = setup();
+			const event = createFakeEvent(user);
+
+			const [resultA, resultB] = await Promise.all([
+				service.createShare(event, { sessionId: session.id }),
+				service.createShare(event, { sessionId: session.id })
+			]);
+
+			expect(resultA.publicId).toBe(resultB.publicId);
+			expect(resultA.shareUrl).toBe(resultB.shareUrl);
+			expect(resultA.analyticsShareId).toBe(resultB.analyticsShareId);
+			expect(shareRepo.shares.filter((s) => s.sessionId === session.id)).toHaveLength(1);
+		});
 	});
 
 	describe('getPublicShare', () => {
@@ -244,7 +261,7 @@ describe('ShareService', () => {
 			expect(publicDto.publicId).toBe(publicId);
 			expect(publicDto.displayName).toBe('AliceWonder');
 			expect(publicDto.totalScore).toBe(850);
-			expect(publicDto.accuracy).toBe(0.9);
+			expect(publicDto.accuracy).toBe(90);
 			expect(publicDto.logicRank).toBe('Silver Solver');
 			expect(publicDto.totalQuestions).toBe(2);
 			expect(publicDto.correctAnswers).toBe(1);
@@ -256,6 +273,48 @@ describe('ShareService', () => {
 			expect(publicDto).not.toHaveProperty('guestToken');
 			expect(publicDto).not.toHaveProperty('distinctId');
 			expect(publicDto).not.toHaveProperty('isSuspicious');
+		});
+
+		it('snapshots creator display name at creation and preserves it across claim or profile edits', async () => {
+			const rawGuestToken = 'guest-secret-token-snap';
+			const guestSession = createChallengeSession({
+				id: '88888888-8888-4888-8888-888888888888',
+				userId: null,
+				guestToken: hashGuestToken(rawGuestToken),
+				status: 'completed',
+				totalScore: 720,
+				accuracy: 80,
+				isSuspicious: false
+			});
+			const { service, profileRepo } = setup({ session: guestSession });
+			const event = createFakeEvent(null, { [GUEST_TOKEN_COOKIE]: rawGuestToken });
+
+			const { publicId } = await service.createShare(event, { sessionId: guestSession.id });
+			let publicDto = await service.getPublicShare(publicId);
+			expect(publicDto.displayName).toBe('Guest Solver');
+
+			// Now simulate guest session being claimed by a registered user "Bob"
+			guestSession.userId = 'user-bob';
+			await profileRepo.create({ id: 'user-bob', displayName: 'BobTheBuilder' });
+
+			// getPublicShare MUST still return the snapshotted 'Guest Solver', not 'BobTheBuilder'
+			publicDto = await service.getPublicShare(publicId);
+			expect(publicDto.displayName).toBe('Guest Solver');
+		});
+
+		it('preserves non-standard challenge types in public share DTO', async () => {
+			const quickSession = createChallengeSession({
+				userId: 'user-alice',
+				challengeType: 'quick',
+				status: 'completed',
+				accuracy: 85
+			});
+			const { user, service } = setup({ session: quickSession });
+			const event = createFakeEvent(user);
+			const { publicId } = await service.createShare(event, { sessionId: quickSession.id });
+
+			const publicDto = await service.getPublicShare(publicId);
+			expect(publicDto.challengeType).toBe('quick');
 		});
 
 		it('enforces permanent anti-spoiler protection on question breakdown', async () => {

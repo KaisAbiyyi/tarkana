@@ -6,6 +6,7 @@ export interface CreateShareInput {
 	sessionId: string;
 	userId: string | null;
 	publicId: string;
+	displayName?: string;
 }
 
 export interface ShareRepository {
@@ -18,20 +19,39 @@ export interface ShareRepository {
 export function createShareRepository(database: Database = getDb()): ShareRepository {
 	return {
 		async createShare(input) {
-			const [created] = await database
-				.insert(sharedResults)
-				.values({
-					sessionId: input.sessionId,
-					userId: input.userId,
-					publicId: input.publicId,
-					isRevoked: false
-				})
-				.returning();
+			try {
+				const [created] = await database
+					.insert(sharedResults)
+					.values({
+						sessionId: input.sessionId,
+						userId: input.userId,
+						publicId: input.publicId,
+						displayName: input.displayName ?? 'Guest Solver',
+						isRevoked: false
+					})
+					.onConflictDoNothing()
+					.returning();
 
-			if (!created) {
-				throw new Error('Failed to create shared result');
+				if (created) {
+					return created;
+				}
+			} catch {
+				// Concurrency fallback on constraint violation
 			}
-			return created;
+
+			const [existing] = await database
+				.select()
+				.from(sharedResults)
+				.where(
+					and(eq(sharedResults.sessionId, input.sessionId), eq(sharedResults.isRevoked, false))
+				)
+				.limit(1);
+
+			if (existing) {
+				return existing;
+			}
+
+			throw new Error('Failed to create or retrieve shared result');
 		},
 
 		async findShareByPublicId(publicId) {

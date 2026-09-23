@@ -5,7 +5,11 @@
 	import Button from '$lib/components/primitives/Button.svelte';
 	import Badge from '$lib/components/primitives/Badge.svelte';
 	import Card from '$lib/components/primitives/Card.svelte';
-	import { formatPercent, formatSeconds } from '$lib/shared/presentation/format';
+	import {
+		formatPercent,
+		formatSeconds,
+		labelChallengeType
+	} from '$lib/shared/presentation/format';
 	import { getI18nContext } from '$lib/i18n/context';
 	import { analytics } from '$lib/client/analytics';
 
@@ -27,7 +31,7 @@
 		`${share.displayName}'s Logic Challenge Result: ${share.totalScore} PTS | Tarkana`
 	);
 	let pageDescription = $derived(
-		`${share.displayName} scored ${share.totalScore} with ${Math.round(share.accuracy * 100)}% accuracy on Tarkana. Can you beat this score?`
+		`${share.displayName} scored ${share.totalScore} with ${Math.round(share.accuracy)}% accuracy on Tarkana. Can you beat this score?`
 	);
 
 	onMount(() => {
@@ -41,7 +45,7 @@
 		}
 
 		analytics.track('shared_result_viewed', {
-			share_id: share.publicId,
+			share_id: data.analyticsShareId,
 			challenge_type: share.challengeType,
 			referrer
 		});
@@ -49,7 +53,7 @@
 
 	function handleCtaClick(destination: string) {
 		analytics.track('shared_result_cta_clicked', {
-			share_id: share.publicId,
+			share_id: data.analyticsShareId,
 			challenge_type: share.challengeType,
 			destination
 		});
@@ -84,7 +88,9 @@
 			<header class="grid gap-3">
 				<div class="flex flex-wrap items-center gap-2">
 					<Badge tone="accent">
-						{isDaily ? `DAILY CHALLENGE • ${share.challengeDate}` : 'STANDARD LOGIC CHALLENGE'}
+						{isDaily
+							? `DAILY CHALLENGE • ${share.challengeDate}`
+							: `${labelChallengeType(share.challengeType, locale).toUpperCase()} LOGIC CHALLENGE`}
 					</Badge>
 					<Badge tone="neutral">
 						{share.logicRank}

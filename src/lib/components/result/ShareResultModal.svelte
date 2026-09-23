@@ -3,6 +3,8 @@
 	import Button from '$lib/components/primitives/Button.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
 	import { analytics } from '$lib/client/analytics';
+	import type { ChallengeType } from '$lib/shared/constants/challenge';
+	import { labelChallengeType } from '$lib/shared/presentation/format';
 
 	type QuestionReview = {
 		orderIndex: number;
@@ -15,11 +17,12 @@
 		sessionId: string;
 		publicId: string;
 		shareUrl: string;
+		analyticsShareId?: string;
 		totalScore: number;
 		accuracy: number;
 		totalTimeSeconds: number;
 		logicRank: string;
-		challengeType: 'standard' | 'daily';
+		challengeType: ChallengeType;
 		challengeDate?: string;
 		questions: QuestionReview[];
 	};
@@ -30,6 +33,7 @@
 		sessionId,
 		publicId,
 		shareUrl,
+		analyticsShareId,
 		totalScore,
 		accuracy,
 		totalTimeSeconds,
@@ -39,7 +43,7 @@
 		questions
 	}: Props = $props();
 
-	const { t } = getI18nContext();
+	const { locale, t } = getI18nContext();
 
 	let linkCopied = $state(false);
 	let textCopied = $state(false);
@@ -62,11 +66,11 @@
 	let formattedSummaryText = $derived.by(() => {
 		const modeHeader = isDaily
 			? `Tarkana Daily • ${challengeDate ?? ''}`
-			: 'Tarkana Logic Challenge';
+			: `Tarkana ${labelChallengeType(challengeType, locale)} Challenge`;
 		return [
 			modeHeader,
 			`🎯 Reasoning Score: ${totalScore} pts`,
-			`⚡ Accuracy: ${Math.round(accuracy * 100)}%`,
+			`⚡ Accuracy: ${Math.round(accuracy)}%`,
 			`⏱️ Total Time: ${totalTimeSeconds}s`,
 			`🧠 Logic Rank: ${logicRank}`,
 			emojiGrid,
@@ -84,7 +88,7 @@
 				session_id: sessionId,
 				platform: 'clipboard_link',
 				score: totalScore,
-				share_id: publicId
+				share_id: analyticsShareId ?? publicId
 			});
 		} catch {
 			/* ignore */
@@ -100,7 +104,7 @@
 				session_id: sessionId,
 				platform: 'clipboard_text',
 				score: totalScore,
-				share_id: publicId
+				share_id: analyticsShareId ?? publicId
 			});
 		} catch {
 			/* ignore */
@@ -119,7 +123,7 @@
 					session_id: sessionId,
 					platform: 'native_share',
 					score: totalScore,
-					share_id: publicId
+					share_id: analyticsShareId ?? publicId
 				});
 				return;
 			} catch {
@@ -134,7 +138,7 @@
 			session_id: sessionId,
 			platform,
 			score: totalScore,
-			share_id: publicId
+			share_id: analyticsShareId ?? publicId
 		});
 	}
 
@@ -245,6 +249,16 @@
 							class="inline-flex items-center gap-1.5 border-2 border-[var(--color-border)] bg-[#25D366] px-3 py-2 text-xs font-black text-black hover:opacity-90"
 						>
 							💬 {t('share.shareOnWhatsApp')}
+						</a>
+						<a
+							href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							onclick={() => handleSocialClick('linkedin')}
+							class="inline-flex items-center gap-1.5 border-2 border-[var(--color-border)] bg-[#0077b5] px-3 py-2 text-xs font-black text-white hover:opacity-90"
+						>
+							<span>in</span>
+							{t('share.shareOnLinkedIn')}
 						</a>
 						<a
 							href={`/api/og/share/${publicId}.png?download=1`}

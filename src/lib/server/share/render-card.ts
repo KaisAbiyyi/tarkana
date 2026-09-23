@@ -10,16 +10,26 @@ function escapeXml(unsafe: string): string {
 		.replace(/'/g, '&apos;');
 }
 
-export function renderShareCardSvg(share: PublicShareResultDto): string {
+export function renderShareCardSvg(share: PublicShareResultDto, appOrigin?: string): string {
 	const isDaily = share.challengeType === 'daily';
+	const typeUpper = (share.challengeType ?? 'standard').toUpperCase();
 	const title = isDaily
 		? `DAILY CHALLENGE • ${escapeXml(share.challengeDate ?? '')}`
-		: 'STANDARD LOGIC CHALLENGE';
+		: `${typeUpper} LOGIC CHALLENGE`;
 	const displayName = escapeXml(share.displayName);
 	const scoreText = `${share.totalScore}`;
-	const accuracyText = `${Math.round(share.accuracy * 100)}%`;
+	const accuracyText = `${Math.round(share.accuracy)}%`;
 	const timeText = `${share.totalTimeSeconds}s`;
 	const rankText = escapeXml(share.logicRank);
+
+	const host = (() => {
+		try {
+			if (appOrigin) return new URL(appOrigin).host.toUpperCase();
+		} catch {
+			/* ignore */
+		}
+		return 'TARKANA.APP';
+	})();
 
 	// Generate question tiles (max 10 displayed)
 	const questionsToDisplay = share.questions.slice(0, 10);
@@ -106,15 +116,15 @@ export function renderShareCardSvg(share: PublicShareResultDto): string {
 	<g transform="translate(60, 520)">
 		<rect width="1060" height="50" rx="6" fill="#1c1917" />
 		<text x="530" y="32" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="16" fill="#fde047" text-anchor="middle" letter-spacing="1.5">
-			CAN YOU BEAT THIS SCORE? • PLAY NOW AT TARKANA.APP
+			CAN YOU BEAT THIS SCORE? • PLAY NOW AT ${host}
 		</text>
 	</g>
 </svg>
 	`.trim();
 }
 
-export function renderShareCardPng(share: PublicShareResultDto): Buffer {
-	const svg = renderShareCardSvg(share);
+export function renderShareCardPng(share: PublicShareResultDto, appOrigin?: string): Buffer {
+	const svg = renderShareCardSvg(share, appOrigin);
 	const resvg = new Resvg(svg, {
 		fitTo: { mode: 'width', value: 1200 }
 	});

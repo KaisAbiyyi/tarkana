@@ -1,9 +1,10 @@
 import type { RequestEvent } from '@sveltejs/kit';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { getOptionalProfile } from '$lib/server/auth/guards';
 import { getGuestToken, hashGuestToken } from '$lib/server/sessions/guest-token';
 import { badRequest, forbidden, notFound, unauthorized } from '$lib/server/errors';
 import { requireUuid } from '$lib/shared/validation/common';
+import type { ChallengeType } from '$lib/shared/constants/challenge';
 import {
 	createShareRepository,
 	type ShareRepository
@@ -23,6 +24,10 @@ import {
 import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
 import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
 
+export function toAnalyticsShareId(publicId: string): string {
+	return createHash('sha256').update(publicId).digest('hex').slice(0, 16);
+}
+
 export interface PublicShareQuestionDto {
 	orderIndex: number;
 	isCorrect: boolean;
@@ -31,7 +36,7 @@ export interface PublicShareQuestionDto {
 export interface PublicShareResultDto {
 	publicId: string;
 	displayName: string;
-	challengeType: 'standard' | 'daily';
+	challengeType: ChallengeType;
 	challengeDate?: string;
 	totalScore: number;
 	accuracy: number;
@@ -47,6 +52,7 @@ export interface PublicShareResultDto {
 export interface CreateShareResult {
 	publicId: string;
 	shareUrl: string;
+	analyticsShareId: string;
 }
 
 export interface ShareService {
@@ -107,21 +113,32 @@ export function createShareService(
 			// Idempotently return existing active share if already created
 			const existing = await shareRepository.findActiveShareBySessionId(session.id);
 			if (existing) {
+				const analyticsShareId = toAnalyticsShareId(existing.publicId);
 				return {
 					publicId: existing.publicId,
-					shareUrl: `${origin}/share/${existing.publicId}`
+					shareUrl: `${origin}/share/${existing.publicId}`,
+					analyticsShareId
 				};
+			}
+
+			let displayName = 'Guest Solver';
+			if (profile?.displayName) {
+				displayName = profile.displayName;
 			}
 
 			// Generate opaque URL-safe publicId
 			const randomSlug = randomBytes(9).toString('base64url');
 			const publicId = `shr_${randomSlug}`;
 
-			await shareRepository.createShare({
+			const activeShare = await shareRepository.createShare({
 				sessionId: session.id,
 				userId: profile?.id ?? null,
-				publicId
+				publicId,
+				displayName
 			});
+
+			const canonicalPublicId = activeShare.publicId;
+			const analyticsShareId = toAnalyticsShareId(canonicalPublicId);
 
 			try {
 				const distinctId = getOrSetDistinctId(event);
@@ -130,7 +147,7 @@ export function createShareService(
 					userId: profile?.id ?? null,
 					event: 'share_created',
 					properties: {
-						share_id: publicId,
+						share_id: analyticsShareId,
 						session_id: session.id,
 						challenge_type: session.challengeType,
 						is_guest: isGuest
@@ -141,8 +158,9 @@ export function createShareService(
 			}
 
 			return {
-				publicId,
-				shareUrl: `${origin}/share/${publicId}`
+				publicId: canonicalPublicId,
+				shareUrl: `${origin}/share/${canonicalPublicId}`,
+				analyticsShareId
 			};
 		},
 
@@ -161,13 +179,8 @@ export function createShareService(
 				throw notFound('Shared result was not found');
 			}
 
-			let displayName = 'Guest Solver';
-			if (session.userId) {
-				const profile = await profileRepository.findById(session.userId);
-				if (profile?.displayName) {
-					displayName = profile.displayName;
-				}
-			}
+			// Use snapshotted display name to preserve anonymous creator identity even after claim
+			const displayName = share.displayName || 'Guest Solver';
 
 			let challengeDate: string | undefined;
 			if (session.challengeType === 'daily') {
@@ -202,7 +215,7 @@ export function createShareService(
 			return {
 				publicId: share.publicId,
 				displayName,
-				challengeType: session.challengeType as 'standard' | 'daily',
+				challengeType: session.challengeType as ChallengeType,
 				challengeDate,
 				totalScore: session.totalScore,
 				accuracy: session.accuracy,

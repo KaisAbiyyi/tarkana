@@ -358,6 +358,7 @@ export const sharedResults = pgTable(
 			.notNull()
 			.references(() => challengeSessions.id, { onDelete: 'cascade' }),
 		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'set null' }),
+		displayName: varchar('display_name', { length: 64 }).notNull().default('Guest Solver'),
 		isRevoked: boolean('is_revoked').notNull().default(false),
 		revokedAt: timestamp('revoked_at', { withTimezone: true }),
 		createdAt: now(),
@@ -365,6 +366,9 @@ export const sharedResults = pgTable(
 	},
 	(table) => [
 		uniqueIndex('shared_results_public_id_uidx').on(table.publicId),
+		uniqueIndex('shared_results_session_active_uidx')
+			.on(table.sessionId)
+			.where(sql`is_revoked = false`),
 		index('shared_results_session_id_idx').on(table.sessionId),
 		index('shared_results_user_id_idx').on(table.userId)
 	]

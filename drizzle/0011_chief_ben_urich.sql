@@ -1,0 +1,2 @@
+ALTER TABLE "shared_results" ADD COLUMN "display_name" varchar(64) DEFAULT 'Guest Solver' NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "shared_results_session_active_uidx" ON "shared_results" USING btree ("session_id") WHERE is_revoked = false;
