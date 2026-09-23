@@ -123,9 +123,9 @@ test.describe('P1.4 Daily Leaderboard E2E', () => {
 				const submitRes = await context.post('/api/challenge/submit', {
 					data: {
 						sessionId,
-						questionId: currentQuestion.id,
+						sessionQuestionId: currentQuestion.sessionQuestionId,
 						selectedAnswer: currentQuestion.choices[0],
-						timeTakenSeconds: 3
+						timeSpentSeconds: 3
 					}
 				});
 				expect(submitRes.status()).toBe(200);
