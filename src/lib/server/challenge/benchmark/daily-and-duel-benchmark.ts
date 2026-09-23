@@ -1,7 +1,10 @@
 import type { Category, DailyPuzzleSnapshotQuestion, QuestionRule } from '$lib/server/db/schema';
 import { generateDailyPuzzleSnapshot } from '$lib/server/challenge/daily-challenge';
 import { getRuleInventory } from '$lib/server/challenge/generators/registry';
-import { computeLatencyPercentiles } from '$lib/server/challenge/benchmark/generator-benchmark';
+import {
+	computeLatencyPercentiles,
+	isDeepEqual
+} from '$lib/server/challenge/benchmark/generator-benchmark';
 import type { LatencyPercentiles } from '$lib/server/challenge/benchmark/types';
 
 export type DailyBenchmarkResult = {
@@ -137,7 +140,7 @@ export function runDailyChallengeBenchmark(daysToTest = 15): DailyBenchmarkResul
 				categories: sampleCategories
 			});
 
-			if (JSON.stringify(snapshot.puzzleSnapshot) !== JSON.stringify(replay.puzzleSnapshot)) {
+			if (!isDeepEqual(snapshot.puzzleSnapshot, replay.puzzleSnapshot)) {
 				mismatches++;
 			}
 		} catch {
@@ -159,7 +162,14 @@ export function runDailyChallengeBenchmark(daysToTest = 15): DailyBenchmarkResul
 	};
 }
 
-export function runDuelSnapshotReplayBenchmark(sessionsToSimulate = 20): DuelReplayBenchmarkResult {
+/**
+ * Synthetic DTO replay benchmark: validates deep equality of simulated memory DTO mappings.
+ * NOTE: This is an isolated, in-memory synthetic DTO replay check.
+ * It does NOT exercise the canonical production database snapshot-copy/session-spawn path (`spawnParticipantSessionTransaction`).
+ */
+export function runSyntheticDuelDtoReplayBenchmark(
+	sessionsToSimulate = 20
+): DuelReplayBenchmarkResult {
 	const latencies: number[] = [];
 	let mismatches = 0;
 	let totalQuestions = 0;
@@ -217,7 +227,10 @@ export function runDuelSnapshotReplayBenchmark(sessionsToSimulate = 20): DuelRep
 		totalQuestionsReplayed: totalQuestions,
 		replayMismatches: mismatches,
 		observedFailureRatePct: Number(rate.toFixed(2)),
-		formattedResult: `${mismatches} mismatches in ${totalQuestions} replayed questions across ${sessionsToSimulate} duels (observed rate: ${rate.toFixed(2)}%)`,
+		formattedResult: `${mismatches} mismatches in ${totalQuestions} replayed questions across ${sessionsToSimulate} synthetic duels (observed rate: ${rate.toFixed(2)}% - synthetic DTO check only)`,
 		latency: computeLatencyPercentiles(latencies)
 	};
 }
+
+/** Alias for backward compatibility */
+export const runDuelSnapshotReplayBenchmark = runSyntheticDuelDtoReplayBenchmark;

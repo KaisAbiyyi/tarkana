@@ -42,7 +42,9 @@ export type BenchmarkRunOptions = {
 	difficulties?: DifficultyBand[];
 	locales?: Array<'en' | 'id'>;
 	seedPrefix?: string;
+	commitSha?: string;
 	includeSemanticOracles?: boolean;
+	inventory?: import('$lib/server/challenge/generators/registry').RuleInventoryItem[];
 };
 
 export type BenchmarkSummary = {
@@ -59,6 +61,8 @@ export type BenchmarkSummary = {
 	overallStructuralFailures: number;
 	overallSemanticFailures: number;
 	overallReconstructionMismatches: number;
+	overallDuplicateChoiceAnomalies: number;
+	overallAmbiguousChoiceAnomalies: number;
 	overallObservedFailureRatePct: number;
 	summaryStatement: string;
 	aggregateLatency: LatencyPercentiles;

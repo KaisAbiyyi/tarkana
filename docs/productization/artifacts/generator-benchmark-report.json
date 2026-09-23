@@ -1,18 +1,25 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-23T15:55:36.526Z",
+    "generatedAt": "2026-09-23T17:03:34.074Z",
     "nodeVersion": "v22.17.0",
     "platform": "win32",
     "arch": "x64",
+    "commitSha": "553a8dbed9257c9ca95f4c03728185491be1e330",
+    "seedPrefix": "tarkana-bench-v1",
+    "configVersions": {
+      "dailyChallengeConfigVersion": 1,
+      "dailyChallengeGeneratorVersion": 1,
+      "generatorBenchmarkVersion": "1.8.1"
+    },
     "iterationsPerCombination": 100,
-    "totalExecutionTimeMs": 907.34
+    "totalExecutionTimeMs": 1178.17
   },
   "generators": {
     "runtime": {
       "nodeVersion": "v22.17.0",
       "platform": "win32",
       "arch": "x64",
-      "timestamp": "2026-09-23T15:55:36.327Z",
+      "timestamp": "2026-09-23T17:03:33.821Z",
       "commitSha": "local",
       "generatorVersion": "1.0.0"
     },
@@ -21,16 +28,18 @@
     "overallStructuralFailures": 0,
     "overallSemanticFailures": 0,
     "overallReconstructionMismatches": 0,
+    "overallDuplicateChoiceAnomalies": 0,
+    "overallAmbiguousChoiceAnomalies": 0,
     "overallObservedFailureRatePct": 0,
     "summaryStatement": "0 failures in 6600 generated samples across 66 rule combinations (observed rate: 0.00%)",
     "aggregateLatency": {
-      "minMs": 0.011,
-      "p50Ms": 0.024,
-      "p90Ms": 0.16,
-      "p95Ms": 0.267,
-      "p99Ms": 0.441,
-      "maxMs": 2.826,
-      "avgMs": 0.058
+      "minMs": 0.013,
+      "p50Ms": 0.03,
+      "p90Ms": 0.151,
+      "p95Ms": 0.399,
+      "p99Ms": 0.607,
+      "maxMs": 2.74,
+      "avgMs": 0.073
     },
     "results": [
       {
@@ -46,13 +55,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.033,
-          "p50Ms": 0.046,
-          "p90Ms": 0.134,
-          "p95Ms": 0.245,
-          "p99Ms": 2.826,
-          "maxMs": 2.826,
-          "avgMs": 0.097
+          "minMs": 0.041,
+          "p50Ms": 0.048,
+          "p90Ms": 0.101,
+          "p95Ms": 0.257,
+          "p99Ms": 2.709,
+          "maxMs": 2.709,
+          "avgMs": 0.092
         },
         "sampleErrors": []
       },
@@ -69,13 +78,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.029,
-          "p50Ms": 0.032,
+          "minMs": 0.03,
+          "p50Ms": 0.038,
           "p90Ms": 0.045,
-          "p95Ms": 0.053,
-          "p99Ms": 0.963,
-          "maxMs": 0.963,
-          "avgMs": 0.044
+          "p95Ms": 0.063,
+          "p99Ms": 0.111,
+          "maxMs": 0.111,
+          "avgMs": 0.041
         },
         "sampleErrors": []
       },
@@ -93,12 +102,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.03,
-          "p50Ms": 0.035,
-          "p90Ms": 0.064,
-          "p95Ms": 0.082,
-          "p99Ms": 0.132,
-          "maxMs": 0.132,
-          "avgMs": 0.041
+          "p50Ms": 0.04,
+          "p90Ms": 0.049,
+          "p95Ms": 0.089,
+          "p99Ms": 0.175,
+          "maxMs": 0.175,
+          "avgMs": 0.044
         },
         "sampleErrors": []
       },
@@ -106,6 +115,121 @@
         "ruleType": "geometric_sequence",
         "questionType": "number_sequence",
         "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.034,
+          "p50Ms": 0.037,
+          "p90Ms": 0.042,
+          "p95Ms": 0.057,
+          "p99Ms": 0.508,
+          "maxMs": 0.508,
+          "avgMs": 0.045
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "geometric_sequence",
+        "questionType": "number_sequence",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.034,
+          "p50Ms": 0.036,
+          "p90Ms": 0.039,
+          "p95Ms": 0.05,
+          "p99Ms": 0.093,
+          "maxMs": 0.093,
+          "avgMs": 0.037
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "geometric_sequence",
+        "questionType": "number_sequence",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.033,
+          "p50Ms": 0.037,
+          "p90Ms": 0.04,
+          "p95Ms": 0.048,
+          "p99Ms": 0.169,
+          "maxMs": 0.169,
+          "avgMs": 0.04
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "square_number",
+        "questionType": "number_sequence",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.026,
+          "p50Ms": 0.029,
+          "p90Ms": 0.034,
+          "p95Ms": 0.042,
+          "p99Ms": 0.152,
+          "maxMs": 0.152,
+          "avgMs": 0.033
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "square_number",
+        "questionType": "number_sequence",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.029,
+          "p50Ms": 0.032,
+          "p90Ms": 0.037,
+          "p95Ms": 0.041,
+          "p99Ms": 0.084,
+          "maxMs": 0.084,
+          "avgMs": 0.033
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "square_number",
+        "questionType": "number_sequence",
+        "difficulty": "hard",
         "sampleCount": 100,
         "structuralFailures": 0,
         "semanticFailures": 0,
@@ -117,62 +241,16 @@
         "latency": {
           "minMs": 0.028,
           "p50Ms": 0.031,
-          "p90Ms": 0.073,
-          "p95Ms": 0.106,
-          "p99Ms": 2.087,
-          "maxMs": 2.087,
-          "avgMs": 0.067
+          "p90Ms": 0.033,
+          "p95Ms": 0.034,
+          "p99Ms": 2.74,
+          "maxMs": 2.74,
+          "avgMs": 0.058
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "geometric_sequence",
-        "questionType": "number_sequence",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.027,
-          "p50Ms": 0.029,
-          "p90Ms": 0.039,
-          "p95Ms": 0.046,
-          "p99Ms": 0.105,
-          "maxMs": 0.105,
-          "avgMs": 0.033
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "geometric_sequence",
-        "questionType": "number_sequence",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.026,
-          "p50Ms": 0.03,
-          "p90Ms": 0.038,
-          "p95Ms": 0.049,
-          "p99Ms": 0.441,
-          "maxMs": 0.441,
-          "avgMs": 0.036
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "square_number",
+        "ruleType": "fibonacci_like",
         "questionType": "number_sequence",
         "difficulty": "easy",
         "sampleCount": 100,
@@ -184,20 +262,43 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.022,
-          "p50Ms": 0.023,
-          "p90Ms": 0.03,
-          "p95Ms": 0.036,
-          "p99Ms": 0.293,
-          "maxMs": 0.293,
-          "avgMs": 0.028
+          "minMs": 0.024,
+          "p50Ms": 0.025,
+          "p90Ms": 0.027,
+          "p95Ms": 0.028,
+          "p99Ms": 0.094,
+          "maxMs": 0.094,
+          "avgMs": 0.026
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "square_number",
+        "ruleType": "fibonacci_like",
         "questionType": "number_sequence",
         "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.024,
+          "p50Ms": 0.026,
+          "p90Ms": 0.044,
+          "p95Ms": 0.045,
+          "p99Ms": 0.101,
+          "maxMs": 0.101,
+          "avgMs": 0.031
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "fibonacci_like",
+        "questionType": "number_sequence",
+        "difficulty": "hard",
         "sampleCount": 100,
         "structuralFailures": 0,
         "semanticFailures": 0,
@@ -208,40 +309,17 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.023,
-          "p50Ms": 0.029,
-          "p90Ms": 0.051,
-          "p95Ms": 0.12,
-          "p99Ms": 0.96,
-          "maxMs": 0.96,
-          "avgMs": 0.049
+          "p50Ms": 0.024,
+          "p90Ms": 0.039,
+          "p95Ms": 0.04,
+          "p99Ms": 0.08,
+          "maxMs": 0.08,
+          "avgMs": 0.027
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "square_number",
-        "questionType": "number_sequence",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.022,
-          "p50Ms": 0.025,
-          "p90Ms": 0.053,
-          "p95Ms": 0.059,
-          "p99Ms": 0.2,
-          "maxMs": 0.2,
-          "avgMs": 0.032
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "fibonacci_like",
+        "ruleType": "alternating_sequence",
         "questionType": "number_sequence",
         "difficulty": "easy",
         "sampleCount": 100,
@@ -253,18 +331,87 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.019,
-          "p50Ms": 0.021,
-          "p90Ms": 0.022,
-          "p95Ms": 0.037,
-          "p99Ms": 1.468,
-          "maxMs": 1.468,
-          "avgMs": 0.036
+          "minMs": 0.023,
+          "p50Ms": 0.023,
+          "p90Ms": 0.025,
+          "p95Ms": 0.026,
+          "p99Ms": 0.096,
+          "maxMs": 0.096,
+          "avgMs": 0.025
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "fibonacci_like",
+        "ruleType": "alternating_sequence",
+        "questionType": "number_sequence",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.025,
+          "p50Ms": 0.031,
+          "p90Ms": 0.036,
+          "p95Ms": 0.05,
+          "p99Ms": 0.267,
+          "maxMs": 0.267,
+          "avgMs": 0.034
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "alternating_sequence",
+        "questionType": "number_sequence",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.024,
+          "p50Ms": 0.025,
+          "p90Ms": 0.029,
+          "p95Ms": 0.036,
+          "p99Ms": 1.551,
+          "maxMs": 1.551,
+          "avgMs": 0.042
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "increasing_difference",
+        "questionType": "number_sequence",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.02,
+          "p50Ms": 0.023,
+          "p90Ms": 0.062,
+          "p95Ms": 0.151,
+          "p99Ms": 1.083,
+          "maxMs": 1.083,
+          "avgMs": 0.045
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "increasing_difference",
         "questionType": "number_sequence",
         "difficulty": "medium",
         "sampleCount": 100,
@@ -277,150 +424,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.02,
-          "p50Ms": 0.022,
-          "p90Ms": 0.027,
-          "p95Ms": 0.039,
-          "p99Ms": 0.062,
-          "maxMs": 0.062,
-          "avgMs": 0.024
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "fibonacci_like",
-        "questionType": "number_sequence",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.019,
-          "p50Ms": 0.02,
-          "p90Ms": 0.025,
-          "p95Ms": 0.032,
-          "p99Ms": 0.081,
-          "maxMs": 0.081,
-          "avgMs": 0.022
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "alternating_sequence",
-        "questionType": "number_sequence",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.018,
-          "p50Ms": 0.02,
-          "p90Ms": 0.025,
-          "p95Ms": 0.04,
-          "p99Ms": 0.094,
-          "maxMs": 0.094,
-          "avgMs": 0.022
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "alternating_sequence",
-        "questionType": "number_sequence",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.019,
-          "p50Ms": 0.02,
-          "p90Ms": 0.028,
-          "p95Ms": 0.054,
-          "p99Ms": 0.878,
-          "maxMs": 0.878,
-          "avgMs": 0.032
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "alternating_sequence",
-        "questionType": "number_sequence",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.019,
           "p50Ms": 0.021,
-          "p90Ms": 0.03,
-          "p95Ms": 0.037,
-          "p99Ms": 0.082,
-          "maxMs": 0.082,
-          "avgMs": 0.024
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "increasing_difference",
-        "questionType": "number_sequence",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.018,
           "p90Ms": 0.023,
-          "p95Ms": 0.065,
-          "p99Ms": 0.138,
-          "maxMs": 0.138,
-          "avgMs": 0.023
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "increasing_difference",
-        "questionType": "number_sequence",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.018,
-          "p50Ms": 0.019,
-          "p90Ms": 0.025,
-          "p95Ms": 0.03,
-          "p99Ms": 0.601,
-          "maxMs": 0.601,
-          "avgMs": 0.031
+          "p95Ms": 0.024,
+          "p99Ms": 0.072,
+          "maxMs": 0.072,
+          "avgMs": 0.022
         },
         "sampleErrors": []
       },
@@ -438,12 +447,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.017,
-          "p50Ms": 0.018,
-          "p90Ms": 0.023,
-          "p95Ms": 0.03,
-          "p99Ms": 0.134,
-          "maxMs": 0.134,
-          "avgMs": 0.02
+          "p50Ms": 0.027,
+          "p90Ms": 0.035,
+          "p95Ms": 0.044,
+          "p99Ms": 0.193,
+          "maxMs": 0.193,
+          "avgMs": 0.03
         },
         "sampleErrors": []
       },
@@ -460,13 +469,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.019,
-          "p50Ms": 0.02,
-          "p90Ms": 0.043,
-          "p95Ms": 0.054,
-          "p99Ms": 1.577,
-          "maxMs": 1.577,
-          "avgMs": 0.04
+          "minMs": 0.024,
+          "p50Ms": 0.025,
+          "p90Ms": 0.053,
+          "p95Ms": 0.066,
+          "p99Ms": 1.298,
+          "maxMs": 1.298,
+          "avgMs": 0.045
         },
         "sampleErrors": []
       },
@@ -483,63 +492,63 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.021,
-          "p50Ms": 0.023,
-          "p90Ms": 0.033,
-          "p95Ms": 0.056,
-          "p99Ms": 0.14,
-          "maxMs": 0.14,
-          "avgMs": 0.028
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "symbol_rotation",
-        "questionType": "symbol_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.022,
-          "p50Ms": 0.023,
+          "minMs": 0.026,
+          "p50Ms": 0.027,
           "p90Ms": 0.031,
-          "p95Ms": 0.041,
-          "p99Ms": 0.063,
-          "maxMs": 0.063,
-          "avgMs": 0.026
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "alternating_symbol",
-        "questionType": "symbol_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.021,
-          "p50Ms": 0.022,
-          "p90Ms": 0.047,
-          "p95Ms": 0.054,
-          "p99Ms": 0.286,
-          "maxMs": 0.286,
+          "p95Ms": 0.034,
+          "p99Ms": 0.128,
+          "maxMs": 0.128,
           "avgMs": 0.029
         },
         "sampleErrors": []
       },
       {
+        "ruleType": "symbol_rotation",
+        "questionType": "symbol_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.028,
+          "p50Ms": 0.029,
+          "p90Ms": 0.046,
+          "p95Ms": 0.047,
+          "p99Ms": 0.055,
+          "maxMs": 0.055,
+          "avgMs": 0.031
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "alternating_symbol",
+        "questionType": "symbol_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.026,
+          "p50Ms": 0.026,
+          "p90Ms": 0.029,
+          "p95Ms": 0.037,
+          "p99Ms": 0.279,
+          "maxMs": 0.279,
+          "avgMs": 0.031
+        },
+        "sampleErrors": []
+      },
+      {
         "ruleType": "alternating_symbol",
         "questionType": "symbol_pattern",
         "difficulty": "medium",
@@ -552,13 +561,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.021,
-          "p50Ms": 0.023,
-          "p90Ms": 0.028,
-          "p95Ms": 0.04,
-          "p99Ms": 1.151,
-          "maxMs": 1.151,
-          "avgMs": 0.036
+          "minMs": 0.022,
+          "p50Ms": 0.028,
+          "p90Ms": 0.032,
+          "p95Ms": 0.039,
+          "p99Ms": 0.259,
+          "maxMs": 0.259,
+          "avgMs": 0.031
         },
         "sampleErrors": []
       },
@@ -575,13 +584,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.022,
-          "p50Ms": 0.024,
-          "p90Ms": 0.039,
-          "p95Ms": 0.072,
-          "p99Ms": 0.191,
-          "maxMs": 0.191,
-          "avgMs": 0.031
+          "minMs": 0.023,
+          "p50Ms": 0.029,
+          "p90Ms": 0.041,
+          "p95Ms": 0.043,
+          "p99Ms": 0.139,
+          "maxMs": 0.139,
+          "avgMs": 0.033
         },
         "sampleErrors": []
       },
@@ -598,13 +607,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.019,
-          "p90Ms": 0.022,
-          "p95Ms": 0.031,
-          "p99Ms": 0.131,
-          "maxMs": 0.131,
-          "avgMs": 0.021
+          "minMs": 0.022,
+          "p50Ms": 0.023,
+          "p90Ms": 0.025,
+          "p95Ms": 0.042,
+          "p99Ms": 0.16,
+          "maxMs": 0.16,
+          "avgMs": 0.025
         },
         "sampleErrors": []
       },
@@ -621,13 +630,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.019,
-          "p90Ms": 0.026,
-          "p95Ms": 0.035,
-          "p99Ms": 1.691,
-          "maxMs": 1.691,
-          "avgMs": 0.044
+          "minMs": 0.021,
+          "p50Ms": 0.024,
+          "p90Ms": 0.035,
+          "p95Ms": 0.076,
+          "p99Ms": 0.421,
+          "maxMs": 0.421,
+          "avgMs": 0.036
         },
         "sampleErrors": []
       },
@@ -644,18 +653,87 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.018,
-          "p50Ms": 0.019,
-          "p90Ms": 0.029,
-          "p95Ms": 0.043,
-          "p99Ms": 0.063,
-          "maxMs": 0.063,
-          "avgMs": 0.022
+          "minMs": 0.02,
+          "p50Ms": 0.023,
+          "p90Ms": 0.038,
+          "p95Ms": 0.059,
+          "p99Ms": 0.219,
+          "maxMs": 0.219,
+          "avgMs": 0.03
         },
         "sampleErrors": []
       },
       {
         "ruleType": "shape_order",
+        "questionType": "symbol_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.02,
+          "p50Ms": 0.021,
+          "p90Ms": 0.022,
+          "p95Ms": 0.023,
+          "p99Ms": 0.179,
+          "maxMs": 0.179,
+          "avgMs": 0.023
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "shape_order",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.02,
+          "p50Ms": 0.021,
+          "p90Ms": 0.027,
+          "p95Ms": 0.039,
+          "p99Ms": 0.652,
+          "maxMs": 0.652,
+          "avgMs": 0.031
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "shape_order",
+        "questionType": "symbol_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.02,
+          "p50Ms": 0.021,
+          "p90Ms": 0.023,
+          "p95Ms": 0.024,
+          "p99Ms": 0.108,
+          "maxMs": 0.108,
+          "avgMs": 0.023
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "growing_count",
         "questionType": "symbol_pattern",
         "difficulty": "easy",
         "sampleCount": 100,
@@ -668,81 +746,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.015,
-          "p50Ms": 0.016,
-          "p90Ms": 0.018,
-          "p95Ms": 0.029,
-          "p99Ms": 1.756,
-          "maxMs": 1.756,
-          "avgMs": 0.038
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "shape_order",
-        "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.016,
           "p50Ms": 0.017,
-          "p90Ms": 0.021,
-          "p95Ms": 0.028,
-          "p99Ms": 0.438,
-          "maxMs": 0.438,
-          "avgMs": 0.022
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "shape_order",
-        "questionType": "symbol_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.016,
-          "p50Ms": 0.017,
-          "p90Ms": 0.026,
-          "p95Ms": 0.027,
+          "p90Ms": 0.02,
+          "p95Ms": 0.032,
           "p99Ms": 0.147,
           "maxMs": 0.147,
-          "avgMs": 0.021
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "growing_count",
-        "questionType": "symbol_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.013,
-          "p50Ms": 0.014,
-          "p90Ms": 0.016,
-          "p95Ms": 0.02,
-          "p99Ms": 0.199,
-          "maxMs": 0.199,
-          "avgMs": 0.016
+          "avgMs": 0.02
         },
         "sampleErrors": []
       },
@@ -759,13 +768,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.012,
-          "p50Ms": 0.014,
-          "p90Ms": 0.016,
-          "p95Ms": 0.021,
-          "p99Ms": 0.134,
-          "maxMs": 0.134,
-          "avgMs": 0.016
+          "minMs": 0.016,
+          "p50Ms": 0.018,
+          "p90Ms": 0.022,
+          "p95Ms": 0.028,
+          "p99Ms": 0.135,
+          "maxMs": 0.135,
+          "avgMs": 0.02
         },
         "sampleErrors": []
       },
@@ -782,13 +791,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.013,
-          "p50Ms": 0.014,
-          "p90Ms": 0.016,
-          "p95Ms": 0.029,
-          "p99Ms": 0.595,
-          "maxMs": 0.595,
-          "avgMs": 0.022
+          "minMs": 0.019,
+          "p50Ms": 0.031,
+          "p90Ms": 0.033,
+          "p95Ms": 0.057,
+          "p99Ms": 0.531,
+          "maxMs": 0.531,
+          "avgMs": 0.039
         },
         "sampleErrors": []
       },
@@ -805,12 +814,35 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.011,
-          "p50Ms": 0.012,
-          "p90Ms": 0.014,
-          "p95Ms": 0.037,
-          "p99Ms": 0.099,
-          "maxMs": 0.099,
+          "minMs": 0.014,
+          "p50Ms": 0.015,
+          "p90Ms": 0.027,
+          "p95Ms": 0.041,
+          "p99Ms": 0.222,
+          "maxMs": 0.222,
+          "avgMs": 0.021
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "mirrored_sequence",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.013,
+          "p50Ms": 0.015,
+          "p90Ms": 0.016,
+          "p95Ms": 0.02,
+          "p99Ms": 0.037,
+          "maxMs": 0.037,
           "avgMs": 0.015
         },
         "sampleErrors": []
@@ -818,29 +850,6 @@
       {
         "ruleType": "mirrored_sequence",
         "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.011,
-          "p50Ms": 0.012,
-          "p90Ms": 0.013,
-          "p95Ms": 0.016,
-          "p99Ms": 0.054,
-          "maxMs": 0.054,
-          "avgMs": 0.012
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "mirrored_sequence",
-        "questionType": "symbol_pattern",
         "difficulty": "hard",
         "sampleCount": 100,
         "structuralFailures": 0,
@@ -851,13 +860,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.012,
-          "p50Ms": 0.012,
-          "p90Ms": 0.014,
-          "p95Ms": 0.014,
-          "p99Ms": 0.057,
-          "maxMs": 0.057,
-          "avgMs": 0.013
+          "minMs": 0.014,
+          "p50Ms": 0.015,
+          "p90Ms": 0.016,
+          "p95Ms": 0.017,
+          "p99Ms": 0.047,
+          "maxMs": 0.047,
+          "avgMs": 0.016
         },
         "sampleErrors": []
       },
@@ -874,13 +883,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.045,
-          "p50Ms": 0.048,
-          "p90Ms": 0.082,
-          "p95Ms": 0.194,
-          "p99Ms": 1.502,
-          "maxMs": 1.502,
-          "avgMs": 0.088
+          "minMs": 0.055,
+          "p50Ms": 0.056,
+          "p90Ms": 0.075,
+          "p95Ms": 0.091,
+          "p99Ms": 0.956,
+          "maxMs": 0.956,
+          "avgMs": 0.073
         },
         "sampleErrors": []
       },
@@ -897,13 +906,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.029,
-          "p50Ms": 0.031,
-          "p90Ms": 0.037,
-          "p95Ms": 0.065,
-          "p99Ms": 0.365,
-          "maxMs": 0.365,
-          "avgMs": 0.04
+          "minMs": 0.037,
+          "p50Ms": 0.038,
+          "p90Ms": 0.039,
+          "p95Ms": 0.04,
+          "p99Ms": 0.114,
+          "maxMs": 0.114,
+          "avgMs": 0.038
         },
         "sampleErrors": []
       },
@@ -921,35 +930,35 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.03,
-          "p50Ms": 0.032,
-          "p90Ms": 0.04,
+          "p50Ms": 0.038,
+          "p90Ms": 0.042,
+          "p95Ms": 0.051,
+          "p99Ms": 0.063,
+          "maxMs": 0.063,
+          "avgMs": 0.039
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "object_ordering",
+        "questionType": "mini_deduction",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.057,
+          "p50Ms": 0.058,
+          "p90Ms": 0.061,
           "p95Ms": 0.062,
-          "p99Ms": 0.119,
-          "maxMs": 0.119,
-          "avgMs": 0.036
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "object_ordering",
-        "questionType": "mini_deduction",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.046,
-          "p50Ms": 0.049,
-          "p90Ms": 0.065,
-          "p95Ms": 0.118,
-          "p99Ms": 1.811,
-          "maxMs": 1.811,
-          "avgMs": 0.072
+          "p99Ms": 0.142,
+          "maxMs": 0.142,
+          "avgMs": 0.06
         },
         "sampleErrors": []
       },
@@ -966,364 +975,19 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.018,
-          "p50Ms": 0.02,
-          "p90Ms": 0.033,
-          "p95Ms": 0.035,
-          "p99Ms": 0.206,
-          "maxMs": 0.206,
-          "avgMs": 0.025
+          "minMs": 0.022,
+          "p50Ms": 0.023,
+          "p90Ms": 0.024,
+          "p95Ms": 0.025,
+          "p99Ms": 0.078,
+          "maxMs": 0.078,
+          "avgMs": 0.024
         },
         "sampleErrors": []
       },
       {
         "ruleType": "object_ordering",
         "questionType": "mini_deduction",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.019,
-          "p50Ms": 0.027,
-          "p90Ms": 0.038,
-          "p95Ms": 0.044,
-          "p99Ms": 0.052,
-          "maxMs": 0.052,
-          "avgMs": 0.028
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "simple_elimination",
-        "questionType": "mini_deduction",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.044,
-          "p50Ms": 0.047,
-          "p90Ms": 0.064,
-          "p95Ms": 0.074,
-          "p99Ms": 1.837,
-          "maxMs": 1.837,
-          "avgMs": 0.078
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "simple_elimination",
-        "questionType": "mini_deduction",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.022,
-          "p90Ms": 0.041,
-          "p95Ms": 0.041,
-          "p99Ms": 0.102,
-          "maxMs": 0.102,
-          "avgMs": 0.025
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "simple_elimination",
-        "questionType": "mini_deduction",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.019,
-          "p90Ms": 0.028,
-          "p95Ms": 0.09,
-          "p99Ms": 0.596,
-          "maxMs": 0.596,
-          "avgMs": 0.032
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "true_false_clue",
-        "questionType": "mini_deduction",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.016,
-          "p50Ms": 0.017,
-          "p90Ms": 0.021,
-          "p95Ms": 0.03,
-          "p99Ms": 0.293,
-          "maxMs": 0.293,
-          "avgMs": 0.021
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "true_false_clue",
-        "questionType": "mini_deduction",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.019,
-          "p90Ms": 0.023,
-          "p95Ms": 0.03,
-          "p99Ms": 0.083,
-          "maxMs": 0.083,
-          "avgMs": 0.021
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "true_false_clue",
-        "questionType": "mini_deduction",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.018,
-          "p90Ms": 0.02,
-          "p95Ms": 0.038,
-          "p99Ms": 2.053,
-          "maxMs": 2.053,
-          "avgMs": 0.04
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "position_reasoning",
-        "questionType": "mini_deduction",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.042,
-          "p50Ms": 0.046,
-          "p90Ms": 0.059,
-          "p95Ms": 0.094,
-          "p99Ms": 0.189,
-          "maxMs": 0.189,
-          "avgMs": 0.052
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "position_reasoning",
-        "questionType": "mini_deduction",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.025,
-          "p50Ms": 0.026,
-          "p90Ms": 0.028,
-          "p95Ms": 0.029,
-          "p99Ms": 0.095,
-          "maxMs": 0.095,
-          "avgMs": 0.028
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "position_reasoning",
-        "questionType": "mini_deduction",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.025,
-          "p50Ms": 0.028,
-          "p90Ms": 0.043,
-          "p95Ms": 0.063,
-          "p99Ms": 0.112,
-          "maxMs": 0.112,
-          "avgMs": 0.032
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "symbol_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.016,
-          "p50Ms": 0.017,
-          "p90Ms": 0.044,
-          "p95Ms": 0.059,
-          "p99Ms": 1.284,
-          "maxMs": 1.284,
-          "avgMs": 0.036
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "symbol_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.017,
-          "p50Ms": 0.018,
-          "p90Ms": 0.029,
-          "p95Ms": 0.03,
-          "p99Ms": 0.033,
-          "maxMs": 0.033,
-          "avgMs": 0.02
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "symbol_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.018,
-          "p50Ms": 0.02,
-          "p90Ms": 0.036,
-          "p95Ms": 0.093,
-          "p99Ms": 0.408,
-          "maxMs": 0.408,
-          "avgMs": 0.031
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "position_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.023,
-          "p50Ms": 0.026,
-          "p90Ms": 0.035,
-          "p95Ms": 0.067,
-          "p99Ms": 0.279,
-          "maxMs": 0.279,
-          "avgMs": 0.032
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "position_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.025,
-          "p50Ms": 0.026,
-          "p90Ms": 0.027,
-          "p95Ms": 0.029,
-          "p99Ms": 0.042,
-          "maxMs": 0.042,
-          "avgMs": 0.026
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "position_recall",
-        "questionType": "memory_pattern",
         "difficulty": "hard",
         "sampleCount": 100,
         "structuralFailures": 0,
@@ -1335,41 +999,41 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.023,
-          "p50Ms": 0.026,
-          "p90Ms": 0.043,
+          "p50Ms": 0.023,
+          "p90Ms": 0.024,
+          "p95Ms": 0.025,
+          "p99Ms": 0.155,
+          "maxMs": 0.155,
+          "avgMs": 0.025
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "simple_elimination",
+        "questionType": "mini_deduction",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.054,
+          "p50Ms": 0.055,
+          "p90Ms": 0.058,
           "p95Ms": 0.06,
-          "p99Ms": 0.16,
-          "maxMs": 0.16,
-          "avgMs": 0.031
+          "p99Ms": 0.212,
+          "maxMs": 0.212,
+          "avgMs": 0.057
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "sequence_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.216,
-          "p50Ms": 0.239,
-          "p90Ms": 0.374,
-          "p95Ms": 0.483,
-          "p99Ms": 0.903,
-          "maxMs": 0.903,
-          "avgMs": 0.275
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "sequence_recall",
-        "questionType": "memory_pattern",
+        "ruleType": "simple_elimination",
+        "questionType": "mini_deduction",
         "difficulty": "medium",
         "sampleCount": 100,
         "structuralFailures": 0,
@@ -1380,88 +1044,19 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.238,
-          "p50Ms": 0.26,
-          "p90Ms": 0.351,
-          "p95Ms": 0.476,
-          "p99Ms": 0.686,
-          "maxMs": 0.686,
-          "avgMs": 0.285
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "sequence_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.26,
-          "p50Ms": 0.285,
-          "p90Ms": 0.439,
-          "p95Ms": 0.656,
-          "p99Ms": 1.039,
-          "maxMs": 1.039,
-          "avgMs": 0.328
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "missing_element_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.019,
-          "p50Ms": 0.02,
-          "p90Ms": 0.026,
-          "p95Ms": 0.095,
-          "p99Ms": 1.403,
-          "maxMs": 1.403,
-          "avgMs": 0.047
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "missing_element_recall",
-        "questionType": "memory_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.02,
+          "minMs": 0.021,
           "p50Ms": 0.022,
-          "p90Ms": 0.025,
-          "p95Ms": 0.044,
-          "p99Ms": 0.15,
-          "maxMs": 0.15,
-          "avgMs": 0.025
+          "p90Ms": 0.023,
+          "p95Ms": 0.026,
+          "p99Ms": 0.078,
+          "maxMs": 0.078,
+          "avgMs": 0.023
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "missing_element_recall",
-        "questionType": "memory_pattern",
+        "ruleType": "simple_elimination",
+        "questionType": "mini_deduction",
         "difficulty": "hard",
         "sampleCount": 100,
         "structuralFailures": 0,
@@ -1473,12 +1068,426 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.022,
-          "p50Ms": 0.025,
-          "p90Ms": 0.04,
-          "p95Ms": 0.043,
-          "p99Ms": 0.299,
-          "maxMs": 0.299,
-          "avgMs": 0.03
+          "p50Ms": 0.034,
+          "p90Ms": 0.036,
+          "p95Ms": 0.04,
+          "p99Ms": 0.35,
+          "maxMs": 0.35,
+          "avgMs": 0.036
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "true_false_clue",
+        "questionType": "mini_deduction",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.018,
+          "p50Ms": 0.021,
+          "p90Ms": 0.022,
+          "p95Ms": 0.023,
+          "p99Ms": 0.258,
+          "maxMs": 0.258,
+          "avgMs": 0.024
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "true_false_clue",
+        "questionType": "mini_deduction",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.021,
+          "p50Ms": 0.023,
+          "p90Ms": 0.023,
+          "p95Ms": 0.024,
+          "p99Ms": 0.075,
+          "maxMs": 0.075,
+          "avgMs": 0.023
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "true_false_clue",
+        "questionType": "mini_deduction",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.021,
+          "p50Ms": 0.022,
+          "p90Ms": 0.023,
+          "p95Ms": 0.024,
+          "p99Ms": 0.132,
+          "maxMs": 0.132,
+          "avgMs": 0.023
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "position_reasoning",
+        "questionType": "mini_deduction",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.055,
+          "p50Ms": 0.079,
+          "p90Ms": 0.089,
+          "p95Ms": 0.124,
+          "p99Ms": 0.885,
+          "maxMs": 0.885,
+          "avgMs": 0.09
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "position_reasoning",
+        "questionType": "mini_deduction",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.045,
+          "p50Ms": 0.048,
+          "p90Ms": 0.051,
+          "p95Ms": 0.068,
+          "p99Ms": 0.328,
+          "maxMs": 0.328,
+          "avgMs": 0.052
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "position_reasoning",
+        "questionType": "mini_deduction",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.046,
+          "p50Ms": 0.05,
+          "p90Ms": 0.055,
+          "p95Ms": 0.069,
+          "p99Ms": 0.191,
+          "maxMs": 0.191,
+          "avgMs": 0.053
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "symbol_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.024,
+          "p50Ms": 0.028,
+          "p90Ms": 0.063,
+          "p95Ms": 0.104,
+          "p99Ms": 1.661,
+          "maxMs": 1.661,
+          "avgMs": 0.055
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "symbol_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.021,
+          "p50Ms": 0.023,
+          "p90Ms": 0.024,
+          "p95Ms": 0.027,
+          "p99Ms": 0.039,
+          "maxMs": 0.039,
+          "avgMs": 0.023
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "symbol_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.019,
+          "p50Ms": 0.023,
+          "p90Ms": 0.025,
+          "p95Ms": 0.039,
+          "p99Ms": 0.129,
+          "maxMs": 0.129,
+          "avgMs": 0.025
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "position_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.03,
+          "p50Ms": 0.03,
+          "p90Ms": 0.033,
+          "p95Ms": 0.042,
+          "p99Ms": 0.363,
+          "maxMs": 0.363,
+          "avgMs": 0.035
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "position_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.03,
+          "p50Ms": 0.032,
+          "p90Ms": 0.047,
+          "p95Ms": 0.054,
+          "p99Ms": 0.149,
+          "maxMs": 0.149,
+          "avgMs": 0.036
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "position_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.028,
+          "p50Ms": 0.032,
+          "p90Ms": 0.035,
+          "p95Ms": 0.053,
+          "p99Ms": 0.637,
+          "maxMs": 0.637,
+          "avgMs": 0.04
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "sequence_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.269,
+          "p50Ms": 0.29,
+          "p90Ms": 0.363,
+          "p95Ms": 0.436,
+          "p99Ms": 0.922,
+          "maxMs": 0.922,
+          "avgMs": 0.313
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "sequence_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.299,
+          "p50Ms": 0.425,
+          "p90Ms": 0.561,
+          "p95Ms": 0.728,
+          "p99Ms": 1.826,
+          "maxMs": 1.826,
+          "avgMs": 0.455
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "sequence_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.342,
+          "p50Ms": 0.487,
+          "p90Ms": 0.727,
+          "p95Ms": 0.886,
+          "p99Ms": 2.56,
+          "maxMs": 2.56,
+          "avgMs": 0.549
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "missing_element_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.027,
+          "p50Ms": 0.031,
+          "p90Ms": 0.035,
+          "p95Ms": 0.047,
+          "p99Ms": 0.297,
+          "maxMs": 0.297,
+          "avgMs": 0.035
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "missing_element_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.031,
+          "p50Ms": 0.035,
+          "p90Ms": 0.039,
+          "p95Ms": 0.051,
+          "p99Ms": 0.459,
+          "maxMs": 0.459,
+          "avgMs": 0.042
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "missing_element_recall",
+        "questionType": "memory_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.026,
+          "p50Ms": 0.032,
+          "p90Ms": 0.047,
+          "p95Ms": 0.061,
+          "p99Ms": 0.291,
+          "maxMs": 0.291,
+          "avgMs": 0.04
         },
         "sampleErrors": []
       },
@@ -1495,13 +1504,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.213,
-          "p50Ms": 0.238,
-          "p90Ms": 0.402,
-          "p95Ms": 0.757,
-          "p99Ms": 1.978,
-          "maxMs": 1.978,
-          "avgMs": 0.316
+          "minMs": 0.263,
+          "p50Ms": 0.372,
+          "p90Ms": 0.467,
+          "p95Ms": 0.523,
+          "p99Ms": 0.891,
+          "maxMs": 0.891,
+          "avgMs": 0.368
         },
         "sampleErrors": []
       },
@@ -1518,13 +1527,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.233,
-          "p50Ms": 0.251,
-          "p90Ms": 0.32,
-          "p95Ms": 0.869,
-          "p99Ms": 1.552,
-          "maxMs": 1.552,
-          "avgMs": 0.312
+          "minMs": 0.286,
+          "p50Ms": 0.383,
+          "p90Ms": 0.501,
+          "p95Ms": 0.591,
+          "p99Ms": 1.324,
+          "maxMs": 1.324,
+          "avgMs": 0.393
         },
         "sampleErrors": []
       },
@@ -1541,13 +1550,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.26,
-          "p50Ms": 0.288,
-          "p90Ms": 0.38,
-          "p95Ms": 0.546,
-          "p99Ms": 0.801,
-          "maxMs": 0.801,
-          "avgMs": 0.32
+          "minMs": 0.325,
+          "p50Ms": 0.527,
+          "p90Ms": 0.657,
+          "p95Ms": 0.858,
+          "p99Ms": 1.625,
+          "maxMs": 1.625,
+          "avgMs": 0.545
         },
         "sampleErrors": []
       }
@@ -1563,13 +1572,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.272,
-          "p50Ms": 0.412,
-          "p90Ms": 1.682,
-          "p95Ms": 2.381,
-          "p99Ms": 2.381,
-          "maxMs": 2.381,
-          "avgMs": 0.652
+          "minMs": 0.276,
+          "p50Ms": 0.48,
+          "p90Ms": 5.273,
+          "p95Ms": 6.362,
+          "p99Ms": 6.362,
+          "maxMs": 6.362,
+          "avgMs": 1.157
         }
       },
       {
@@ -1580,13 +1589,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.491,
-          "p50Ms": 0.826,
-          "p90Ms": 1.677,
-          "p95Ms": 2.089,
-          "p99Ms": 2.089,
-          "maxMs": 2.089,
-          "avgMs": 0.97
+          "minMs": 0.512,
+          "p50Ms": 0.948,
+          "p90Ms": 3.149,
+          "p95Ms": 5.259,
+          "p99Ms": 5.259,
+          "maxMs": 5.259,
+          "avgMs": 1.254
         }
       },
       {
@@ -1597,13 +1606,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 1.19,
-          "p50Ms": 1.871,
-          "p90Ms": 3.128,
-          "p95Ms": 3.394,
-          "p99Ms": 3.394,
-          "maxMs": 3.394,
-          "avgMs": 2.051
+          "minMs": 0.959,
+          "p50Ms": 2.001,
+          "p90Ms": 2.936,
+          "p95Ms": 5.096,
+          "p99Ms": 5.096,
+          "maxMs": 5.096,
+          "avgMs": 2.1
         }
       },
       {
@@ -1614,13 +1623,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.352,
-          "p50Ms": 0.409,
-          "p90Ms": 0.803,
-          "p95Ms": 1.764,
-          "p99Ms": 1.764,
-          "maxMs": 1.764,
-          "avgMs": 0.533
+          "minMs": 0.374,
+          "p50Ms": 0.397,
+          "p90Ms": 0.596,
+          "p95Ms": 1.608,
+          "p99Ms": 1.608,
+          "maxMs": 1.608,
+          "avgMs": 0.486
         }
       },
       {
@@ -1631,13 +1640,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.418,
-          "p50Ms": 0.529,
-          "p90Ms": 0.69,
-          "p95Ms": 1.14,
-          "p99Ms": 1.14,
-          "maxMs": 1.14,
-          "avgMs": 0.561
+          "minMs": 0.48,
+          "p50Ms": 0.567,
+          "p90Ms": 2.28,
+          "p95Ms": 3.213,
+          "p99Ms": 3.213,
+          "maxMs": 3.213,
+          "avgMs": 0.803
         }
       }
     ],
@@ -1650,29 +1659,29 @@
     "observedFailureRatePct": 0,
     "formattedResult": "0 failures in 20 daily snapshot generations (observed rate: 0.00%)",
     "latency": {
-      "minMs": 1.207,
-      "p50Ms": 2.315,
-      "p90Ms": 3.99,
-      "p95Ms": 5.649,
-      "p99Ms": 5.649,
-      "maxMs": 5.649,
-      "avgMs": 2.568
+      "minMs": 1.559,
+      "p50Ms": 3.19,
+      "p90Ms": 6.009,
+      "p95Ms": 6.549,
+      "p99Ms": 6.549,
+      "maxMs": 6.549,
+      "avgMs": 3.268
     }
   },
-  "duelSnapshotReplay": {
+  "syntheticDuelDtoReplay": {
     "sessionsSampled": 20,
     "totalQuestionsReplayed": 200,
     "replayMismatches": 0,
     "observedFailureRatePct": 0,
-    "formattedResult": "0 mismatches in 200 replayed questions across 20 duels (observed rate: 0.00%)",
+    "formattedResult": "0 mismatches in 200 replayed questions across 20 synthetic duels (observed rate: 0.00% - synthetic DTO check only)",
     "latency": {
-      "minMs": 0.007,
+      "minMs": 0.013,
       "p50Ms": 0.014,
-      "p90Ms": 0.335,
-      "p95Ms": 0.486,
-      "p99Ms": 0.486,
-      "maxMs": 0.486,
-      "avgMs": 0.062
+      "p90Ms": 0.245,
+      "p95Ms": 0.267,
+      "p99Ms": 0.267,
+      "maxMs": 0.267,
+      "avgMs": 0.038
     }
   }
 }

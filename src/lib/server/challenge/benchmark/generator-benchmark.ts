@@ -18,7 +18,7 @@ export function runGeneratorBenchmark(options: BenchmarkRunOptions = {}): Benchm
 	const locales: Array<'en' | 'id'> = options.locales ?? ['en'];
 	const includeSemantic = options.includeSemanticOracles ?? true;
 
-	const inventory = getRuleInventory();
+	const inventory = options.inventory ?? getRuleInventory();
 	const activeRules = options.rules
 		? inventory.filter((item) => options.rules!.includes(item.ruleType))
 		: inventory;
@@ -29,6 +29,8 @@ export function runGeneratorBenchmark(options: BenchmarkRunOptions = {}): Benchm
 	let totalStructural = 0;
 	let totalSemantic = 0;
 	let totalReconstruction = 0;
+	let totalDuplicateChoices = 0;
+	let totalAmbiguousChoices = 0;
 	let totalSamples = 0;
 
 	for (const ruleItem of activeRules) {
@@ -149,6 +151,8 @@ export function runGeneratorBenchmark(options: BenchmarkRunOptions = {}): Benchm
 			totalStructural += structuralFailures;
 			totalSemantic += semanticFailures;
 			totalReconstruction += reconstructionMismatches;
+			totalDuplicateChoices += duplicateChoiceAnomalies;
+			totalAmbiguousChoices += ambiguousChoiceAnomalies;
 			totalSamples += iterations;
 
 			const latencyPercentiles = computeLatencyPercentiles(latencies);
@@ -171,7 +175,12 @@ export function runGeneratorBenchmark(options: BenchmarkRunOptions = {}): Benchm
 		}
 	}
 
-	const overallFailures = totalStructural + totalSemantic + totalReconstruction;
+	const overallFailures =
+		totalStructural +
+		totalSemantic +
+		totalReconstruction +
+		totalDuplicateChoices +
+		totalAmbiguousChoices;
 	const overallFailureRate = totalSamples > 0 ? (overallFailures / totalSamples) * 100 : 0;
 	const aggregateLatency = computeLatencyPercentiles(allLatencies);
 
@@ -181,7 +190,7 @@ export function runGeneratorBenchmark(options: BenchmarkRunOptions = {}): Benchm
 			platform: process.platform,
 			arch: process.arch,
 			timestamp: new Date().toISOString(),
-			commitSha: process.env.GITHUB_SHA || process.env.GIT_COMMIT || 'local',
+			commitSha: options.commitSha ?? process.env.GITHUB_SHA ?? process.env.GIT_COMMIT ?? 'local',
 			generatorVersion: '1.0.0'
 		},
 		totalSamples,
@@ -189,6 +198,8 @@ export function runGeneratorBenchmark(options: BenchmarkRunOptions = {}): Benchm
 		overallStructuralFailures: totalStructural,
 		overallSemanticFailures: totalSemantic,
 		overallReconstructionMismatches: totalReconstruction,
+		overallDuplicateChoiceAnomalies: totalDuplicateChoices,
+		overallAmbiguousChoiceAnomalies: totalAmbiguousChoices,
 		overallObservedFailureRatePct: Number(overallFailureRate.toFixed(2)),
 		summaryStatement: `${overallFailures} failures in ${totalSamples} generated samples across ${allResults.length} rule combinations (observed rate: ${overallFailureRate.toFixed(2)}%)`,
 		aggregateLatency,
@@ -220,7 +231,7 @@ export function computeLatencyPercentiles(times: number[]): LatencyPercentiles {
 	};
 }
 
-function isDeepEqual(a: unknown, b: unknown): boolean {
+export function isDeepEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
 	if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
 		return false;

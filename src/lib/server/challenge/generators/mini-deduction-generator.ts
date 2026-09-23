@@ -41,7 +41,12 @@ export function generateMiniDeductionQuestion(input: GenerateQuestionInput): Gen
 			offset: rng.intBetween(0, 40)
 		}),
 		timeLimitSeconds: input.timeLimitSeconds,
-		metadata: { ruleType: input.ruleType, difficulty: input.difficulty },
+		metadata: {
+			ruleType: input.ruleType,
+			difficulty: input.difficulty,
+			deductionTarget: puzzle.deductionTarget,
+			entities: puzzle.entities
+		},
 		generatedSeed: input.seed
 	});
 }
@@ -71,6 +76,8 @@ function buildPuzzle(
 				return {
 					prompt: t('deduction.comparisonPrompt', { first, second, third }),
 					answer: first,
+					deductionTarget: first,
+					entities: [first, second, third],
 					distractors: [second, third, t('arena.cannotDetermine')],
 					explanation: t('deduction.comparisonExplain', { first, second, third })
 				};
@@ -90,6 +97,8 @@ function buildPuzzle(
 				return {
 					prompt: `${base.replace('?', '')} ${extra} ?`,
 					answer: first,
+					deductionTarget: first,
+					entities: [first, second, third, fourth],
 					distractors: [second, third, fourth, t('arena.cannotDetermine')],
 					explanation: t('deduction.comparisonExplain', { first, second, third })
 				};
@@ -107,6 +116,8 @@ function buildPuzzle(
 						third: selection[2]!
 					}),
 					answer: selection[1] as string,
+					deductionTarget: selection[1] as string,
+					entities: selection as string[],
 					distractors: [selection[0] as string, selection[2] as string, t('arena.cannotDetermine')],
 					explanation: t('deduction.orderExplain', {
 						first: selection[0]!,
@@ -129,6 +140,8 @@ function buildPuzzle(
 							third: 'x'
 						}),
 					answer: selection[3] as string,
+					deductionTarget: selection[3] as string,
+					entities: selection as string[],
 					distractors: [selection[0] as string, selection[1] as string, selection[2] as string],
 					explanation: 'Combined logic.'
 				};
@@ -146,6 +159,8 @@ function buildPuzzle(
 						wrongB: selection[2]
 					}),
 					answer: selection[0] as string,
+					deductionTarget: selection[0] as string,
+					entities: selection as string[],
 					distractors: [selection[1] as string, selection[2] as string, t('arena.cannotDetermine')],
 					explanation: t('deduction.eliminationExplain', { correct: selection[0] })
 				};
@@ -160,6 +175,8 @@ function buildPuzzle(
 						' ' +
 						t('deduction.eliminationExplain', { correct: selection[3] }),
 					answer: selection[0] as string,
+					deductionTarget: selection[0] as string,
+					entities: selection as string[],
 					distractors: [selection[1] as string, selection[2] as string, selection[3] as string],
 					explanation: t('deduction.eliminationExplain', { correct: selection[0] })
 				};
@@ -171,6 +188,8 @@ function buildPuzzle(
 				return {
 					prompt: t('deduction.truthPrompt', { truth, falsehood }),
 					answer: truth,
+					deductionTarget: truth,
+					entities: [truth, falsehood],
 					distractors: [falsehood, t('deduction.both'), t('deduction.neither')],
 					explanation: t('deduction.truthExplain', { truth })
 				};
@@ -181,6 +200,8 @@ function buildPuzzle(
 						' ' +
 						t('deduction.truthExplain', { truth: third }),
 					answer: truth,
+					deductionTarget: truth,
+					entities: [truth, falsehood, third],
 					distractors: [falsehood, third, t('deduction.neither')],
 					explanation: t('deduction.truthExplain', { truth })
 				};
@@ -197,6 +218,8 @@ function buildPuzzle(
 				return {
 					prompt: t('deduction.positionPrompt', { left, middle, right }),
 					answer: middle,
+					deductionTarget: middle,
+					entities: [left, middle, right],
 					distractors: [left, right, t('arena.cannotDetermine')],
 					explanation: t('deduction.positionExplain', { middle })
 				};
@@ -207,6 +230,8 @@ function buildPuzzle(
 						' ' +
 						t('deduction.positionExplain', { middle: farRight }),
 					answer: middle,
+					deductionTarget: middle,
+					entities: [left, middle, right, farRight],
 					distractors: [left, right, farRight, t('arena.cannotDetermine')],
 					explanation: t('deduction.positionExplain', { middle })
 				};
