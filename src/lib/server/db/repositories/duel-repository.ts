@@ -213,7 +213,9 @@ export function createDuelRepository(database = defaultDb): DuelRepository {
 						.insert(challengeSessions)
 						.values({
 							userId: input.userId,
-							guestToken: input.guestToken ? hashGuestToken(input.guestToken) : null,
+							guestToken:
+								input.guestTokenHash ??
+								(input.guestToken ? hashGuestToken(input.guestToken) : null),
 							challengeType: 'duel',
 							status: 'in_progress',
 							totalQuestions: input.duel.totalQuestions,
@@ -269,14 +271,7 @@ export function createDuelRepository(database = defaultDb): DuelRepository {
 					};
 				});
 			} catch (err: unknown) {
-				const isUniqueConflict =
-					(err &&
-						typeof err === 'object' &&
-						'code' in err &&
-						(err as { code: string }).code === '23505') ||
-					(err instanceof Error && err.message.toLowerCase().includes('unique'));
-
-				if (isUniqueConflict) {
+				if (isUniqueConstraintError(err)) {
 					// The concurrent transaction won and committed. The losing session and questions
 					// were rolled back cleanly by PostgreSQL. Query the winning canonical participant!
 					let canonicalParticipant: DuelParticipant | null = null;
@@ -430,4 +425,29 @@ export function createDuelRepository(database = defaultDb): DuelRepository {
 			return { claimedCount: updated.length };
 		}
 	};
+}
+
+function isUniqueConstraintError(err: unknown): boolean {
+	let current: unknown = err;
+	while (current && typeof current === 'object') {
+		const candidate = current as Record<string, unknown>;
+		if (candidate.code === '23505') return true;
+		if (
+			typeof candidate.message === 'string' &&
+			/unique constraint|duplicate key|duel_participants_/i.test(candidate.message)
+		) {
+			return true;
+		}
+		if (typeof candidate.detail === 'string' && /already exists/i.test(candidate.detail)) {
+			return true;
+		}
+		if (
+			typeof candidate.constraint === 'string' &&
+			/duel_participants_/i.test(candidate.constraint)
+		) {
+			return true;
+		}
+		current = candidate.cause;
+	}
+	return false;
 }
