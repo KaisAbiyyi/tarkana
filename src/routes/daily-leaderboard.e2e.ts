@@ -76,4 +76,94 @@ test.describe('P1.4 Daily Leaderboard E2E', () => {
 		// URL updates to ?tab=daily
 		await expect(page).toHaveURL(/tab=daily/);
 	});
+
+	test('strictly validates limit and offset query parameters with 400 Bad Request', async ({
+		request
+	}) => {
+		const invalidParams = [
+			'limit=abc',
+			'limit=0',
+			'limit=101',
+			'limit=10.5',
+			'offset=-1',
+			'offset=xyz',
+			'offset=2.5'
+		];
+
+		for (const param of invalidParams) {
+			const res = await request.get(`/api/challenge/daily/leaderboard?${param}`);
+			expect(res.status()).toBe(400);
+			const body = await res.json();
+			expect(body.ok).toBe(false);
+			expect(body.error.code).toBe('bad_request');
+		}
+	});
+
+	test('real guest Daily challenge completion updates attempt and reflects hypothetical rank on leaderboard', async ({
+		playwright,
+		page
+	}) => {
+		// Create a separate context for the guest to isolate cookies
+		const context = await playwright.request.newContext({
+			baseURL: 'http://127.0.0.1:4173'
+		});
+
+		try {
+			// 1. Start a real daily challenge as guest (no mocks)
+			const startRes = await context.post('/api/challenge/daily/start');
+			expect(startRes.status()).toBe(200);
+			const startBody = await startRes.json();
+			expect(startBody.ok).toBe(true);
+			const sessionId = startBody.data.sessionId;
+			let currentQuestion = startBody.data.currentQuestion;
+
+			// 2. Answer all 10 questions sequentially
+			for (let i = 0; i < 10; i++) {
+				expect(currentQuestion).toBeDefined();
+				const submitRes = await context.post('/api/challenge/submit', {
+					data: {
+						sessionId,
+						questionId: currentQuestion.id,
+						selectedAnswer: currentQuestion.choices[0],
+						timeTakenSeconds: 3
+					}
+				});
+				expect(submitRes.status()).toBe(200);
+				const submitBody = await submitRes.json();
+				expect(submitBody.ok).toBe(true);
+				currentQuestion = submitBody.data.nextQuestion;
+			}
+
+			// 3. Finish the challenge
+			const finishRes = await context.post('/api/challenge/finish', {
+				data: { sessionId }
+			});
+			expect(finishRes.status()).toBe(200);
+			const finishBody = await finishRes.json();
+			expect(finishBody.ok).toBe(true);
+			expect(finishBody.data.isGuest).toBe(true);
+
+			// 4. Query leaderboard API with the guest's cookies
+			const leaderboardRes = await context.get('/api/challenge/daily/leaderboard');
+			expect(leaderboardRes.status()).toBe(200);
+			const leaderboardBody = await leaderboardRes.json();
+			expect(leaderboardBody.ok).toBe(true);
+			expect(leaderboardBody.data.guestHypotheticalEntry).toBeDefined();
+			expect(
+				leaderboardBody.data.guestHypotheticalEntry.hypotheticalPosition
+			).toBeGreaterThanOrEqual(1);
+
+			// 5. Transfer storage state/cookies to browser page and visit /leaderboard?tab=daily
+			const storageState = await context.storageState();
+			await page.context().addCookies(storageState.cookies);
+			await page.goto('/leaderboard?tab=daily');
+			await page.waitForLoadState('networkidle');
+
+			// 6. Verify conversion callout is visible with the hypothetical position
+			const hypotheticalRank = leaderboardBody.data.guestHypotheticalEntry.hypotheticalPosition;
+			await expect(page.getByText(new RegExp(`#${hypotheticalRank}`, 'i'))).toBeVisible();
+		} finally {
+			await context.dispose();
+		}
+	});
 });

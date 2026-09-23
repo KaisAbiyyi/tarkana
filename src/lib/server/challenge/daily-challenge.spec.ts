@@ -753,23 +753,20 @@ describe('P1.3 Daily Challenge Core Architecture', () => {
 			}
 
 			// 5. Guest finishes Daily challenge
-			const finishService = createFinishChallengeService(sessionRepo as any, profileRepo as any);
+			const finishService = createFinishChallengeService(
+				sessionRepo as any,
+				profileRepo as any,
+				dailyRepo as any
+			);
 			const finishRes = await finishService.finish(event, { sessionId: startRes.sessionId });
 			expect(finishRes.isGuest).toBe(true);
 			expect(finishRes.ratingDelta).toBe(0);
 
-			// Complete attempt in dailyRepo (like real DB completeSessionAndUpdateProfile transaction)
-			const att = await dailyRepo.findAttemptBySessionId(startRes.sessionId);
-			await dailyRepo.completeAttempt({
-				attemptId: att!.id,
-				score: finishRes.totalScore,
-				accuracy: finishRes.accuracy,
-				totalTimeSeconds: finishRes.totalTimeSeconds
-			});
-
-			// Verify attempt in dailyRepo is completed
+			// Verify attempt in dailyRepo is completed automatically by finishService
 			const updatedAttempt = await dailyRepo.findAttemptBySessionId(startRes.sessionId);
 			expect(updatedAttempt?.status).toBe('completed');
+			expect(updatedAttempt?.score).toBe(finishRes.totalScore);
+			expect(updatedAttempt?.accuracy).toBe(finishRes.accuracy);
 
 			// 6. Subsequent start is rejected with 409 conflict
 			await expect(service.start(event, '2026-09-22')).rejects.toThrow(/already been completed/i);
@@ -826,7 +823,11 @@ describe('P1.3 Daily Challenge Core Architecture', () => {
 				sessionRepo as any,
 				profileRepo as any
 			);
-			const finishService = createFinishChallengeService(sessionRepo as any, profileRepo as any);
+			const finishService = createFinishChallengeService(
+				sessionRepo as any,
+				profileRepo as any,
+				dailyRepo as any
+			);
 
 			const event = createMockEvent({ user: { id: 'user-bob' }, distinctId: 'dist-bob' });
 			const started = await dailyService.start(event, '2026-09-22');

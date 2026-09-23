@@ -682,11 +682,14 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 					completedAt: dailyChallengeAttempts.completedAt
 				})
 				.from(dailyChallengeAttempts)
+				.innerJoin(challengeSessions, eq(challengeSessions.id, dailyChallengeAttempts.sessionId))
 				.where(
 					and(
 						eq(dailyChallengeAttempts.dailyChallengeId, dailyChallengeId),
 						eq(dailyChallengeAttempts.guestTokenHash, guestTokenHash),
 						eq(dailyChallengeAttempts.status, 'completed'),
+						eq(dailyChallengeAttempts.isOfficial, true),
+						eq(challengeSessions.isSuspicious, false),
 						isNull(dailyChallengeAttempts.userId)
 					)
 				)
