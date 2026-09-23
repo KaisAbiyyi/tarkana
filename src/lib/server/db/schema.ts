@@ -227,11 +227,11 @@ export const dailyChallengeAttempts = pgTable(
 		index('daily_attempts_leaderboard_rank_idx')
 			.on(
 				table.dailyChallengeId,
-				table.score,
-				table.accuracy,
-				table.totalTimeSeconds,
-				table.completedAt,
-				table.id
+				table.score.desc(),
+				table.accuracy.desc(),
+				table.totalTimeSeconds.asc(),
+				table.completedAt.asc(),
+				table.id.asc()
 			)
 			.where(sql`user_id IS NOT NULL AND is_official = true AND status = 'completed'`)
 	]

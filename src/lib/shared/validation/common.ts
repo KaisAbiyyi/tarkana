@@ -25,10 +25,13 @@ export function parsePositiveInteger(value: unknown, fieldName: string, max = 10
 	return Number(numericValue);
 }
 
-export function parsePagination(searchParams: URLSearchParams): { limit: number; offset: number } {
+export function parsePagination(
+	searchParams: URLSearchParams,
+	defaultLimit = 20
+): { limit: number; offset: number } {
 	const limitParam = searchParams.get('limit');
 	const offsetParam = searchParams.get('offset');
-	const limit = limitParam === null ? 20 : Number(limitParam);
+	const limit = limitParam === null ? defaultLimit : Number(limitParam);
 	const offset = offsetParam === null ? 0 : Number(offsetParam);
 
 	if (!Number.isInteger(limit) || limit < 1 || limit > 100) {

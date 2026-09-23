@@ -398,4 +398,38 @@ describe('daily leaderboard service', () => {
 		expect(result[0].isCurrent).toBe(false);
 		expect(result[2].isCurrent).toBe(false);
 	});
+
+	it('strictly validates limit and offset parameters and rejects malformed values', async () => {
+		const service = createDailyLeaderboardService(
+			createMockDailyRepo(),
+			createProfileRepositoryFake(null),
+			createMockChallengeService()
+		);
+		const event = createFakeEvent(null);
+
+		// Invalid limit < 1
+		await expect(service.getLeaderboard(event, { limit: 0 })).rejects.toThrow(
+			/limit must be an integer between 1 and 100/
+		);
+
+		// Invalid limit > 100
+		await expect(service.getLeaderboard(event, { limit: 101 })).rejects.toThrow(
+			/limit must be an integer between 1 and 100/
+		);
+
+		// Non-integer limit
+		await expect(service.getLeaderboard(event, { limit: 10.5 })).rejects.toThrow(
+			/limit must be an integer between 1 and 100/
+		);
+
+		// Negative offset
+		await expect(service.getLeaderboard(event, { offset: -1 })).rejects.toThrow(
+			/offset must be a non-negative integer/
+		);
+
+		// Non-integer offset
+		await expect(service.getLeaderboard(event, { offset: 5.5 })).rejects.toThrow(
+			/offset must be a non-negative integer/
+		);
+	});
 });

@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createFinishChallengeService } from './finish-challenge-service';
+import type { DailyRepository } from '$lib/server/db/repositories/daily-repository';
 import {
 	createFakeEvent,
 	createFakeUser,
@@ -163,5 +164,54 @@ describe('finish challenge service', () => {
 
 		expect(result.isGuest).toBe(false);
 		expect(result.canClaim).toBe(false);
+	});
+
+	it('synchronizes daily challenge attempt completion when challengeType is daily', async () => {
+		const profile = createProfile({ rating: 500, rank: 'Bronze Mind' });
+		const session = createChallengeSession({
+			userId: profile.id,
+			challengeType: 'daily',
+			ratingBefore: profile.rating,
+			ratingAfter: profile.rating,
+			rankBefore: profile.rank,
+			rankAfter: profile.rank,
+			totalQuestions: 1
+		});
+		const question = createSessionQuestion({ sessionId: session.id, orderIndex: 0 });
+		const sessionRepo = createSessionRepositoryFake({
+			session,
+			questions: [question],
+			answers: [createSessionAnswer({ sessionQuestionId: question.id, userId: profile.id })]
+		});
+		const completedAttempts: unknown[] = [];
+		const dailyRepo = {
+			findAttemptBySessionId: vi.fn(async (sessionId: string) => ({
+				id: '00000000-0000-4000-8000-000000000001',
+				sessionId,
+				status: 'in_progress'
+			})),
+			completeAttempt: vi.fn(async (input: unknown) => {
+				completedAttempts.push(input);
+				return input as any;
+			})
+		} as unknown as DailyRepository;
+
+		const service = createFinishChallengeService(
+			sessionRepo,
+			createProfileRepositoryFake(profile),
+			dailyRepo
+		);
+
+		await service.finish(createFakeEvent(createFakeUser({ id: profile.id })), {
+			sessionId: session.id
+		});
+
+		expect(dailyRepo.findAttemptBySessionId).toHaveBeenCalledWith(session.id);
+		expect(dailyRepo.completeAttempt).toHaveBeenCalledTimes(1);
+		expect(completedAttempts[0]).toMatchObject({
+			attemptId: '00000000-0000-4000-8000-000000000001',
+			score: expect.any(Number),
+			accuracy: 100
+		});
 	});
 });

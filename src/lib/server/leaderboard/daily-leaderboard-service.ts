@@ -65,8 +65,19 @@ export function createDailyLeaderboardService(
 				throw badRequest('Cannot view leaderboards for future dates');
 			}
 
-			const limit = Math.min(100, Math.max(1, options.limit ?? 50));
-			const offset = Math.max(0, options.offset ?? 0);
+			if (options.limit !== undefined) {
+				if (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 100) {
+					throw badRequest('limit must be an integer between 1 and 100');
+				}
+			}
+			if (options.offset !== undefined) {
+				if (!Number.isInteger(options.offset) || options.offset < 0) {
+					throw badRequest('offset must be a non-negative integer');
+				}
+			}
+
+			const limit = options.limit ?? 50;
+			const offset = options.offset ?? 0;
 
 			// Historical lookups must NEVER generate or create a daily challenge snapshot!
 			let daily = await dailyRepository.findDailyChallengeByDate(requestedDate);

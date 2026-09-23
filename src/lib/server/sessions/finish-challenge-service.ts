@@ -10,6 +10,10 @@ import {
 	createSessionRepository,
 	type SessionRepository
 } from '$lib/server/db/repositories/session-repository';
+import {
+	createDailyRepository,
+	type DailyRepository
+} from '$lib/server/db/repositories/daily-repository';
 import type { ChallengeSession, SessionAnswer, SessionQuestion } from '$lib/server/db/schema';
 import { calculateRatingDelta, applyRatingDelta } from '$lib/server/scoring/rating';
 import { resolveCompletedRank, isRankPromotion, getRankProgress } from '$lib/server/scoring/rank';
@@ -53,7 +57,8 @@ export type FinishChallengeService = {
 
 export function createFinishChallengeService(
 	sessionRepository: SessionRepository = createSessionRepository(),
-	profileRepository: ProfileRepository = createProfileRepository()
+	profileRepository: ProfileRepository = createProfileRepository(),
+	dailyRepository: DailyRepository = createDailyRepository()
 ): FinishChallengeService {
 	async function finishGuestSession(session: ChallengeSession, input: FinishChallengeInput) {
 		const [questions, answers] = await Promise.all([
@@ -108,6 +113,26 @@ export function createFinishChallengeService(
 			isSuspicious: suspicious.isSuspicious,
 			suspiciousReason: suspicious.reasons.join(', ') || null
 		});
+
+		if (isDaily) {
+			await syncDailyAttemptCompletion(session.id, scoreSummary);
+		}
+	}
+
+	async function syncDailyAttemptCompletion(
+		sessionId: string,
+		scoreSummary: { totalScore: number; accuracy: number; totalTimeSeconds: number }
+	) {
+		const attempt = await dailyRepository.findAttemptBySessionId(sessionId);
+		if (attempt && attempt.status === 'in_progress') {
+			await dailyRepository.completeAttempt({
+				attemptId: attempt.id,
+				score: scoreSummary.totalScore,
+				accuracy: scoreSummary.accuracy,
+				totalTimeSeconds: scoreSummary.totalTimeSeconds,
+				completedAt: new Date()
+			});
+		}
 	}
 
 	return {
@@ -225,6 +250,10 @@ export function createFinishChallengeService(
 					profileRank: isDaily ? profile.rank : rankAfter
 				});
 
+				if (isDaily) {
+					await syncDailyAttemptCompletion(session.id, scoreSummary);
+				}
+
 				const finishResult = {
 					...toFinishResult({
 						session: completedSession,
@@ -281,6 +310,10 @@ export function createFinishChallengeService(
 					isSuspicious: suspicious.isSuspicious,
 					suspiciousReason: suspicious.reasons.join(', ') || null
 				});
+
+				if (isDaily) {
+					await syncDailyAttemptCompletion(session.id, scoreSummary);
+				}
 
 				const finishResult = {
 					...toFinishResult({

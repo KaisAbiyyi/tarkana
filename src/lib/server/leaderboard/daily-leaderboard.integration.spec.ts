@@ -335,7 +335,81 @@ describe('Real Database Daily Leaderboard Integration', () => {
 		expect(guestPos?.hypotheticalPosition).toBe(2);
 		expect(guestPos?.score).toBe(920);
 
+		// Suspicious guest attempt -> must receive null
+		const suspiciousGuestSessionId = makeSessionId(11);
+		const suspiciousGuestToken = 'test-integ-suspicious-guest';
+		const suspiciousGuestHash = hashGuestToken(suspiciousGuestToken);
+		await db.insert(challengeSessions).values({
+			id: suspiciousGuestSessionId,
+			userId: null,
+			challengeType: 'daily',
+			status: 'completed',
+			totalQuestions: 10,
+			ratingBefore: 0,
+			ratingAfter: 0,
+			rankBefore: 'Unranked',
+			rankAfter: 'Unranked',
+			isSuspicious: true
+		});
+		await db.insert(dailyChallengeAttempts).values({
+			id: makeAttemptId(101),
+			dailyChallengeId: testDailyId,
+			sessionId: suspiciousGuestSessionId,
+			userId: null,
+			guestTokenHash: suspiciousGuestHash,
+			distinctId: 'guest-dist-11',
+			isOfficial: true,
+			status: 'completed',
+			score: 930,
+			accuracy: 0.93,
+			totalTimeSeconds: 40,
+			completedAt: new Date('2026-05-01T11:00:00Z')
+		});
+		const suspiciousGuestPos = await dailyRepo.getGuestHypotheticalPosition({
+			dailyChallengeId: testDailyId,
+			guestTokenHash: suspiciousGuestHash
+		});
+		expect(suspiciousGuestPos).toBeNull();
+
+		// Unofficial guest attempt -> must receive null
+		const unofficialGuestSessionId = makeSessionId(12);
+		const unofficialGuestToken = 'test-integ-unofficial-guest';
+		const unofficialGuestHash = hashGuestToken(unofficialGuestToken);
+		await db.insert(challengeSessions).values({
+			id: unofficialGuestSessionId,
+			userId: null,
+			challengeType: 'daily',
+			status: 'completed',
+			totalQuestions: 10,
+			ratingBefore: 0,
+			ratingAfter: 0,
+			rankBefore: 'Unranked',
+			rankAfter: 'Unranked',
+			isSuspicious: false
+		});
+		await db.insert(dailyChallengeAttempts).values({
+			id: makeAttemptId(102),
+			dailyChallengeId: testDailyId,
+			sessionId: unofficialGuestSessionId,
+			userId: null,
+			guestTokenHash: unofficialGuestHash,
+			distinctId: 'guest-dist-12',
+			isOfficial: false,
+			status: 'completed',
+			score: 940,
+			accuracy: 0.94,
+			totalTimeSeconds: 35,
+			completedAt: new Date('2026-05-01T11:00:00Z')
+		});
+		const unofficialGuestPos = await dailyRepo.getGuestHypotheticalPosition({
+			dailyChallengeId: testDailyId,
+			guestTokenHash: unofficialGuestHash
+		});
+		expect(unofficialGuestPos).toBeNull();
+
 		// 8. PostgreSQL Query Plan EXPLAIN Verification
+		// Test with sequential scan disabled to assert index utilization and alignment
+		await db.execute(sql`SET LOCAL enable_seqscan = OFF;`);
 		const explainResult = await db.execute(sql`
 			EXPLAIN (FORMAT JSON)
 			WITH ranked_attempts AS (
@@ -366,19 +440,24 @@ describe('Real Database Daily Leaderboard Integration', () => {
 			)
 			SELECT * FROM ranked_attempts LIMIT 10;
 		`);
+		await db.execute(sql`SET LOCAL enable_seqscan = ON;`);
 
 		expect(explainResult.rows).toBeDefined();
 		expect(explainResult.rows.length).toBeGreaterThan(0);
+		const explainJson = JSON.stringify(explainResult.rows);
+		expect(explainJson).toContain('daily_attempts_leaderboard_rank_idx');
 
 		// Clean up after test
 		await db
 			.delete(dailyChallengeAttempts)
 			.where(eq(dailyChallengeAttempts.dailyChallengeId, testDailyId));
 		await db.delete(dailyChallenges).where(eq(dailyChallenges.id, testDailyId));
-		for (let i = 1; i <= 10; i++) {
+		for (let i = 1; i <= 12; i++) {
 			await db.delete(challengeSessions).where(eq(challengeSessions.id, makeSessionId(i)));
 			await db.delete(usersProfile).where(eq(usersProfile.id, makeUserId(i)));
 		}
 		await db.delete(challengeSessions).where(eq(challengeSessions.id, guestSessionId));
+		await db.delete(challengeSessions).where(eq(challengeSessions.id, suspiciousGuestSessionId));
+		await db.delete(challengeSessions).where(eq(challengeSessions.id, unofficialGuestSessionId));
 	});
 });

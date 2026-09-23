@@ -1,0 +1,2 @@
+DROP INDEX "daily_attempts_leaderboard_rank_idx";--> statement-breakpoint
+CREATE INDEX "daily_attempts_leaderboard_rank_idx" ON "daily_challenge_attempts" USING btree ("daily_challenge_id","score" DESC NULLS LAST,"accuracy" DESC NULLS LAST,"total_time_seconds","completed_at","id") WHERE user_id IS NOT NULL AND is_official = true AND status = 'completed';

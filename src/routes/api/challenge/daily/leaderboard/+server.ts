@@ -2,6 +2,7 @@ import type { RequestHandler } from './$types';
 import { jsonError, jsonOk } from '$lib/server/api/response';
 import { createDailyLeaderboardService } from '$lib/server/leaderboard/daily-leaderboard-service';
 import { enforceRateLimit } from '$lib/server/security/rate-limit';
+import { parsePagination } from '$lib/shared/validation/common';
 
 export const GET: RequestHandler = async (event) => {
 	try {
@@ -14,11 +15,7 @@ export const GET: RequestHandler = async (event) => {
 		await enforceRateLimit(rateLimitKey, { maxRequests: 60, windowMs: 60 * 1000 });
 
 		const date = event.url.searchParams.get('date') ?? undefined;
-		const limitRaw = event.url.searchParams.get('limit');
-		const offsetRaw = event.url.searchParams.get('offset');
-
-		const limit = limitRaw ? parseInt(limitRaw, 10) : undefined;
-		const offset = offsetRaw ? parseInt(offsetRaw, 10) : undefined;
+		const { limit, offset } = parsePagination(event.url.searchParams, 50);
 
 		const service = createDailyLeaderboardService();
 		const result = await service.getLeaderboard(event, { date, limit, offset });

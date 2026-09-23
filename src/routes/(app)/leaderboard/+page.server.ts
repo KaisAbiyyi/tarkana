@@ -8,7 +8,9 @@ export const load: PageServerLoad = async (event) => {
 		event.url.searchParams.get('tab') === 'global' ? 'global' : 'daily';
 	const date = event.url.searchParams.get('date') ?? getUtcDateString();
 	const limit = 50;
-	const offset = Number(event.url.searchParams.get('offset') ?? 0);
+	const offsetRaw = event.url.searchParams.get('offset');
+	const parsedOffset = offsetRaw ? parseInt(offsetRaw, 10) : 0;
+	const offset = Number.isInteger(parsedOffset) && parsedOffset >= 0 ? parsedOffset : 0;
 
 	const dailyLeaderboardService = createDailyLeaderboardService();
 	const dailyLeaderboard = await dailyLeaderboardService.getLeaderboard(event, {
