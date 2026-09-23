@@ -16,6 +16,7 @@
 		"test:unit:watch": "vitest",
 		"test": "npm run test:unit && npm run test:e2e",
 		"test:e2e": "node scripts/run-e2e.mjs",
+		"benchmark": "node scripts/run-generator-benchmark.mjs",
 		"db:push": "drizzle-kit push",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
