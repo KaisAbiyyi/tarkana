@@ -162,7 +162,9 @@ test.describe('P1.6 Challenge-a-Friend Asynchronous Duels E2E', () => {
 			await page.waitForLoadState('networkidle');
 
 			// Now head-to-head comparison is revealed!
-			const comparisonHeader = page.getByText(/Head-to-Head|Hasil Duel|Resultados del duelo/i);
+			const comparisonHeader = page
+				.getByText(/Head-to-Head|Hasil Duel|Resultados del duelo/i)
+				.first();
 			await expect(comparisonHeader).toBeVisible();
 
 			// Both Challenger and Participant cards are present
