@@ -35,7 +35,8 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 					challengeSessions,
 					sql`${challengeSessions.userId} = ${usersProfile.id}
 						and ${challengeSessions.status} = 'completed'
-						and ${challengeSessions.isSuspicious} = false`
+						and ${challengeSessions.isSuspicious} = false
+						and ${challengeSessions.challengeType} not in ('daily', 'duel')`
 				)
 				.groupBy(usersProfile.id)
 				.orderBy(desc(usersProfile.rating), desc(sql<number>`count(${challengeSessions.id})`))
@@ -57,7 +58,7 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 							ORDER BY u.rating DESC, count(cs.id) DESC
 						) as position
 					FROM users_profile u
-					LEFT JOIN challenge_sessions cs ON cs.user_id = u.id AND cs.status = 'completed' AND cs.is_suspicious = false
+					LEFT JOIN challenge_sessions cs ON cs.user_id = u.id AND cs.status = 'completed' AND cs.is_suspicious = false AND cs.challenge_type NOT IN ('daily', 'duel')
 					GROUP BY u.id, u.display_name, u.rank, u.rating
 				)
 				SELECT * FROM ranked_users WHERE "userId" = ${userId}

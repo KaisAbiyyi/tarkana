@@ -52,8 +52,6 @@ export interface DuelPreGameDto {
 	isExpired: boolean;
 	isCreator: boolean;
 	hasAttemptInProgress: boolean;
-	activeSessionId?: string;
-	completedSessionId?: string;
 }
 
 export interface DuelQuestionOutcomeDto {
@@ -61,8 +59,13 @@ export interface DuelQuestionOutcomeDto {
 	isCorrect: boolean;
 }
 
+export interface DuelQuestionMatrixItemDto {
+	orderIndex: number;
+	creatorCorrect: boolean;
+	participantCorrect: boolean | null;
+}
+
 export interface DuelContenderDto {
-	userId?: string;
 	displayName: string;
 	score: number;
 	accuracy: number;
@@ -93,6 +96,7 @@ export interface DuelComparisonDto {
 	userParticipant?: DuelParticipantDto;
 	outcome?: DuelOutcome;
 	creatorQuestions: DuelQuestionOutcomeDto[];
+	questionMatrix: DuelQuestionMatrixItemDto[];
 	standings: DuelContenderDto[];
 }
 
@@ -311,7 +315,6 @@ export function createDuelService(
 						completedAt: duel.createdAt
 					},
 					...validParticipants.map((p) => ({
-						userId: p.userId ?? undefined,
 						displayName: p.displayName,
 						score: p.score ?? 0,
 						accuracy: p.accuracy ?? 0,
@@ -321,6 +324,31 @@ export function createDuelService(
 						completedAt: p.completedAt ?? new Date()
 					}))
 				].sort(compareContenders);
+
+				const participantAnswersByOrder = new Map<number, boolean>();
+				if (participant && isCompleted) {
+					const participantQuestions = await sessionRepository.listSessionQuestions(
+						participant.sessionId
+					);
+					const participantAnswers = await sessionRepository.listSessionAnswers(
+						participant.sessionId
+					);
+					const pAnswersMap = new Map(
+						participantAnswers.map((a) => [a.sessionQuestionId, a.isCorrect])
+					);
+					for (const pq of participantQuestions) {
+						participantAnswersByOrder.set(pq.orderIndex, pAnswersMap.get(pq.id) ?? false);
+					}
+				}
+
+				const questionMatrix: DuelQuestionMatrixItemDto[] = questions.map((q) => ({
+					orderIndex: q.orderIndex,
+					creatorCorrect: creatorAnswersMap.get(q.id) ?? false,
+					participantCorrect:
+						participant && isCompleted
+							? (participantAnswersByOrder.get(q.orderIndex) ?? false)
+							: null
+				}));
 
 				const comparisonData: DuelComparisonDto = {
 					publicId: duel.publicId,
@@ -346,6 +374,7 @@ export function createDuelService(
 						orderIndex: q.orderIndex,
 						isCorrect: creatorAnswersMap.get(q.id) ?? false
 					})),
+					questionMatrix,
 					standings
 				};
 
@@ -365,9 +394,7 @@ export function createDuelService(
 				expiresAt: duel.expiresAt,
 				isExpired,
 				isCreator,
-				hasAttemptInProgress: participant?.status === 'in_progress',
-				activeSessionId: participant?.sessionId,
-				completedSessionId: participant?.status === 'completed' ? participant.sessionId : undefined
+				hasAttemptInProgress: participant?.status === 'in_progress'
 			};
 
 			return {
@@ -409,87 +436,58 @@ export function createDuelService(
 
 			const guestHash = guestToken ? hashGuestToken(guestToken) : null;
 
-			// Check if caller already has a participant record
-			let participant: DuelParticipant | null = null;
+			// Check if caller already has a participant record to allow resuming expired duels
+			let existingParticipant: DuelParticipant | null = null;
 			if (profile) {
-				participant = await duelRepository.findParticipantByUser(duel.id, profile.id);
+				existingParticipant = await duelRepository.findParticipantByUser(duel.id, profile.id);
 			} else if (guestHash) {
-				participant = await duelRepository.findParticipantByGuest(duel.id, guestHash);
+				existingParticipant = await duelRepository.findParticipantByGuest(duel.id, guestHash);
 			}
 
-			// Resume or report existing attempt
-			if (participant) {
-				if (participant.status === 'completed') {
-					return {
-						status: 'already_completed',
-						sessionId: participant.sessionId
-					};
-				}
-
-				// Resume in-progress attempt
-				const questions = await sessionRepository.listSessionQuestions(participant.sessionId);
-				const answers = await sessionRepository.listSessionAnswers(participant.sessionId);
-				const answeredQuestionIds = new Set(answers.map((a) => a.sessionQuestionId));
-				const nextQuestion = questions.find((q) => !answeredQuestionIds.has(q.id)) ?? questions[0]!;
-
-				return {
-					status: 'resumed',
-					sessionId: participant.sessionId,
-					currentQuestion: toActiveQuestionDto(nextQuestion),
-					questions: questions.map((q) => toActiveQuestionDto(q)),
-					isResumed: true
-				};
-			}
-
-			// New acceptance: check expiration
-			if (duel.expiresAt.getTime() < Date.now()) {
+			// Expiration only blocks NEW accepts
+			if (!existingParticipant && duel.expiresAt.getTime() < Date.now()) {
 				throw badRequest('Duel invitation has expired');
 			}
 
-			// Spawn participant session
+			// Atomic acceptance / resume in a single transaction
 			const userRating = profile ? profile.rating : 0;
 			const userRank = profile ? profile.rank : 'Unranked';
-
-			const session = await sessionRepository.createSession({
-				userId: profile?.id ?? null,
-				guestToken: profile ? null : (guestToken ?? null),
-				challengeType: 'duel',
-				status: 'in_progress',
-				totalQuestions: duel.totalQuestions,
-				ratingBefore: userRating,
-				ratingAfter: userRating,
-				rankBefore: userRank,
-				rankAfter: userRank
-			});
-
-			// Replay exact puzzle snapshot questions
-			const persistedQuestions = await sessionRepository.addQuestions(
-				duel.puzzleSnapshot.map((q) => ({
-					sessionId: session.id,
-					categoryId: q.categoryId,
-					questionType: q.questionType,
-					prompt: q.prompt,
-					choices: q.choices,
-					correctAnswer: q.correctAnswer,
-					explanation: q.explanation,
-					difficultyScore: q.difficultyScore,
-					timeLimitSeconds: q.timeLimitSeconds,
-					metadata: q.metadata ?? {},
-					generatedSeed: '',
-					orderIndex: q.orderIndex
-				}))
-			);
-
 			const displayName = profile?.displayName ?? generateSafeDuelPseudonym();
 
-			await duelRepository.addParticipant({
-				duelId: duel.id,
-				sessionId: session.id,
+			const spawnResult = await duelRepository.spawnParticipantSessionTransaction({
+				duel,
 				userId: profile?.id ?? null,
+				guestToken: profile ? null : (guestToken ?? null),
 				guestTokenHash: profile ? null : guestHash,
 				displayName,
-				status: 'in_progress'
+				userRating,
+				userRank
 			});
+
+			if (!spawnResult.isNew) {
+				if (spawnResult.participant.status === 'completed') {
+					return {
+						status: 'already_completed',
+						sessionId: spawnResult.participant.sessionId
+					};
+				}
+
+				const answers = await sessionRepository.listSessionAnswers(
+					spawnResult.participant.sessionId
+				);
+				const answeredQuestionIds = new Set(answers.map((a) => a.sessionQuestionId));
+				const nextQuestion =
+					spawnResult.questions.find((q) => !answeredQuestionIds.has(q.id)) ??
+					spawnResult.questions[0]!;
+
+				return {
+					status: 'resumed',
+					sessionId: spawnResult.participant.sessionId,
+					currentQuestion: toActiveQuestionDto(nextQuestion),
+					questions: spawnResult.questions.map((q) => toActiveQuestionDto(q)),
+					isResumed: true
+				};
+			}
 
 			try {
 				const distinctId = getOrSetDistinctId(event);
@@ -509,12 +507,12 @@ export function createDuelService(
 				/* ignore */
 			}
 
-			const firstQuestion = persistedQuestions[0]!;
+			const firstQuestion = spawnResult.questions[0]!;
 			return {
 				status: 'started',
-				sessionId: session.id,
+				sessionId: spawnResult.session.id,
 				currentQuestion: toActiveQuestionDto(firstQuestion),
-				questions: persistedQuestions.map((q) => toActiveQuestionDto(q)),
+				questions: spawnResult.questions.map((q) => toActiveQuestionDto(q)),
 				isResumed: false
 			};
 		},

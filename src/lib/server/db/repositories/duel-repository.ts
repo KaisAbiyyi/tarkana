@@ -1,13 +1,19 @@
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm';
 import { db as defaultDb } from '$lib/server/db';
 import {
 	challengeDuels,
+	challengeSessions,
 	duelParticipants,
+	sessionQuestions,
 	type ChallengeDuel,
+	type ChallengeSession,
 	type DuelParticipant,
 	type NewChallengeDuel,
-	type NewDuelParticipant
+	type NewDuelParticipant,
+	type SessionQuestion
 } from '$lib/server/db/schema';
+import { hashGuestToken } from '$lib/server/sessions/guest-token';
+import type { RankName } from '$lib/shared/constants/rank';
 
 export interface CompleteParticipantInput {
 	sessionId: string;
@@ -18,6 +24,23 @@ export interface CompleteParticipantInput {
 	completedAt: Date;
 }
 
+export interface SpawnParticipantInput {
+	duel: ChallengeDuel;
+	userId: string | null;
+	guestToken: string | null;
+	guestTokenHash: string | null;
+	displayName: string;
+	userRating: number;
+	userRank: RankName;
+}
+
+export interface SpawnParticipantResult {
+	session: ChallengeSession;
+	participant: DuelParticipant;
+	questions: SessionQuestion[];
+	isNew: boolean;
+}
+
 export interface DuelRepository {
 	createDuel(data: NewChallengeDuel): Promise<ChallengeDuel>;
 	findDuelByPublicId(publicId: string): Promise<ChallengeDuel | null>;
@@ -26,6 +49,7 @@ export interface DuelRepository {
 	revokeDuel(publicId: string): Promise<void>;
 
 	addParticipant(data: NewDuelParticipant): Promise<DuelParticipant>;
+	spawnParticipantSessionTransaction(input: SpawnParticipantInput): Promise<SpawnParticipantResult>;
 	findParticipantBySessionId(sessionId: string): Promise<DuelParticipant | null>;
 	findParticipantByUser(duelId: string, userId: string): Promise<DuelParticipant | null>;
 	findParticipantByGuest(duelId: string, guestTokenHash: string): Promise<DuelParticipant | null>;
@@ -128,6 +152,162 @@ export function createDuelRepository(database = defaultDb): DuelRepository {
 			}
 
 			throw new Error('Failed to create or retrieve duel participant');
+		},
+
+		async spawnParticipantSessionTransaction(
+			input: SpawnParticipantInput
+		): Promise<SpawnParticipantResult> {
+			try {
+				return await database.transaction(async (tx) => {
+					// 1. Check if participant already exists for this actor in this duel
+					let existingParticipant: DuelParticipant | null = null;
+					if (input.userId) {
+						const [p] = await tx
+							.select()
+							.from(duelParticipants)
+							.where(
+								and(
+									eq(duelParticipants.duelId, input.duel.id),
+									eq(duelParticipants.userId, input.userId)
+								)
+							)
+							.limit(1);
+						existingParticipant = p ?? null;
+					} else if (input.guestTokenHash) {
+						const [p] = await tx
+							.select()
+							.from(duelParticipants)
+							.where(
+								and(
+									eq(duelParticipants.duelId, input.duel.id),
+									eq(duelParticipants.guestTokenHash, input.guestTokenHash),
+									isNull(duelParticipants.userId)
+								)
+							)
+							.limit(1);
+						existingParticipant = p ?? null;
+					}
+
+					if (existingParticipant) {
+						const [session] = await tx
+							.select()
+							.from(challengeSessions)
+							.where(eq(challengeSessions.id, existingParticipant.sessionId))
+							.limit(1);
+						const questions = await tx
+							.select()
+							.from(sessionQuestions)
+							.where(eq(sessionQuestions.sessionId, existingParticipant.sessionId))
+							.orderBy(asc(sessionQuestions.orderIndex));
+
+						return {
+							session: session!,
+							participant: existingParticipant,
+							questions,
+							isNew: false
+						};
+					}
+
+					// 2. Spawn session in transaction
+					const [newSession] = await tx
+						.insert(challengeSessions)
+						.values({
+							userId: input.userId,
+							guestToken:
+								input.guestTokenHash ??
+								(input.guestToken ? hashGuestToken(input.guestToken) : null),
+							challengeType: 'duel',
+							status: 'in_progress',
+							totalQuestions: input.duel.totalQuestions,
+							ratingBefore: input.userRating,
+							ratingAfter: input.userRating,
+							rankBefore: input.userRank,
+							rankAfter: input.userRank
+						})
+						.returning();
+
+					if (!newSession) throw new Error('Could not create duel challenge session');
+
+					// 3. Replay exact puzzle snapshot questions
+					const createdQuestions = await tx
+						.insert(sessionQuestions)
+						.values(
+							input.duel.puzzleSnapshot.map((q) => ({
+								sessionId: newSession.id,
+								categoryId: q.categoryId,
+								questionType: q.questionType,
+								prompt: q.prompt,
+								choices: q.choices,
+								correctAnswer: q.correctAnswer,
+								explanation: q.explanation,
+								difficultyScore: q.difficultyScore,
+								timeLimitSeconds: q.timeLimitSeconds,
+								metadata: q.metadata ?? {},
+								generatedSeed: '',
+								orderIndex: q.orderIndex
+							}))
+						)
+						.returning();
+
+					// 4. Insert participant record without onConflictDoNothing
+					// Any concurrent race on unique constraint will throw and rollback this tx!
+					const [participant] = await tx
+						.insert(duelParticipants)
+						.values({
+							duelId: input.duel.id,
+							sessionId: newSession.id,
+							userId: input.userId,
+							guestTokenHash: input.userId ? null : input.guestTokenHash,
+							displayName: input.displayName,
+							status: 'in_progress'
+						})
+						.returning();
+
+					return {
+						session: newSession,
+						participant: participant!,
+						questions: createdQuestions.sort((a, b) => a.orderIndex - b.orderIndex),
+						isNew: true
+					};
+				});
+			} catch (err: unknown) {
+				if (isUniqueConstraintError(err)) {
+					// The concurrent transaction won and committed. The losing session and questions
+					// were rolled back cleanly by PostgreSQL. Query the winning canonical participant!
+					let canonicalParticipant: DuelParticipant | null = null;
+					if (input.userId) {
+						canonicalParticipant = await this.findParticipantByUser(input.duel.id, input.userId);
+					} else if (input.guestTokenHash) {
+						canonicalParticipant = await this.findParticipantByGuest(
+							input.duel.id,
+							input.guestTokenHash
+						);
+					}
+
+					if (canonicalParticipant) {
+						const [session] = await database
+							.select()
+							.from(challengeSessions)
+							.where(eq(challengeSessions.id, canonicalParticipant.sessionId))
+							.limit(1);
+						const questions = await database
+							.select()
+							.from(sessionQuestions)
+							.where(eq(sessionQuestions.sessionId, canonicalParticipant.sessionId))
+							.orderBy(asc(sessionQuestions.orderIndex));
+
+						if (session) {
+							return {
+								session,
+								participant: canonicalParticipant,
+								questions,
+								isNew: false
+							};
+						}
+					}
+				}
+				throw err;
+			}
 		},
 
 		async findParticipantBySessionId(sessionId) {
@@ -245,4 +425,29 @@ export function createDuelRepository(database = defaultDb): DuelRepository {
 			return { claimedCount: updated.length };
 		}
 	};
+}
+
+function isUniqueConstraintError(err: unknown): boolean {
+	let current: unknown = err;
+	while (current && typeof current === 'object') {
+		const candidate = current as Record<string, unknown>;
+		if (candidate.code === '23505') return true;
+		if (
+			typeof candidate.message === 'string' &&
+			/unique constraint|duplicate key|duel_participants_/i.test(candidate.message)
+		) {
+			return true;
+		}
+		if (typeof candidate.detail === 'string' && /already exists/i.test(candidate.detail)) {
+			return true;
+		}
+		if (
+			typeof candidate.constraint === 'string' &&
+			/duel_participants_/i.test(candidate.constraint)
+		) {
+			return true;
+		}
+		current = candidate.cause;
+	}
+	return false;
 }

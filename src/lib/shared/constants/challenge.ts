@@ -20,6 +20,23 @@ export const CHALLENGE_TYPES = [
 
 export type ChallengeType = (typeof CHALLENGE_TYPES)[number];
 
+export const UNRATED_CHALLENGE_TYPES = ['daily', 'duel'] as const;
+export type UnratedChallengeType = (typeof UNRATED_CHALLENGE_TYPES)[number];
+
+export const COMPETITIVE_CHALLENGE_TYPES = [
+	'quick',
+	'standard',
+	'long',
+	'custom',
+	'mixed',
+	'mode'
+] as const;
+export type CompetitiveChallengeType = (typeof COMPETITIVE_CHALLENGE_TYPES)[number];
+
+export function isCompetitiveChallengeType(challengeType: string): boolean {
+	return challengeType !== 'daily' && challengeType !== 'duel';
+}
+
 export const DIFFICULTY_BANDS = ['easy', 'medium', 'hard'] as const;
 
 export type DifficultyBand = (typeof DIFFICULTY_BANDS)[number];

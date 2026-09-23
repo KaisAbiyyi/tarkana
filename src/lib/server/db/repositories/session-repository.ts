@@ -10,12 +10,14 @@ import {
 	isNull,
 	lt,
 	max,
+	notInArray,
 	sql
 } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
 import { resolveCompletedRank } from '$lib/server/scoring/rank';
 import { applyRatingDelta } from '$lib/server/scoring/rating';
 import { hashGuestToken } from '$lib/server/sessions/guest-token';
+import { isCompetitiveChallengeType } from '$lib/shared/constants/challenge';
 import {
 	categories,
 	challengeConfigs,
@@ -142,6 +144,14 @@ export type CompleteSessionAndProfileInput = CompleteSessionInput & {
 	profileRating: number;
 	profileRank: ChallengeSession['rankAfter'];
 };
+
+export function isCompetitiveSessionFilter(table = challengeSessions) {
+	return and(
+		eq(table.status, 'completed'),
+		eq(table.isSuspicious, false),
+		notInArray(table.challengeType, ['daily', 'duel'])
+	);
+}
 
 export function createSessionRepository(database: Database = getDb()): SessionRepository {
 	return {
@@ -541,11 +551,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				})
 				.from(challengeSessions)
 				.where(
-					and(
-						eq(challengeSessions.userId, userId),
-						eq(challengeSessions.status, 'completed'),
-						eq(challengeSessions.isSuspicious, false)
-					)
+					and(eq(challengeSessions.userId, userId), isCompetitiveSessionFilter(challengeSessions))
 				);
 
 			const recentSessions = await database
@@ -893,8 +899,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					if (
 						session.status === 'completed' &&
 						!session.isSuspicious &&
-						session.challengeType !== 'daily' &&
-						session.challengeType !== 'duel'
+						isCompetitiveChallengeType(session.challengeType)
 					) {
 						completedCountDelta += 1;
 
@@ -915,7 +920,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 							sessionRankAfter = profile.rank;
 						}
 					} else {
-						// Daily challenges or suspicious sessions always contribute 0 rating delta
+						// Daily challenges, duels, or suspicious sessions always contribute 0 rating delta
 						sessionRatingBefore = profile.rating;
 						sessionRatingAfter = profile.rating;
 						sessionRatingDelta = 0;
@@ -1026,7 +1031,10 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 						)
 						.limit(1);
 
-					if (!existingUserPart) {
+					if (existingUserPart) {
+						// Deterministic deduplication: authenticated attempt wins, delete guest duplicate so it does not remain in standings
+						await tx.delete(duelParticipants).where(eq(duelParticipants.id, guestPart.id));
+					} else {
 						await tx
 							.update(duelParticipants)
 							.set({ userId: profile.id })

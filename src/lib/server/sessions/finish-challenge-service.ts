@@ -21,6 +21,7 @@ import {
 import { toAnalyticsDuelId } from '$lib/server/duel/duel-service';
 import { resolveDuelOutcome } from '$lib/server/duel/outcome';
 import type { ChallengeSession, SessionAnswer, SessionQuestion } from '$lib/server/db/schema';
+import { isCompetitiveChallengeType } from '$lib/shared/constants/challenge';
 import { calculateRatingDelta, applyRatingDelta } from '$lib/server/scoring/rating';
 import { resolveCompletedRank, isRankPromotion, getRankProgress } from '$lib/server/scoring/rank';
 import { calculateSessionScore } from '$lib/server/scoring/scoring';
@@ -295,7 +296,8 @@ export function createFinishChallengeService(
 			});
 			const isDaily = session.challengeType === 'daily';
 			const isDuel = session.challengeType === 'duel';
-			const isUnrated = isDaily || isDuel || suspicious.isSuspicious;
+			const isUnrated =
+				!isCompetitiveChallengeType(session.challengeType) || suspicious.isSuspicious;
 			const ratingDelta = isUnrated ? 0 : calculateRatingDelta(scoreSummary.accuracy);
 
 			if (profile) {
