@@ -12,6 +12,7 @@ Tarkana Android strictly follows a two-part versioning policy:
   * Internal / Milestone P1.7: `versionCode = 4`
 * **`versionName`** (string): Semantic version `MAJOR.MINOR.PATCH` matching the Tarkana release cycle.
   * Milestone P1.7: `versionName = "0.1.0"`
+* **Release Tag Convention**: Release tags strictly use the `android-v*` prefix (e.g. `android-v0.1.0`), which triggers the automated signed AAB bundle release workflow in GitHub Actions.
 
 ---
 
@@ -110,5 +111,6 @@ Before promoting to Closed/Open Testing on Google Play:
 - [ ] Production `.well-known/assetlinks.json` published on web domain with the Play App Signing SHA-256.
 - [ ] App Links verified with `adb shell pm get-app-links com.kaisabiyyistudio.tarkana_android`.
 - [ ] Privacy Policy URL accessible and compliant.
+- [ ] Authentication preferences and crash reports excluded from Auto Backup (`backup_rules.xml` & `data_extraction_rules.xml`).
 - [ ] Store listing assets uploaded (Icon 512x512, Feature Graphic 1024x500, phone screenshots).
 - [ ] Tested on Android 7.0 (API 24) minimum up to Android 15/16 (API 35/36).
