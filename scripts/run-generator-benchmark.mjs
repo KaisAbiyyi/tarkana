@@ -3,6 +3,7 @@ import { createServer } from 'vite';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { writeFileSync, mkdirSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,6 +13,7 @@ const projectRoot = resolve(__dirname, '..');
 const args = process.argv.slice(2);
 let iterations = 100;
 let jsonOnly = false;
+let seedPrefix = 'tarkana-bench-v1';
 let outputPath = resolve(
 	projectRoot,
 	'docs/productization/artifacts/generator-benchmark-report.json'
@@ -22,17 +24,30 @@ for (const arg of args) {
 		iterations = parseInt(arg.split('=')[1], 10) || 100;
 	} else if (arg === '--json') {
 		jsonOnly = true;
+	} else if (arg.startsWith('--seed-prefix=')) {
+		seedPrefix = arg.split('=')[1] || 'tarkana-bench-v1';
 	} else if (arg.startsWith('--output=')) {
 		outputPath = resolve(process.cwd(), arg.split('=')[1]);
+	}
+}
+
+// Git commit resolution
+let commitSha = process.env.GITHUB_SHA || process.env.GIT_COMMIT || '';
+if (!commitSha) {
+	try {
+		commitSha = execSync('git rev-parse HEAD', { cwd: projectRoot, encoding: 'utf-8' }).trim();
+	} catch {
+		commitSha = 'local';
 	}
 }
 
 async function main() {
 	if (!jsonOnly) {
 		console.log('\n================================================================');
-		console.log('       TARKANA PROCEDURAL GENERATOR BENCHMARK SUITE (P1.8)');
+		console.log('       TARKANA PROCEDURAL GENERATOR BENCHMARK SUITE (P1.8.1)');
 		console.log('================================================================\n');
 		console.log(`Config: ${iterations} iterations per rule × difficulty combination`);
+		console.log(`Seed Prefix: ${seedPrefix} | Git Commit: ${commitSha}`);
 		console.log(`Node: ${process.version} | Platform: ${process.platform} (${process.arch})\n`);
 	}
 
@@ -53,7 +68,8 @@ async function main() {
 		const generatorSummary = runGeneratorBenchmark({
 			iterationsPerCombination: iterations,
 			includeSemanticOracles: true,
-			seedPrefix: `cli-bench-${Date.now()}`
+			seedPrefix,
+			commitSha
 		});
 		const elapsedGen = performance.now() - startGen;
 
@@ -69,9 +85,15 @@ async function main() {
 		const dailyDuelModule = await viteServer.ssrLoadModule(
 			'/src/lib/server/challenge/benchmark/daily-and-duel-benchmark.ts'
 		);
-		const { runDailyChallengeBenchmark, runDuelSnapshotReplayBenchmark } = dailyDuelModule;
+		const { runDailyChallengeBenchmark, runSyntheticDuelDtoReplayBenchmark } = dailyDuelModule;
 		const dailyReport = runDailyChallengeBenchmark(Math.max(10, Math.floor(iterations / 5)));
-		const duelReport = runDuelSnapshotReplayBenchmark(Math.max(10, Math.floor(iterations / 5)));
+		const duelReport = runSyntheticDuelDtoReplayBenchmark(Math.max(10, Math.floor(iterations / 5)));
+
+		// 4. Version info
+		const dailyModule = await viteServer.ssrLoadModule(
+			'/src/lib/server/challenge/daily-challenge.ts'
+		);
+		const { DAILY_CHALLENGE_CONFIG_VERSION, DAILY_CHALLENGE_GENERATOR_VERSION } = dailyModule;
 
 		const fullReport = {
 			metadata: {
@@ -79,13 +101,20 @@ async function main() {
 				nodeVersion: process.version,
 				platform: process.platform,
 				arch: process.arch,
+				commitSha,
+				seedPrefix,
+				configVersions: {
+					dailyChallengeConfigVersion: DAILY_CHALLENGE_CONFIG_VERSION ?? 'unknown',
+					dailyChallengeGeneratorVersion: DAILY_CHALLENGE_GENERATOR_VERSION ?? 'unknown',
+					generatorBenchmarkVersion: '1.8.1'
+				},
 				iterationsPerCombination: iterations,
 				totalExecutionTimeMs: Number(elapsedGen.toFixed(2))
 			},
 			generators: generatorSummary,
 			challengeBuilder: builderReport,
 			dailySnapshot: dailyReport,
-			duelSnapshotReplay: duelReport
+			syntheticDuelDtoReplay: duelReport
 		};
 
 		// Write artifact to disk
@@ -99,9 +128,6 @@ async function main() {
 
 		// Terminal ASCII Display
 		console.log('--- GENERATOR INVENTORY BENCHMARK RESULTS ---');
-		console.log(
-			'%-24s | %-16s | %-6s | %-7s | %-7s | %-7s | %-10s | %-7s | %-7s'.replace(/%-\d+s/g, (m) => m)
-		);
 		console.log(
 			padRight('Rule Type', 24) +
 				' | ' +
@@ -165,7 +191,7 @@ async function main() {
 			`- Daily Generator: ${dailyReport.formattedResult} (p50: ${dailyReport.latency.p50Ms}ms, p95: ${dailyReport.latency.p95Ms}ms)`
 		);
 
-		console.log('\n--- DUEL SNAPSHOT REPLAY INTEGRITY ---');
+		console.log('\n--- SYNTHETIC DUEL DTO REPLAY (In-Memory Check) ---');
 		console.log(
 			`- Duel Replay: ${duelReport.formattedResult} (p50: ${duelReport.latency.p50Ms}ms, p95: ${duelReport.latency.p95Ms}ms)`
 		);

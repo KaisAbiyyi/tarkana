@@ -63,7 +63,10 @@ export function generateMemoryPatternQuestion(input: GenerateQuestionInput): Gen
 			ruleType: input.ruleType,
 			memorize: challenge.memorize,
 			revealSeconds: challenge.revealSeconds,
-			difficulty: input.difficulty
+			difficulty: input.difficulty,
+			...(challenge.targetIndex !== undefined ? { targetIndex: challenge.targetIndex } : {}),
+			...(challenge.targetSymbol !== undefined ? { targetSymbol: challenge.targetSymbol } : {}),
+			...(challenge.missingIndex !== undefined ? { missingIndex: challenge.missingIndex } : {})
 		},
 		generatedSeed: input.seed
 	});
@@ -106,6 +109,7 @@ function buildMemoryChallenge(
 			return {
 				memorize: sequence,
 				revealSeconds,
+				targetIndex: index,
 				prompt: t('memory.symbolPrompt', { position: index + 1 }),
 				answer: sequence[index] as string,
 				distractors: activePool,
@@ -122,16 +126,19 @@ function buildMemoryChallenge(
 			);
 			// Fallback in case rng matched perfectly, which won't happen because we forced it
 			const target = sequence[targetIndex !== -1 ? targetIndex : 0] as string;
+			const finalIndex = sequence.indexOf(target);
 
 			return {
 				memorize: sequence,
 				revealSeconds,
+				targetIndex: finalIndex,
+				targetSymbol: target,
 				prompt: t('memory.positionPrompt', { symbol: labelSymbolToken(target, locale) }),
-				answer: String(sequence.indexOf(target) + 1),
+				answer: String(finalIndex + 1),
 				distractors: Array.from({ length: seqLength }, (_, i) => String(i + 1)),
 				explanation: t('memory.positionExplain', {
 					symbol: labelSymbolToken(target, locale),
-					position: sequence.indexOf(target) + 1
+					position: finalIndex + 1
 				})
 			};
 		}
@@ -151,6 +158,7 @@ function buildMemoryChallenge(
 			return {
 				memorize: sequence,
 				revealSeconds,
+				missingIndex: index,
 				prompt: t('memory.missingPrompt', {
 					sequence: sequence
 						.map((value, valueIndex) =>

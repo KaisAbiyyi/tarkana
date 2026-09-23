@@ -45,13 +45,13 @@
 	<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 		<StatTile label="Dynamic Rules" value={data.ruleCount} tone="yellow" />
 		<StatTile
-			label="Healthy Generators"
+			label="Live Smoke Health"
 			value={`${data.healthyCount}/${data.ruleCount}`}
 			tone={data.allHealthy ? 'teal' : 'yellow'}
 		/>
 		<StatTile
-			label="Generator Status"
-			value={data.allHealthy ? 'Operational' : 'Attention Needed'}
+			label="Smoke Status (1/rule)"
+			value={data.allHealthy ? 'Passed' : 'Attention Needed'}
 			tone={data.allHealthy ? 'teal' : 'yellow'}
 		/>
 		<StatTile
@@ -227,10 +227,19 @@
 
 	<!-- Generator Inventory Table -->
 	<Card title="Procedural Generator Dynamic Inventory ({data.ruleCount} Rules)">
-		<p class="mb-4 text-sm font-bold text-[var(--color-muted)]">
-			Derived at runtime from active generator rule registries. Each rule was tested with a sample
-			diagnostic run upon page load.
+		<p class="mb-3 text-sm font-bold text-[var(--color-muted)]">
+			Derived at runtime from active generator rule registries. Each rule was tested with a single
+			smoke sample upon page load.
 		</p>
+
+		<div
+			class="mb-4 border-2 border-[var(--color-border)] bg-blue-50 p-4 text-xs font-bold text-blue-900"
+		>
+			ℹ️ <strong>Bounded Live Smoke Sample</strong>: Evaluates exactly 1 isolated sample per active
+			rule on page load. For high-volume statistical verification across 10,000+ pseudorandom seeds,
+			full difficulty coverage, choice uniqueness, and deterministic reconstruction, execute the
+			offline benchmark CLI suite (<code>npm run benchmark</code>).
+		</div>
 
 		<div class="overflow-x-auto border-2 border-[var(--color-border)]">
 			<table class="w-full min-w-[700px] border-collapse text-left">
