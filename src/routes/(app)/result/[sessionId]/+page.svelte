@@ -4,6 +4,7 @@
 	import Card from '$lib/components/primitives/Card.svelte';
 	import QuestionReviewList from '$lib/components/result/QuestionReviewList.svelte';
 	import ResultSummary from '$lib/components/result/ResultSummary.svelte';
+	import ShareResultModal from '$lib/components/result/ShareResultModal.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
 	import { onMount } from 'svelte';
 	import { analytics } from '$lib/client/analytics';
@@ -15,7 +16,11 @@
 	let { data }: Props = $props();
 	const { t } = getI18nContext();
 	let result = $derived(data.result);
-	let copied = $state(false);
+
+	let isShareModalOpen = $state(false);
+	let isCreatingShare = $state(false);
+	let sharePublicId = $state<string | null>(null);
+	let shareUrl = $state<string | null>(null);
 
 	onMount(() => {
 		if (result.canClaim) {
@@ -27,36 +32,29 @@
 	});
 
 	async function handleShare() {
-		if (typeof window === 'undefined') return;
-		const shareUrl = window.location.href;
-		if (navigator.share) {
-			try {
-				await navigator.share({
-					title: 'Tarkana Challenge Result',
-					text: `I scored ${result.totalScore} on Tarkana!`,
-					url: shareUrl
-				});
-				analytics.track('result_shared', {
-					session_id: result.sessionId,
-					platform: 'native_share',
-					score: result.totalScore
-				});
-				return;
-			} catch {
-				/* ignore */
-			}
+		if (result.isSuspicious) return;
+		if (sharePublicId && shareUrl) {
+			isShareModalOpen = true;
+			return;
 		}
+
+		isCreatingShare = true;
 		try {
-			await navigator.clipboard.writeText(shareUrl);
-			copied = true;
-			setTimeout(() => (copied = false), 2500);
-			analytics.track('result_shared', {
-				session_id: result.sessionId,
-				platform: 'clipboard',
-				score: result.totalScore
+			const res = await fetch('/api/share/create', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sessionId: result.sessionId })
 			});
+			const body = await res.json();
+			if (body.ok && body.data) {
+				sharePublicId = body.data.publicId;
+				shareUrl = body.data.shareUrl;
+				isShareModalOpen = true;
+			}
 		} catch {
 			/* ignore */
+		} finally {
+			isCreatingShare = false;
 		}
 	}
 </script>
@@ -73,9 +71,11 @@
 			<h1 class="page-title">{t('result.review')}</h1>
 		</div>
 		<div class="flex flex-wrap gap-3">
-			<Button onclick={handleShare} variant="secondary">
-				{copied ? 'Link Copied!' : 'Share Result'}
-			</Button>
+			{#if !result.isSuspicious}
+				<Button onclick={handleShare} variant="secondary" disabled={isCreatingShare}>
+					{isCreatingShare ? 'Loading...' : 'Share Result'}
+				</Button>
+			{/if}
 			<Button href="/challenge">{t('result.retry')}</Button>
 			<Button href="/leaderboard" variant="secondary">{t('nav.leaderboard')}</Button>
 		</div>
@@ -135,3 +135,23 @@
 		<QuestionReviewList review={result.review} />
 	</section>
 </section>
+
+{#if isShareModalOpen && sharePublicId && shareUrl}
+	<ShareResultModal
+		isOpen={isShareModalOpen}
+		onClose={() => (isShareModalOpen = false)}
+		sessionId={result.sessionId}
+		publicId={sharePublicId}
+		{shareUrl}
+		totalScore={result.totalScore}
+		accuracy={result.accuracy}
+		totalTimeSeconds={result.totalTimeSeconds}
+		logicRank={result.rankAfter}
+		challengeType={result.challengeType === 'daily' ? 'daily' : 'standard'}
+		challengeDate={result.challengeDate}
+		questions={result.review.map((q) => ({
+			orderIndex: q.orderIndex,
+			isCorrect: q.isCorrect
+		}))}
+	/>
+{/if}

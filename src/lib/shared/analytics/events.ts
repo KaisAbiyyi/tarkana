@@ -14,6 +14,9 @@ export const CANONICAL_EVENTS = [
 	'signup_completed',
 	'guest_claim_succeeded',
 	'result_shared',
+	'share_created',
+	'shared_result_viewed',
+	'shared_result_cta_clicked',
 	'return_visit'
 ] as const;
 
@@ -93,6 +96,26 @@ export interface ResultSharedProperties {
 	session_id: string;
 	platform: string;
 	score?: number;
+	share_id?: string;
+}
+
+export interface ShareCreatedProperties {
+	share_id: string;
+	session_id: string;
+	challenge_type: string;
+	is_guest: boolean;
+}
+
+export interface SharedResultViewedProperties {
+	share_id: string;
+	challenge_type: string;
+	referrer?: string;
+}
+
+export interface SharedResultCtaClickedProperties {
+	share_id: string;
+	challenge_type: string;
+	destination: string;
 }
 
 export interface ReturnVisitProperties {
@@ -112,6 +135,9 @@ export type EventPropertyMap = {
 	signup_completed: SignupCompletedProperties;
 	guest_claim_succeeded: GuestClaimSucceededProperties;
 	result_shared: ResultSharedProperties;
+	share_created: ShareCreatedProperties;
+	shared_result_viewed: SharedResultViewedProperties;
+	shared_result_cta_clicked: SharedResultCtaClickedProperties;
 	return_visit: ReturnVisitProperties;
 };
 
@@ -149,7 +175,10 @@ export const EVENT_PROPERTY_ALLOWLIST: Record<CanonicalEventName, readonly strin
 	signup_started: ['source'],
 	signup_completed: ['user_id', 'has_guest_sessions'],
 	guest_claim_succeeded: ['user_id', 'claimed_count', 'is_provisional', 'rating_after'],
-	result_shared: ['session_id', 'platform', 'score'],
+	result_shared: ['session_id', 'platform', 'score', 'share_id'],
+	share_created: ['share_id', 'session_id', 'challenge_type', 'is_guest'],
+	shared_result_viewed: ['share_id', 'challenge_type', 'referrer'],
+	shared_result_cta_clicked: ['share_id', 'challenge_type', 'destination'],
 	return_visit: ['days_since_last_visit', 'has_active_account']
 };
 

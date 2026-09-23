@@ -69,7 +69,12 @@ export function createProfileRepositoryFake(
 	return {
 		createdProfiles,
 		updatedDisplayNames,
-		async findById() {
+		async findById(id?: string) {
+			if (!profile) return null;
+			if (id && profile.id !== id) {
+				const created = createdProfiles.find((p) => p.id === id);
+				return created ?? null;
+			}
 			return profile;
 		},
 		async create(input) {
@@ -100,5 +105,45 @@ export function toProfileSummary(profile: UserProfile): ProfileSummary {
 		role: profile.role,
 		rating: profile.rating,
 		rank: profile.rank
+	};
+}
+
+export function createShareRepositoryFake(
+	initialShares: import('$lib/server/db/schema').SharedResult[] = []
+): import('$lib/server/db/repositories/share-repository').ShareRepository & {
+	shares: import('$lib/server/db/schema').SharedResult[];
+} {
+	const shares = [...initialShares];
+	return {
+		shares,
+		async createShare(input) {
+			const created: import('$lib/server/db/schema').SharedResult = {
+				id: `shr-db-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+				publicId: input.publicId,
+				sessionId: input.sessionId,
+				userId: input.userId,
+				isRevoked: false,
+				revokedAt: null,
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+			shares.push(created);
+			return created;
+		},
+		async findShareByPublicId(publicId) {
+			return shares.find((s) => s.publicId === publicId) ?? null;
+		},
+		async findActiveShareBySessionId(sessionId) {
+			return shares.filter((s) => s.sessionId === sessionId && !s.isRevoked).pop() ?? null;
+		},
+		async revokeShare(publicId) {
+			const share = shares.find((s) => s.publicId === publicId);
+			if (share) {
+				share.isRevoked = true;
+				share.revokedAt = new Date();
+				share.updatedAt = new Date();
+			}
+			return share ?? null;
+		}
 	};
 }

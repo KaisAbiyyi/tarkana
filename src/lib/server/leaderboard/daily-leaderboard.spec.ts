@@ -20,6 +20,7 @@ describe('daily leaderboard service', () => {
 	function createMockDailyRepo(overrides: Partial<DailyRepository> = {}): DailyRepository {
 		return {
 			findDailyChallengeByDate: vi.fn(async () => null),
+			findDailyChallengeById: vi.fn(async () => null),
 			getOrCreateDailyChallenge: vi.fn(async () => ({}) as any),
 			findAttemptForUser: vi.fn(async () => null),
 			findAttemptForGuest: vi.fn(async () => null),

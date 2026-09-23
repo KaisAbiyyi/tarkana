@@ -102,6 +102,10 @@ function createDailyRepositoryFake(
 			return challenges.find((c) => c.challengeDate === dateString) ?? null;
 		},
 
+		async findDailyChallengeById(id) {
+			return challenges.find((c) => c.id === id) ?? null;
+		},
+
 		async getOrCreateDailyChallenge(input) {
 			const existing = challenges.find((c) => c.challengeDate === input.challengeDate);
 			if (existing) return existing;

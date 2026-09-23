@@ -31,6 +31,8 @@ export type FinishChallengeInput = {
 
 export type FinishChallengeResult = {
 	sessionId: string;
+	challengeType?: ChallengeSession['challengeType'];
+	challengeDate?: string;
 	totalScore: number;
 	accuracy: number;
 	correctAnswers: number;
@@ -122,17 +124,29 @@ export function createFinishChallengeService(
 	async function syncDailyAttemptCompletion(
 		sessionId: string,
 		scoreSummary: { totalScore: number; accuracy: number; totalTimeSeconds: number }
-	) {
+	): Promise<string | undefined> {
 		const attempt = await dailyRepository.findAttemptBySessionId(sessionId);
-		if (attempt && attempt.status === 'in_progress') {
-			await dailyRepository.completeAttempt({
-				attemptId: attempt.id,
-				score: scoreSummary.totalScore,
-				accuracy: scoreSummary.accuracy,
-				totalTimeSeconds: scoreSummary.totalTimeSeconds,
-				completedAt: new Date()
-			});
+		if (attempt) {
+			if (attempt.status === 'in_progress') {
+				await dailyRepository.completeAttempt({
+					attemptId: attempt.id,
+					score: scoreSummary.totalScore,
+					accuracy: scoreSummary.accuracy,
+					totalTimeSeconds: scoreSummary.totalTimeSeconds,
+					completedAt: new Date()
+				});
+			}
+			if (
+				attempt.dailyChallengeId &&
+				typeof dailyRepository.findDailyChallengeById === 'function'
+			) {
+				const daily = await dailyRepository.findDailyChallengeById(attempt.dailyChallengeId);
+				if (daily) {
+					return daily.challengeDate;
+				}
+			}
 		}
+		return undefined;
 	}
 
 	return {
@@ -180,9 +194,23 @@ export function createFinishChallengeService(
 			]);
 
 			if (session.status === 'completed') {
+				let challengeDate: string | undefined;
+				if (session.challengeType === 'daily') {
+					const attempt = await dailyRepository.findAttemptBySessionId(session.id);
+					if (
+						attempt?.dailyChallengeId &&
+						typeof dailyRepository.findDailyChallengeById === 'function'
+					) {
+						const daily = await dailyRepository.findDailyChallengeById(attempt.dailyChallengeId);
+						if (daily) {
+							challengeDate = daily.challengeDate;
+						}
+					}
+				}
 				const result = toFinishResult({ session, questions, answers, suspiciousReasons: [] });
 				return {
 					...result,
+					challengeDate,
 					isGuest,
 					canClaim: isGuest && !session.claimedAt
 				};
@@ -250,8 +278,9 @@ export function createFinishChallengeService(
 					profileRank: isDaily ? profile.rank : rankAfter
 				});
 
+				let challengeDate: string | undefined;
 				if (isDaily) {
-					await syncDailyAttemptCompletion(session.id, scoreSummary);
+					challengeDate = await syncDailyAttemptCompletion(session.id, scoreSummary);
 				}
 
 				const finishResult = {
@@ -261,6 +290,7 @@ export function createFinishChallengeService(
 						answers,
 						suspiciousReasons: suspicious.reasons
 					}),
+					challengeDate,
 					isGuest: false,
 					canClaim: false
 				};
@@ -311,8 +341,9 @@ export function createFinishChallengeService(
 					suspiciousReason: suspicious.reasons.join(', ') || null
 				});
 
+				let challengeDate: string | undefined;
 				if (isDaily) {
-					await syncDailyAttemptCompletion(session.id, scoreSummary);
+					challengeDate = await syncDailyAttemptCompletion(session.id, scoreSummary);
 				}
 
 				const finishResult = {
@@ -322,6 +353,7 @@ export function createFinishChallengeService(
 						answers,
 						suspiciousReasons: suspicious.reasons
 					}),
+					challengeDate,
 					isGuest: true,
 					canClaim: true
 				};
@@ -379,6 +411,7 @@ function toFinishResult(input: {
 
 	return {
 		sessionId: input.session.id,
+		challengeType: input.session.challengeType,
 		totalScore: input.session.totalScore || scoreSummary.totalScore,
 		accuracy: input.session.accuracy || scoreSummary.accuracy,
 		correctAnswers: scoreSummary.correctAnswers,
