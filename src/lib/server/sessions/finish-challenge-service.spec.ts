@@ -214,4 +214,60 @@ describe('finish challenge service', () => {
 			accuracy: 100
 		});
 	});
+
+	it('completes duel sessions as unrated and returns duelPublicId', async () => {
+		const profile = createProfile({ rating: 750, rank: 'Gold Analyst' });
+		const session = createChallengeSession({
+			userId: profile.id,
+			challengeType: 'duel',
+			ratingBefore: profile.rating,
+			ratingAfter: profile.rating,
+			rankBefore: profile.rank,
+			rankAfter: profile.rank,
+			totalQuestions: 1
+		});
+		const question = createSessionQuestion({ sessionId: session.id, orderIndex: 0 });
+		const sessionRepo = createSessionRepositoryFake({
+			session,
+			questions: [question],
+			answers: [createSessionAnswer({ sessionQuestionId: question.id, userId: profile.id })]
+		});
+
+		const duelRepo = {
+			findParticipantBySessionId: vi.fn(async (sessionId: string) => ({
+				id: 'part-123',
+				duelId: 'duel-real-id',
+				sessionId,
+				status: 'in_progress'
+			})),
+			completeParticipant: vi.fn(async (input: any) => input),
+			findDuelById: vi.fn(async () => ({
+				id: 'duel-real-id',
+				publicId: 'chf_test12345678',
+				creatorScore: 800,
+				creatorAccuracy: 90,
+				creatorTotalTimeSeconds: 40
+			}))
+		} as any;
+
+		const service = createFinishChallengeService(
+			sessionRepo,
+			createProfileRepositoryFake(profile),
+			undefined,
+			duelRepo
+		);
+
+		const result = await service.finish(createFakeEvent(createFakeUser({ id: profile.id })), {
+			sessionId: session.id
+		});
+
+		expect(result).toMatchObject({
+			accuracy: 100,
+			ratingBefore: 750,
+			ratingAfter: 750,
+			ratingDelta: 0,
+			duelPublicId: 'chf_test12345678'
+		});
+		expect(duelRepo.completeParticipant).toHaveBeenCalledTimes(1);
+	});
 });

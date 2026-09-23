@@ -21,7 +21,8 @@ const challengeLabels: Record<ChallengeType, MessageKey> = {
 	daily: 'label.daily',
 	custom: 'label.custom',
 	mixed: 'label.mixed',
-	mode: 'label.practice'
+	mode: 'label.practice',
+	duel: 'label.duel'
 };
 
 const statusLabels: Record<SessionStatus, MessageKey> = {

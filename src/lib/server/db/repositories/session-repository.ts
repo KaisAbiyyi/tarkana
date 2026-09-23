@@ -19,8 +19,10 @@ import { hashGuestToken } from '$lib/server/sessions/guest-token';
 import {
 	categories,
 	challengeConfigs,
+	challengeDuels,
 	challengeSessions,
 	dailyChallengeAttempts,
+	duelParticipants,
 	questionRules,
 	sessionAnswers,
 	sessionQuestions,
@@ -596,6 +598,18 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 							completedAt: new Date()
 						})
 						.where(eq(dailyChallengeAttempts.sessionId, input.sessionId));
+				} else if (updatedSession.challengeType === 'duel') {
+					await tx
+						.update(duelParticipants)
+						.set({
+							status: 'completed',
+							score: input.totalScore,
+							accuracy: input.accuracy,
+							totalTimeSeconds: input.totalTimeSeconds,
+							isSuspicious: input.isSuspicious,
+							completedAt: new Date()
+						})
+						.where(eq(duelParticipants.sessionId, input.sessionId));
 				}
 
 				return updatedSession;
@@ -631,9 +645,11 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				}
 
 				const isDaily = currentSession.challengeType === 'daily';
-				const finalRatingDelta = isDaily ? 0 : input.ratingDelta;
-				const finalRatingAfter = isDaily ? currentSession.ratingBefore : input.ratingAfter;
-				const finalRankAfter = isDaily ? currentSession.rankBefore : input.rankAfter;
+				const isDuel = currentSession.challengeType === 'duel';
+				const isUnrated = isDaily || isDuel;
+				const finalRatingDelta = isUnrated ? 0 : input.ratingDelta;
+				const finalRatingAfter = isUnrated ? currentSession.ratingBefore : input.ratingAfter;
+				const finalRankAfter = isUnrated ? currentSession.rankBefore : input.rankAfter;
 
 				const [updatedSession] = await tx
 					.update(challengeSessions)
@@ -674,8 +690,21 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 							completedAt: new Date()
 						})
 						.where(eq(dailyChallengeAttempts.sessionId, input.sessionId));
+				} else if (isDuel) {
+					// Atomic update of duel_participants inside this single transaction
+					await tx
+						.update(duelParticipants)
+						.set({
+							status: 'completed',
+							score: input.totalScore,
+							accuracy: input.accuracy,
+							totalTimeSeconds: input.totalTimeSeconds,
+							isSuspicious: input.isSuspicious,
+							completedAt: new Date()
+						})
+						.where(eq(duelParticipants.sessionId, input.sessionId));
 				} else {
-					// Daily Challenge must NEVER modify competitive Logic Rating or rank!
+					// Daily Challenge and Duel must NEVER modify competitive Logic Rating or rank!
 					await tx
 						.update(usersProfile)
 						.set({ rating: input.profileRating, rank: input.profileRank })
@@ -864,7 +893,8 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					if (
 						session.status === 'completed' &&
 						!session.isSuspicious &&
-						session.challengeType !== 'daily'
+						session.challengeType !== 'daily' &&
+						session.challengeType !== 'duel'
 					) {
 						completedCountDelta += 1;
 
@@ -974,6 +1004,50 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 							})
 							.where(eq(dailyChallengeAttempts.id, guestAttempt.id));
 					}
+				}
+
+				// 4c. Reassign guest duel participant records
+				const guestDuelParts = await tx
+					.select()
+					.from(duelParticipants)
+					.where(
+						and(eq(duelParticipants.guestTokenHash, hashedToken), isNull(duelParticipants.userId))
+					);
+
+				for (const guestPart of guestDuelParts) {
+					const [existingUserPart] = await tx
+						.select({ id: duelParticipants.id })
+						.from(duelParticipants)
+						.where(
+							and(
+								eq(duelParticipants.duelId, guestPart.duelId),
+								eq(duelParticipants.userId, profile.id)
+							)
+						)
+						.limit(1);
+
+					if (!existingUserPart) {
+						await tx
+							.update(duelParticipants)
+							.set({ userId: profile.id })
+							.where(eq(duelParticipants.id, guestPart.id));
+					}
+				}
+
+				// 4d. Reassign guest-created duels
+				if (sessionIds.length > 0) {
+					await tx
+						.update(challengeDuels)
+						.set({
+							creatorUserId: profile.id,
+							updatedAt: new Date()
+						})
+						.where(
+							and(
+								inArray(challengeDuels.creatorSessionId, sessionIds),
+								isNull(challengeDuels.creatorUserId)
+							)
+						);
 				}
 
 				// 5. Update user profile if rating or rank changed

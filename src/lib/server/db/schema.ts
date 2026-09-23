@@ -374,6 +374,74 @@ export const sharedResults = pgTable(
 	]
 );
 
+export const challengeDuels = pgTable(
+	'challenge_duels',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		publicId: varchar('public_id', { length: 32 }).notNull(),
+		creatorSessionId: uuid('creator_session_id')
+			.notNull()
+			.references(() => challengeSessions.id, { onDelete: 'cascade' }),
+		creatorUserId: uuid('creator_user_id').references(() => usersProfile.id, {
+			onDelete: 'set null'
+		}),
+		creatorDisplayName: varchar('creator_display_name', { length: 64 }).notNull(),
+		creatorScore: integer('creator_score').notNull(),
+		creatorAccuracy: doublePrecision('creator_accuracy').notNull(),
+		creatorTotalTimeSeconds: integer('creator_total_time_seconds').notNull(),
+		sourceChallengeType: challengeTypeEnum('source_challenge_type').notNull(),
+		totalQuestions: integer('total_questions').notNull(),
+		puzzleSnapshot: jsonb('puzzle_snapshot').$type<DailyPuzzleSnapshotQuestion[]>().notNull(),
+		isRevoked: boolean('is_revoked').notNull().default(false),
+		revokedAt: timestamp('revoked_at', { withTimezone: true }),
+		expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+		createdAt: now(),
+		updatedAt: updatedAt()
+	},
+	(table) => [
+		uniqueIndex('challenge_duels_public_id_uidx').on(table.publicId),
+		uniqueIndex('challenge_duels_creator_session_active_uidx')
+			.on(table.creatorSessionId)
+			.where(sql`is_revoked = false`),
+		index('challenge_duels_creator_session_id_idx').on(table.creatorSessionId),
+		index('challenge_duels_creator_user_id_idx').on(table.creatorUserId),
+		index('challenge_duels_expires_at_idx').on(table.expiresAt)
+	]
+);
+
+export const duelParticipants = pgTable(
+	'duel_participants',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		duelId: uuid('duel_id')
+			.notNull()
+			.references(() => challengeDuels.id, { onDelete: 'cascade' }),
+		sessionId: uuid('session_id')
+			.notNull()
+			.references(() => challengeSessions.id, { onDelete: 'cascade' }),
+		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'set null' }),
+		guestTokenHash: varchar('guest_token_hash', { length: 64 }),
+		displayName: varchar('display_name', { length: 64 }).notNull(),
+		status: sessionStatusEnum('status').notNull().default('in_progress'),
+		score: integer('score').notNull().default(0),
+		accuracy: doublePrecision('accuracy').notNull().default(0),
+		totalTimeSeconds: integer('total_time_seconds').notNull().default(0),
+		isSuspicious: boolean('is_suspicious').notNull().default(false),
+		completedAt: timestamp('completed_at', { withTimezone: true }),
+		createdAt: now()
+	},
+	(table) => [
+		index('duel_participants_duel_id_idx').on(table.duelId),
+		uniqueIndex('duel_participants_session_id_uidx').on(table.sessionId),
+		uniqueIndex('duel_participants_user_uidx')
+			.on(table.duelId, table.userId)
+			.where(sql`user_id IS NOT NULL`),
+		uniqueIndex('duel_participants_guest_uidx')
+			.on(table.duelId, table.guestTokenHash)
+			.where(sql`guest_token_hash IS NOT NULL AND user_id IS NULL`)
+	]
+);
+
 export const completedSessionStatusSql = sql`status = 'completed'`;
 
 export type UserProfile = typeof usersProfile.$inferSelect;
@@ -402,3 +470,7 @@ export type DailyChallengeAttempt = typeof dailyChallengeAttempts.$inferSelect;
 export type NewDailyChallengeAttempt = typeof dailyChallengeAttempts.$inferInsert;
 export type SharedResult = typeof sharedResults.$inferSelect;
 export type NewSharedResult = typeof sharedResults.$inferInsert;
+export type ChallengeDuel = typeof challengeDuels.$inferSelect;
+export type NewChallengeDuel = typeof challengeDuels.$inferInsert;
+export type DuelParticipant = typeof duelParticipants.$inferSelect;
+export type NewDuelParticipant = typeof duelParticipants.$inferInsert;
