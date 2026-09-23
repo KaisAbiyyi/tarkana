@@ -452,7 +452,7 @@ export function createDuelService(
 
 			const session = await sessionRepository.createSession({
 				userId: profile?.id ?? null,
-				guestToken: guestHash,
+				guestToken: profile ? null : (guestToken ?? null),
 				challengeType: 'duel',
 				status: 'in_progress',
 				totalQuestions: duel.totalQuestions,
@@ -486,7 +486,7 @@ export function createDuelService(
 				duelId: duel.id,
 				sessionId: session.id,
 				userId: profile?.id ?? null,
-				guestTokenHash: guestHash,
+				guestTokenHash: profile ? null : guestHash,
 				displayName,
 				status: 'in_progress'
 			});
