@@ -108,6 +108,7 @@ export interface GuestHypotheticalPositionOutput {
 
 export interface DailyRepository {
 	findDailyChallengeByDate(dateString: string): Promise<DailyChallenge | null>;
+	findDailyChallengeById(id: string): Promise<DailyChallenge | null>;
 	getOrCreateDailyChallenge(challenge: NewDailyChallenge): Promise<DailyChallenge>;
 	findAttemptForUser(
 		dailyChallengeId: string,
@@ -144,6 +145,16 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 				.select()
 				.from(dailyChallenges)
 				.where(eq(dailyChallenges.challengeDate, dateString))
+				.limit(1);
+
+			return daily ?? null;
+		},
+
+		async findDailyChallengeById(id) {
+			const [daily] = await database
+				.select()
+				.from(dailyChallenges)
+				.where(eq(dailyChallenges.id, id))
 				.limit(1);
 
 			return daily ?? null;

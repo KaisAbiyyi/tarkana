@@ -71,6 +71,13 @@
       "when": 1790137210630,
       "tag": "0009_ordinary_toad",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790143015405,
+      "tag": "0010_good_kree",
+      "breakpoints": true
     }
   ]
 }

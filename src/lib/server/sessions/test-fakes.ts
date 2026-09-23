@@ -15,6 +15,7 @@ import type {
 	DashboardSessionStats,
 	SessionRepository
 } from '$lib/server/db/repositories/session-repository';
+import { hashGuestToken } from '$lib/server/sessions/guest-token';
 
 export function createChallengeSession(
 	overrides: Partial<ChallengeSession> = {}
@@ -157,7 +158,10 @@ export function createSessionRepositoryFake(
 			return session.id === sessionId && session.userId === userId ? session : null;
 		},
 		async findGuestSession(sessionId: string, guestToken: string) {
-			return session.id === sessionId && session.guestToken === guestToken ? session : null;
+			return session.id === sessionId &&
+				(session.guestToken === guestToken || session.guestToken === hashGuestToken(guestToken))
+				? session
+				: null;
 		},
 		async listSessionQuestions(sessionId: string) {
 			return questions.filter((question) => question.sessionId === sessionId);

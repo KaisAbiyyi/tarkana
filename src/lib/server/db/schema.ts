@@ -349,6 +349,27 @@ export const identityAliases = pgTable(
 	]
 );
 
+export const sharedResults = pgTable(
+	'shared_results',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		publicId: varchar('public_id', { length: 32 }).notNull(),
+		sessionId: uuid('session_id')
+			.notNull()
+			.references(() => challengeSessions.id, { onDelete: 'cascade' }),
+		userId: uuid('user_id').references(() => usersProfile.id, { onDelete: 'set null' }),
+		isRevoked: boolean('is_revoked').notNull().default(false),
+		revokedAt: timestamp('revoked_at', { withTimezone: true }),
+		createdAt: now(),
+		updatedAt: updatedAt()
+	},
+	(table) => [
+		uniqueIndex('shared_results_public_id_uidx').on(table.publicId),
+		index('shared_results_session_id_idx').on(table.sessionId),
+		index('shared_results_user_id_idx').on(table.userId)
+	]
+);
+
 export const completedSessionStatusSql = sql`status = 'completed'`;
 
 export type UserProfile = typeof usersProfile.$inferSelect;
@@ -375,3 +396,5 @@ export type DailyChallenge = typeof dailyChallenges.$inferSelect;
 export type NewDailyChallenge = typeof dailyChallenges.$inferInsert;
 export type DailyChallengeAttempt = typeof dailyChallengeAttempts.$inferSelect;
 export type NewDailyChallengeAttempt = typeof dailyChallengeAttempts.$inferInsert;
+export type SharedResult = typeof sharedResults.$inferSelect;
+export type NewSharedResult = typeof sharedResults.$inferInsert;
