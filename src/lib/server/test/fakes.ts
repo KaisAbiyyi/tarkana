@@ -2,7 +2,8 @@ import type { RequestEvent } from '@sveltejs/kit';
 import type { User } from '@supabase/supabase-js';
 import type { ProfileSummary } from '$lib/shared/types/auth';
 import type { ProfileRepository } from '$lib/server/db/repositories/profile-repository';
-import type { UserProfile } from '$lib/server/db/schema';
+import type { NewSessionQuestion, UserProfile } from '$lib/server/db/schema';
+import type { RankName } from '$lib/shared/constants/rank';
 
 export function createFakeUser(overrides: Partial<User> = {}): User {
 	return {
@@ -153,7 +154,9 @@ export function createShareRepositoryFake(
 	};
 }
 
-export function createDuelRepositoryFake(): import('$lib/server/db/repositories/duel-repository').DuelRepository & {
+export function createDuelRepositoryFake(
+	sessionRepository?: import('$lib/server/db/repositories/session-repository').SessionRepository
+): import('$lib/server/db/repositories/duel-repository').DuelRepository & {
 	duels: import('$lib/server/db/schema').ChallengeDuel[];
 	participants: import('$lib/server/db/schema').DuelParticipant[];
 } {
@@ -237,6 +240,142 @@ export function createDuelRepositoryFake(): import('$lib/server/db/repositories/
 			};
 			participants.push(created);
 			return created;
+		},
+		async spawnParticipantSessionTransaction(input) {
+			let existingParticipant: import('$lib/server/db/schema').DuelParticipant | null = null;
+			if (input.userId) {
+				existingParticipant =
+					participants.find((p) => p.duelId === input.duel.id && p.userId === input.userId) ?? null;
+			} else if (input.guestTokenHash) {
+				existingParticipant =
+					participants.find(
+						(p) =>
+							p.duelId === input.duel.id && p.guestTokenHash === input.guestTokenHash && !p.userId
+					) ?? null;
+			}
+
+			if (existingParticipant) {
+				const existingSession: import('$lib/server/db/schema').ChallengeSession = {
+					id: existingParticipant.sessionId,
+					userId: existingParticipant.userId,
+					guestToken: existingParticipant.guestTokenHash,
+					challengeType: 'duel',
+					status: existingParticipant.status,
+					totalQuestions: input.duel.totalQuestions,
+					totalScore: existingParticipant.score,
+					accuracy: existingParticipant.accuracy,
+					totalTimeSeconds: existingParticipant.totalTimeSeconds,
+					averageTimeSeconds: 0,
+					ratingBefore: input.userRating,
+					ratingAfter: input.userRating,
+					ratingDelta: 0,
+					rankBefore: input.userRank as RankName,
+					rankAfter: input.userRank as RankName,
+					isSuspicious: existingParticipant.isSuspicious,
+					suspiciousReason: null,
+					claimedAt: null,
+					dailyChallengeId: null,
+					completedAt: existingParticipant.completedAt,
+					createdAt: existingParticipant.createdAt,
+					updatedAt: new Date()
+				};
+				const questions: import('$lib/server/db/schema').SessionQuestion[] =
+					input.duel.puzzleSnapshot.map((q, idx) => ({
+						id: `q-${existingParticipant!.sessionId}-${idx}`,
+						sessionId: existingParticipant!.sessionId,
+						categoryId: q.categoryId,
+						questionType: q.questionType,
+						prompt: q.prompt,
+						choices: q.choices,
+						correctAnswer: q.correctAnswer,
+						explanation: q.explanation,
+						difficultyScore: q.difficultyScore,
+						timeLimitSeconds: q.timeLimitSeconds,
+						metadata: q.metadata ?? {},
+						generatedSeed: '',
+						orderIndex: q.orderIndex,
+						createdAt: new Date()
+					}));
+				return {
+					session: existingSession,
+					participant: existingParticipant,
+					questions,
+					isNew: false
+				};
+			}
+
+			const sessionId = `duel-session-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+			const newSession: import('$lib/server/db/schema').ChallengeSession = {
+				id: sessionId,
+				userId: input.userId,
+				guestToken: input.guestTokenHash,
+				challengeType: 'duel',
+				status: 'in_progress',
+				totalQuestions: input.duel.totalQuestions,
+				totalScore: 0,
+				accuracy: 0,
+				totalTimeSeconds: 0,
+				averageTimeSeconds: 0,
+				ratingBefore: input.userRating,
+				ratingAfter: input.userRating,
+				ratingDelta: 0,
+				rankBefore: input.userRank as RankName,
+				rankAfter: input.userRank as RankName,
+				isSuspicious: false,
+				suspiciousReason: null,
+				claimedAt: null,
+				dailyChallengeId: null,
+				completedAt: null,
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+
+			const questions: import('$lib/server/db/schema').SessionQuestion[] =
+				input.duel.puzzleSnapshot.map((q, idx) => ({
+					id: `q-${sessionId}-${idx}`,
+					sessionId,
+					categoryId: q.categoryId,
+					questionType: q.questionType,
+					prompt: q.prompt,
+					choices: q.choices,
+					correctAnswer: q.correctAnswer,
+					explanation: q.explanation,
+					difficultyScore: q.difficultyScore,
+					timeLimitSeconds: q.timeLimitSeconds,
+					metadata: q.metadata ?? {},
+					generatedSeed: '',
+					orderIndex: q.orderIndex,
+					createdAt: new Date()
+				}));
+
+			const participant: import('$lib/server/db/schema').DuelParticipant = {
+				id: `part-id-${participants.length + 1}`,
+				duelId: input.duel.id,
+				sessionId,
+				userId: input.userId,
+				guestTokenHash: input.userId ? null : input.guestTokenHash,
+				displayName: input.displayName,
+				status: 'in_progress',
+				score: 0,
+				accuracy: 0,
+				totalTimeSeconds: 0,
+				isSuspicious: false,
+				completedAt: null,
+				createdAt: new Date()
+			};
+			participants.push(participant);
+
+			if (sessionRepository) {
+				await sessionRepository.createSession(newSession);
+				await sessionRepository.addQuestions(questions as NewSessionQuestion[]);
+			}
+
+			return {
+				session: newSession,
+				participant,
+				questions,
+				isNew: true
+			};
 		},
 		async findParticipantBySessionId(sessionId) {
 			return participants.find((p) => p.sessionId === sessionId) ?? null;

@@ -10,11 +10,10 @@ import {
 	isNull,
 	lt,
 	max,
+	notInArray,
 	sql
 } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
-import { resolveCompletedRank } from '$lib/server/scoring/rank';
-import { applyRatingDelta } from '$lib/server/scoring/rating';
 import { hashGuestToken } from '$lib/server/sessions/guest-token';
 import {
 	categories,
@@ -142,6 +141,14 @@ export type CompleteSessionAndProfileInput = CompleteSessionInput & {
 	profileRating: number;
 	profileRank: ChallengeSession['rankAfter'];
 };
+
+export function isCompetitiveSessionFilter(table = challengeSessions) {
+	return and(
+		eq(table.status, 'completed'),
+		eq(table.isSuspicious, false),
+		notInArray(table.challengeType, ['daily', 'duel'])
+	);
+}
 
 export function createSessionRepository(database: Database = getDb()): SessionRepository {
 	return {
@@ -541,11 +548,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				})
 				.from(challengeSessions)
 				.where(
-					and(
-						eq(challengeSessions.userId, userId),
-						eq(challengeSessions.status, 'completed'),
-						eq(challengeSessions.isSuspicious, false)
-					)
+					and(eq(challengeSessions.userId, userId), isCompetitiveSessionFilter(challengeSessions))
 				);
 
 			const recentSessions = await database
@@ -860,68 +863,18 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					throw new Error('Guest session not found or token mismatch');
 				}
 
-				// 3. Determine provisional status:
-				// An account is provisional if it has 0 prior completed sessions and is Unranked with 0 rating
-				const [priorCompletedSession] = await tx
-					.select({ id: challengeSessions.id })
-					.from(challengeSessions)
-					.where(
-						and(
-							eq(challengeSessions.userId, input.userId),
-							eq(challengeSessions.status, 'completed')
-						)
-					)
-					.limit(1);
-
-				const isProvisional =
-					!priorCompletedSession && profile.rank === 'Unranked' && profile.rating === 0;
-
-				let runningRating = isProvisional ? 100 : profile.rating;
-				let runningRank = profile.rank;
-				let completedCountDelta = 0;
-
+				// 3. Claimed guest sessions are history-only and never alter competitive rating or rank
+				const isProvisional = false;
 				const updatedSessions: ChallengeSession[] = [];
 				const sessionIds = unclaimedSessions.map((s) => s.id);
 
 				for (const session of unclaimedSessions) {
-					let sessionRatingBefore: number;
-					let sessionRatingAfter: number;
-					let sessionRatingDelta: number;
-					let sessionRankBefore: (typeof profile)['rank'];
-					let sessionRankAfter: (typeof profile)['rank'];
-
-					if (
-						session.status === 'completed' &&
-						!session.isSuspicious &&
-						session.challengeType !== 'daily' &&
-						session.challengeType !== 'duel'
-					) {
-						completedCountDelta += 1;
-
-						if (isProvisional) {
-							sessionRatingBefore = runningRating;
-							sessionRatingDelta = session.ratingDelta;
-							runningRating = applyRatingDelta(runningRating, sessionRatingDelta);
-							runningRank = resolveCompletedRank(runningRating);
-							sessionRatingAfter = runningRating;
-							sessionRankBefore = resolveCompletedRank(sessionRatingBefore);
-							sessionRankAfter = runningRank;
-						} else {
-							// ANTI-FARMING: Existing accounts get +0 rating delta from guest sessions
-							sessionRatingBefore = profile.rating;
-							sessionRatingAfter = profile.rating;
-							sessionRatingDelta = 0;
-							sessionRankBefore = profile.rank;
-							sessionRankAfter = profile.rank;
-						}
-					} else {
-						// Daily challenges or suspicious sessions always contribute 0 rating delta
-						sessionRatingBefore = profile.rating;
-						sessionRatingAfter = profile.rating;
-						sessionRatingDelta = 0;
-						sessionRankBefore = profile.rank;
-						sessionRankAfter = profile.rank;
-					}
+					// Claimed guest sessions are history-only: zero rating delta
+					const sessionRatingBefore = profile.rating;
+					const sessionRatingAfter = profile.rating;
+					const sessionRatingDelta = 0;
+					const sessionRankBefore = profile.rank;
+					const sessionRankAfter = profile.rank;
 
 					const [updatedSession] = await tx
 						.update(challengeSessions)
@@ -1026,7 +979,10 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 						)
 						.limit(1);
 
-					if (!existingUserPart) {
+					if (existingUserPart) {
+						// Deterministic deduplication: authenticated attempt wins, delete guest duplicate so it does not remain in standings
+						await tx.delete(duelParticipants).where(eq(duelParticipants.id, guestPart.id));
+					} else {
 						await tx
 							.update(duelParticipants)
 							.set({ userId: profile.id })
@@ -1050,21 +1006,9 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 						);
 				}
 
-				// 5. Update user profile if rating or rank changed
-				const finalRating =
-					isProvisional && completedCountDelta > 0 ? runningRating : profile.rating;
-				const finalRank = isProvisional && completedCountDelta > 0 ? runningRank : profile.rank;
-
-				if (finalRating !== profile.rating || finalRank !== profile.rank) {
-					await tx
-						.update(usersProfile)
-						.set({
-							rating: finalRating,
-							rank: finalRank,
-							updatedAt: new Date()
-						})
-						.where(eq(usersProfile.id, profile.id));
-				}
+				// 5. Claimed guest sessions never alter competitive rating or rank
+				const finalRating = profile.rating;
+				const finalRank = profile.rank;
 
 				const primary = input.specificSessionId
 					? (updatedSessions.find((s) => s.id === input.specificSessionId) ?? updatedSessions[0]!)

@@ -218,20 +218,7 @@
 
 				<!-- Action / Acceptance Card -->
 				<Card title="Duel Acceptance" tone="accent">
-					{#if preGame.isExpired}
-						<div class="grid gap-4 py-2">
-							<p class="text-base font-bold text-[var(--color-accent,#dc2626)]">
-								{t('duel.expired')}
-							</p>
-							<p class="text-sm text-[var(--color-muted)]">
-								Duel invitations expire after 7 days to keep leaderboards fresh. You can still test
-								your reasoning in a solo challenge.
-							</p>
-							<div>
-								<Button href="/challenge" variant="primary">Start a Solo Challenge</Button>
-							</div>
-						</div>
-					{:else if preGame.isCreator}
+					{#if preGame.isCreator}
 						<div class="grid gap-4 py-2">
 							<p class="text-base font-bold text-[var(--color-foreground)]">
 								Share this invite link with your friends or community:
@@ -260,15 +247,35 @@
 								{/if}
 							</div>
 						</div>
-					{:else if preGame.hasAttemptInProgress && preGame.activeSessionId}
+					{:else if preGame.hasAttemptInProgress}
 						<div class="grid gap-4 py-2">
 							<p class="text-base font-bold text-[var(--color-foreground)]">
 								You have an in-progress attempt for this duel!
 							</p>
+							{#if acceptError}
+								<div
+									class="border-2 border-[var(--color-accent,#dc2626)] bg-red-50 p-3 text-sm font-bold text-[var(--color-accent,#dc2626)]"
+								>
+									{acceptError}
+								</div>
+							{/if}
 							<div>
-								<Button href={`/challenge?session=${preGame.activeSessionId}`} variant="primary">
-									Resume Duel Attempt
+								<Button variant="primary" onclick={handleAccept} disabled={accepting}>
+									{accepting ? 'Resuming Duel...' : 'Resume Duel Attempt'}
 								</Button>
+							</div>
+						</div>
+					{:else if preGame.isExpired}
+						<div class="grid gap-4 py-2">
+							<p class="text-base font-bold text-[var(--color-accent,#dc2626)]">
+								{t('duel.expired')}
+							</p>
+							<p class="text-sm text-[var(--color-muted)]">
+								Duel invitations expire after 7 days to keep leaderboards fresh. You can still test
+								your reasoning in a solo challenge.
+							</p>
+							<div>
+								<Button href="/challenge" variant="primary">Start a Solo Challenge</Button>
 							</div>
 						</div>
 					{:else}
@@ -450,6 +457,89 @@
 						</Card>
 					{/if}
 				</div>
+
+				<!-- Head-to-Head Puzzle Outcome Matrix -->
+				{#if comp.questionMatrix && comp.questionMatrix.length > 0}
+					<Card title="Head-to-Head Puzzle Breakdown" tone="default">
+						<div class="grid gap-3">
+							<p class="text-xs font-bold text-[var(--color-muted)]">
+								Question-by-question comparative breakdown. Identical puzzle seed and time limits.
+							</p>
+							<div class="overflow-x-auto">
+								<table class="w-full border-collapse text-left" aria-label="Puzzle Outcome Matrix">
+									<thead>
+										<tr class="border-b-2 border-[var(--color-border)]">
+											<th class="px-3 py-2 text-xs font-black text-[var(--color-muted)] uppercase"
+												>Puzzle</th
+											>
+											<th class="px-3 py-2 text-xs font-black text-[var(--color-muted)] uppercase">
+												{comp.creatorDisplayName} (Challenger)
+											</th>
+											{#if comp.userParticipant}
+												<th
+													class="px-3 py-2 text-xs font-black text-[var(--color-muted)] uppercase"
+												>
+													{comp.userParticipant.displayName} (You)
+												</th>
+												<th
+													class="px-3 py-2 text-right text-xs font-black text-[var(--color-muted)] uppercase"
+												>
+													Point Outcome
+												</th>
+											{/if}
+										</tr>
+									</thead>
+									<tbody class="divide-y-2 divide-[var(--color-border)]">
+										{#each comp.questionMatrix as item (item.orderIndex)}
+											<tr>
+												<td class="px-3 py-2.5 text-sm font-black">
+													Puzzle #{item.orderIndex + 1}
+												</td>
+												<td class="px-3 py-2.5 text-sm font-bold">
+													<span
+														class="inline-flex h-7 w-7 items-center justify-center border-2 border-[var(--color-border)] font-black shadow-[1px_1px_0_0_var(--color-border)] {item.creatorCorrect
+															? 'bg-green-500 text-white'
+															: 'bg-red-500 text-white'}"
+													>
+														{item.creatorCorrect ? '✓' : '✕'}
+													</span>
+												</td>
+												{#if comp.userParticipant}
+													<td class="px-3 py-2.5 text-sm font-bold">
+														{#if item.participantCorrect !== null}
+															<span
+																class="inline-flex h-7 w-7 items-center justify-center border-2 border-[var(--color-border)] font-black shadow-[1px_1px_0_0_var(--color-border)] {item.participantCorrect
+																	? 'bg-green-500 text-white'
+																	: 'bg-red-500 text-white'}"
+															>
+																{item.participantCorrect ? '✓' : '✕'}
+															</span>
+														{:else}
+															<span class="text-xs text-[var(--color-muted)]">—</span>
+														{/if}
+													</td>
+													<td class="px-3 py-2.5 text-right text-xs font-black">
+														{#if item.participantCorrect === null}
+															<span class="text-[var(--color-muted)]">—</span>
+														{:else if item.creatorCorrect && item.participantCorrect}
+															<span class="text-green-700">Both Solved</span>
+														{:else if !item.creatorCorrect && !item.participantCorrect}
+															<span class="text-[var(--color-muted)]">Both Missed</span>
+														{:else if !item.creatorCorrect && item.participantCorrect}
+															<span class="font-black text-green-600">+1 Point You! 🎯</span>
+														{:else}
+															<span class="font-bold text-amber-700">+1 Challenger</span>
+														{/if}
+													</td>
+												{/if}
+											</tr>
+										{/each}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</Card>
+				{/if}
 
 				<!-- Standings Table -->
 				<Card title={t('duel.standingsTitle')} tone="default">

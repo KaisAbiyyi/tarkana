@@ -28,7 +28,6 @@ describe('DuelService', () => {
 			overrides.user !== undefined ? overrides.user : createFakeUser({ id: 'user-alice' });
 		const profile = user ? createProfile({ id: user.id, displayName: 'AliceMaster' }) : null;
 		const profileRepo = createProfileRepositoryFake(profile);
-		const duelRepo = createDuelRepositoryFake();
 
 		const defaultSession = createChallengeSession({
 			id: '11111111-1111-4111-8111-111111111111',
@@ -86,6 +85,7 @@ describe('DuelService', () => {
 			questions: [q1, q2],
 			answers: [a1, a2]
 		});
+		const duelRepo = createDuelRepositoryFake(sessionRepo);
 
 		const service = createDuelService(duelRepo, sessionRepo, profileRepo);
 
@@ -375,7 +375,8 @@ describe('DuelService', () => {
 				expect(view.creatorAccuracy).toBe(90);
 				expect(view.outcome).toBe('win'); // Bob won!
 				expect(view.standings.length).toBe(2);
-				expect(view.standings[0].userId).toBe(bob.id);
+				expect(view.standings[0].score).toBe(950);
+				expect(view.standings[0].isCreator).toBe(false);
 				expect(view.standings[1].isCreator).toBe(true);
 			}
 		});
@@ -402,7 +403,7 @@ describe('DuelService', () => {
 			if (view.state === 'completed') {
 				expect(view.outcome).toBe('loss'); // Suspicious is automatic loss
 				// Cheater is excluded from valid standings
-				expect(view.standings.some((s) => s.userId === cheater.id)).toBe(false);
+				expect(view.standings.some((s) => s.score === 1000)).toBe(false);
 			}
 		});
 	});
