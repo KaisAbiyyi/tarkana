@@ -13,7 +13,7 @@ describe('/share/[publicId] page.server.ts load', () => {
 			displayName: 'Solver',
 			challengeType: 'standard',
 			totalScore: 750,
-			accuracy: 0.85,
+			accuracy: 85,
 			correctAnswers: 8,
 			totalQuestions: 10,
 			totalTimeSeconds: 50,
@@ -42,6 +42,7 @@ describe('/share/[publicId] page.server.ts load', () => {
 
 		expect(result).toBeDefined();
 		expect(result?.shareResult).toEqual(fakeShareData);
+		expect(result?.analyticsShareId).toBe(shareServiceModule.toAnalyticsShareId('shr_abc123'));
 		expect(mockGetPublicShare).toHaveBeenCalledWith('shr_abc123');
 	});
 

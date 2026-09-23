@@ -1,5 +1,9 @@
 import type { PageServerLoad } from './$types';
-import { createShareService, getAppOrigin } from '$lib/server/share/share-service';
+import {
+	createShareService,
+	getAppOrigin,
+	toAnalyticsShareId
+} from '$lib/server/share/share-service';
 import { throwPageLoadError } from '$lib/server/page-error';
 
 export const load: PageServerLoad = async (event) => {
@@ -13,7 +17,8 @@ export const load: PageServerLoad = async (event) => {
 
 		return {
 			shareResult,
-			appOrigin
+			appOrigin,
+			analyticsShareId: toAnalyticsShareId(publicId)
 		};
 	} catch (caught) {
 		throwPageLoadError(caught, event.locals.locale);

@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import { createShareService } from '$lib/server/share/share-service';
+import { createShareService, getAppOrigin } from '$lib/server/share/share-service';
 import { renderShareCardPng } from '$lib/server/share/render-card';
 import { enforceRateLimit } from '$lib/server/security/rate-limit';
 import { jsonError } from '$lib/server/api/response';
@@ -15,13 +15,14 @@ export const GET: RequestHandler = async (event) => {
 
 		const shareService = createShareService();
 		const publicShare = await shareService.getPublicShare(publicId);
+		const appOrigin = getAppOrigin(event);
 
-		const pngBuffer = renderShareCardPng(publicShare);
+		const pngBuffer = renderShareCardPng(publicShare, appOrigin);
 
 		const headers = new Headers({
 			'Content-Type': 'image/png',
 			'Content-Length': pngBuffer.byteLength.toString(),
-			'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800'
+			'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400'
 		});
 
 		if (event.url.searchParams.get('download') === '1') {

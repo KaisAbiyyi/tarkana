@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { POST } from './create/+server';
+import { POST as revokePOST } from './revoke/+server';
 import { GET } from '../og/share/[publicId]/+server';
 import * as shareServiceModule from '$lib/server/share/share-service';
 import * as renderCardModule from '$lib/server/share/render-card';
@@ -35,11 +36,12 @@ describe('Share API Endpoints', () => {
 			expect(body.error.code).toBe('bad_request');
 		});
 
-		it('creates share link and returns 200 with publicId and shareUrl', async () => {
+		it('creates share link and returns 200 with publicId, shareUrl, and analyticsShareId', async () => {
 			const validUuid = '11111111-1111-4111-8111-111111111111';
 			const mockCreateShare = vi.fn().mockResolvedValue({
 				publicId: 'shr_test123',
-				shareUrl: 'http://localhost:5173/share/shr_test123'
+				shareUrl: 'http://localhost:5173/share/shr_test123',
+				analyticsShareId: 'sha_test123'
 			});
 
 			vi.spyOn(shareServiceModule, 'createShareService').mockReturnValue({
@@ -67,21 +69,77 @@ describe('Share API Endpoints', () => {
 			expect(body.ok).toBe(true);
 			expect(body.data).toEqual({
 				publicId: 'shr_test123',
-				shareUrl: 'http://localhost:5173/share/shr_test123'
+				shareUrl: 'http://localhost:5173/share/shr_test123',
+				analyticsShareId: 'sha_test123'
 			});
 			expect(mockCreateShare).toHaveBeenCalledWith(mockEvent, { sessionId: validUuid });
 		});
 	});
 
+	describe('POST /api/share/revoke', () => {
+		it('returns 400 for missing or empty publicId', async () => {
+			const mockEvent: any = {
+				getClientAddress: () => '127.0.0.1',
+				locals: {
+					getUser: async () => ({ id: 'usr-1' }),
+					locale: 'en'
+				},
+				request: {
+					headers: new Headers({ 'content-type': 'application/json' }),
+					json: async () => ({ publicId: '' })
+				}
+			};
+
+			const response = await revokePOST(mockEvent);
+			expect(response.status).toBe(400);
+
+			const body = await response.json();
+			expect(body.ok).toBe(false);
+			expect(body.error.code).toBe('bad_request');
+		});
+
+		it('calls revokeShare and returns 200 when authorized', async () => {
+			const mockRevokeShare = vi.fn().mockResolvedValue(undefined);
+			vi.spyOn(shareServiceModule, 'createShareService').mockReturnValue({
+				createShare: vi.fn(),
+				getPublicShare: vi.fn(),
+				revokeShare: mockRevokeShare
+			});
+
+			const mockEvent: any = {
+				getClientAddress: () => '127.0.0.1',
+				locals: {
+					getUser: async () => ({ id: 'usr-1' }),
+					locale: 'en'
+				},
+				request: {
+					headers: new Headers({ 'content-type': 'application/json' }),
+					json: async () => ({ publicId: 'shr_target123' })
+				}
+			};
+
+			const response = await revokePOST(mockEvent);
+			expect(response.status).toBe(200);
+
+			const body = await response.json();
+			expect(body.ok).toBe(true);
+			expect(body.data).toEqual({
+				revoked: true,
+				publicId: 'shr_target123'
+			});
+			expect(mockRevokeShare).toHaveBeenCalledWith(mockEvent, 'shr_target123');
+		});
+	});
+
 	describe('GET /api/og/share/[publicId]', () => {
-		it('renders PNG and returns 200 with image/png and cache headers', async () => {
+		it('renders PNG and returns 200 with image/png and shortened cache headers', async () => {
 			const fakeShareData: shareServiceModule.PublicShareResultDto = {
 				publicId: 'shr_test123',
 				displayName: 'Jane Doe',
 				challengeType: 'daily',
 				challengeDate: '2026-09-23',
 				totalScore: 920,
-				accuracy: 0.9,
+				accuracy: 90,
 				correctAnswers: 9,
 				totalQuestions: 10,
 				totalTimeSeconds: 65,
@@ -114,7 +172,9 @@ describe('Share API Endpoints', () => {
 			const response = await GET(mockEvent);
 			expect(response.status).toBe(200);
 			expect(response.headers.get('Content-Type')).toBe('image/png');
-			expect(response.headers.get('Cache-Control')).toContain('public');
+			expect(response.headers.get('Cache-Control')).toBe(
+				'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400'
+			);
 			expect(response.headers.get('Content-Disposition')).toBeNull();
 
 			const arrayBuffer = await response.arrayBuffer();
@@ -127,7 +187,7 @@ describe('Share API Endpoints', () => {
 				displayName: 'Solver',
 				challengeType: 'standard',
 				totalScore: 800,
-				accuracy: 0.8,
+				accuracy: 80,
 				correctAnswers: 8,
 				totalQuestions: 10,
 				totalTimeSeconds: 90,

@@ -21,6 +21,7 @@
 	let isCreatingShare = $state(false);
 	let sharePublicId = $state<string | null>(null);
 	let shareUrl = $state<string | null>(null);
+	let shareAnalyticsId = $state<string | null>(null);
 
 	onMount(() => {
 		if (result.canClaim) {
@@ -49,6 +50,7 @@
 			if (body.ok && body.data) {
 				sharePublicId = body.data.publicId;
 				shareUrl = body.data.shareUrl;
+				shareAnalyticsId = body.data.analyticsShareId;
 				isShareModalOpen = true;
 			}
 		} catch {
@@ -143,11 +145,12 @@
 		sessionId={result.sessionId}
 		publicId={sharePublicId}
 		{shareUrl}
+		analyticsShareId={shareAnalyticsId ?? undefined}
 		totalScore={result.totalScore}
 		accuracy={result.accuracy}
 		totalTimeSeconds={result.totalTimeSeconds}
 		logicRank={result.rankAfter}
-		challengeType={result.challengeType === 'daily' ? 'daily' : 'standard'}
+		challengeType={result.challengeType ?? 'standard'}
 		challengeDate={result.challengeDate}
 		questions={result.review.map((q) => ({
 			orderIndex: q.orderIndex,
