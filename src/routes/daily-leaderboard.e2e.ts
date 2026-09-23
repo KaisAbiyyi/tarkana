@@ -161,7 +161,7 @@ test.describe('P1.4 Daily Leaderboard E2E', () => {
 
 			// 6. Verify conversion callout is visible with the hypothetical position
 			const hypotheticalRank = leaderboardBody.data.guestHypotheticalEntry.hypotheticalPosition;
-			await expect(page.getByText(new RegExp(`#${hypotheticalRank}`, 'i'))).toBeVisible();
+			await expect(page.getByText(new RegExp(`rank #${hypotheticalRank}`, 'i'))).toBeVisible();
 		} finally {
 			await context.dispose();
 		}
