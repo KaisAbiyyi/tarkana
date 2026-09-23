@@ -8,39 +8,39 @@ Tarkana should become a product that a user can discover, try immediately, retur
 
 ### Repository and CI
 
-- [ ] Add web CI for typecheck, formatting, lint, unit tests, build, and critical E2E tests.
-- [ ] Add Android CI for unit tests, lint, and build.
+- [x] Add web CI for typecheck, formatting, lint, unit tests, build, and critical E2E tests.
+- [x] Add Android CI for unit tests, lint, and build.
 - [ ] Add dependency update automation.
 - [ ] Add CodeQL or equivalent static security scanning.
 - [ ] Add secret scanning workflow where available.
-- [ ] Protect `main` with required checks.
-- [ ] Require PR workflow for non-trivial changes.
-- [ ] Choose one canonical JavaScript package manager and lockfile.
-- [ ] Remove duplicate Copilot instruction file.
-- [ ] Add repository description, topics, social preview, and badges.
-- [ ] Add `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `.env.example`.
-- [ ] Make an explicit license decision.
+- [x] Protect `main` with required checks.
+- [x] Require PR workflow for non-trivial changes.
+- [x] Choose one canonical JavaScript package manager and lockfile.
+- [x] Remove duplicate Copilot instruction file.
+- [x] Add repository description, topics, social preview, and badges.
+- [x] Add `SECURITY.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, and `.env.example`.
+- [x] Make an explicit license decision.
 
 ### Security and reliability
 
-- [ ] Rotate any credential that has ever been committed or exposed.
-- [ ] Run repository history secret audit.
-- [ ] Add RLS integration tests proving cross-user isolation.
-- [ ] Add server authorization integration tests for admin-only operations.
-- [ ] Add abuse-sensitive endpoint rate limiting.
-- [ ] Add idempotency/replay protection where duplicate requests can corrupt state.
-- [ ] Confirm challenge completion is idempotent.
-- [ ] Confirm correct answers never leak before submission.
-- [ ] Standardize API errors without leaking internals.
-- [ ] Separate production migrations from application build side effects.
+- [x] Rotate any credential that has ever been committed or exposed.
+- [x] Run repository history secret audit.
+- [x] Add RLS integration tests proving cross-user isolation.
+- [x] Add server authorization integration tests for admin-only operations.
+- [x] Add abuse-sensitive endpoint rate limiting.
+- [x] Add idempotency/replay protection where duplicate requests can corrupt state.
+- [x] Confirm challenge completion is idempotent.
+- [x] Confirm correct answers never leak before submission.
+- [x] Standardize API errors without leaking internals.
+- [x] Separate production migrations from application build side effects.
 
 ### Operations
 
-- [ ] Add production error tracking.
-- [ ] Add structured logging and correlation IDs.
+- [x] Add production error tracking.
+- [x] Add structured logging and correlation IDs.
 - [ ] Add uptime monitoring around web and health-check function.
 - [ ] Track latency and error rate for core challenge endpoints.
-- [ ] Add a lightweight incident/runbook document.
+- [x] Add a lightweight incident/runbook document.
 
 ## P1: Product Value and Growth
 
@@ -54,33 +54,33 @@ Tarkana should become a product that a user can discover, try immediately, retur
 
 ### Retention
 
-- [ ] Daily Challenge with globally deterministic seed/config.
-- [ ] Daily streak.
-- [ ] Daily challenge history/calendar.
-- [ ] Daily leaderboard.
+- [x] Daily Challenge with globally deterministic seed/config.
+- [x] Daily streak.
+- [x] Daily challenge history/calendar.
+- [x] Daily leaderboard.
 
 ### Referral and sharing
 
-- [ ] Challenge-a-Friend share links.
-- [ ] Same-seed comparison flow.
-- [ ] Shareable result cards.
-- [ ] OpenGraph previews for result/challenge links.
-- [ ] Referral funnel analytics.
+- [x] Challenge-a-Friend share links.
+- [x] Same-seed comparison flow.
+- [x] Shareable result cards.
+- [x] OpenGraph previews for result/challenge links.
+- [x] Referral funnel analytics.
 
 ### Analytics
 
-- [ ] Install one product analytics platform.
-- [ ] Define canonical event naming.
-- [ ] Measure acquisition → activation → signup → repeat session → share.
+- [x] Install one product analytics platform.
+- [x] Define canonical event naming.
+- [x] Measure acquisition → activation → signup → repeat session → share.
 - [ ] Measure D1 and D7 retention when sample size permits.
 
 ### Challenge quality
 
-- [ ] Add generator benchmark harness.
-- [ ] Add deterministic reconstruction benchmark.
-- [ ] Add invalid/ambiguous/duplicate-choice rate measurement.
-- [ ] Add generator latency measurement.
-- [ ] Publish benchmark methodology and results.
+- [x] Add generator benchmark harness.
+- [x] Add deterministic reconstruction benchmark.
+- [x] Add invalid/ambiguous/duplicate-choice rate measurement.
+- [x] Add generator latency measurement.
+- [x] Publish benchmark methodology and results.
 
 ## P1.5: Competitive Product Depth
 
@@ -91,16 +91,16 @@ Tarkana should become a product that a user can discover, try immediately, retur
 - [ ] Rank-tier leaderboard.
 - [ ] Initial achievement set.
 - [ ] Improved suspicious-session signals and admin review.
-- [ ] Admin generator health dashboard.
+- [x] Admin generator health dashboard.
 
 ## P1: Android Production Path
 
-- [ ] Dedicated release signing.
-- [ ] Secure signing secret storage.
-- [ ] Release build and AAB generation.
-- [ ] R8/ProGuard review.
-- [ ] Android crash reporting.
-- [ ] Deep links for shared challenges.
+- [x] Dedicated release signing.
+- [x] Secure signing secret storage.
+- [x] Release build and AAB generation.
+- [x] R8/ProGuard review.
+- [x] Android crash reporting.
+- [x] Deep links for shared challenges.
 - [ ] Store-ready app metadata and screenshots.
 - [ ] Closed/internal Play Store testing.
 

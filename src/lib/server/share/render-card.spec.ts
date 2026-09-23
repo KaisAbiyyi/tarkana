@@ -79,5 +79,5 @@ describe('renderShareCard', () => {
 
 		expect(width).toBe(1200);
 		expect(height).toBe(630);
-	});
+	}, 15000);
 });

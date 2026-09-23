@@ -93,13 +93,14 @@ Copy and maintain:
 
 | Area | Agent | Issue | Branch | State |
 |---|---|---|---|---|
-| Web CI |  |  |  | READY |
-| Android CI |  |  |  | READY |
-| Security/RLS |  |  |  | READY |
-| Observability |  |  |  | READY |
-| Analytics |  |  |  | READY |
-| Guest mode |  |  |  | BLOCKED |
-| Daily Challenge |  |  |  | BLOCKED |
-| Share/referral |  |  |  | BLOCKED |
-| Generator benchmark |  |  |  | READY |
-| Android release |  |  |  | BLOCKED |
+| Web CI | Antigravity | #20 | chore/phase-0-launch-readiness | MERGED |
+| Android CI | Antigravity | #20 | chore/phase-0-launch-readiness | MERGED |
+| Security/RLS | Antigravity | #21 | fix/security-and-rls-hardening | MERGED |
+| Observability | Antigravity | #22 | feat/phase-0-observability | MERGED |
+| Guest mode | Antigravity | #27 | feat/p1.1-guest-challenge-mode | MERGED |
+| Daily Challenge | Antigravity | #30 | feat/p1.3-daily-challenge | MERGED |
+| Share/referral | Antigravity | #33 | feat/p1.4-social-share-results | MERGED |
+| Analytics | Antigravity | #36 | feat/p1.5-product-analytics | MERGED |
+| Blind Duel (P1.6/P1.6.1) | Antigravity | #38 | feat/p1.6.1-blind-duel-hardening | MERGED |
+| Android release (P1.7/P1.7.1) | Antigravity | #39 | feat/p1.7.1-release-hardening | MERGED |
+| Generator benchmark (P1.8) | Antigravity | #41 | feat/p1.8-generator-benchmarks-and-diagnostics | PR_OPEN |

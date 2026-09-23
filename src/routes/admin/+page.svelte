@@ -54,6 +54,10 @@
 				class="border-2 border-[var(--color-border)] bg-white p-4 font-black no-underline hover:bg-[var(--color-primary)]"
 				href={resolve('/admin/sessions')}>{t('admin.sessionMonitoring')}</a
 			>
+			<a
+				class="border-2 border-[var(--color-border)] bg-white p-4 font-black no-underline hover:bg-[var(--color-primary)]"
+				href={resolve('/admin/generator-health')}>Generator Health</a
+			>
 		</div>
 	</Card>
 </section>

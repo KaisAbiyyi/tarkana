@@ -135,19 +135,17 @@ function buildMemoryChallenge(
 				})
 			};
 		}
-		case 'sequence_recall':
+		case 'sequence_recall': {
+			const answer = sequence.join(' > ');
 			return {
 				memorize: sequence,
 				revealSeconds,
 				prompt: t('memory.exactPrompt'),
-				answer: sequence.join(' > '),
-				distractors: [
-					rng.shuffle(sequence).join(' > '),
-					[...sequence].reverse().join(' > '),
-					rng.shuffle(activePool).slice(0, seqLength).join(' > ')
-				],
+				answer,
+				distractors: generateSequenceDistractors(answer, sequence, activePool, seqLength, rng),
 				explanation: t('memory.exactExplain')
 			};
+		}
 		case 'missing_element_recall': {
 			const index = rng.intBetween(0, sequence.length - 1);
 			return {
@@ -167,18 +165,65 @@ function buildMemoryChallenge(
 				})
 			};
 		}
-		case 'reverse_sequence_recall':
+		case 'reverse_sequence_recall': {
+			const answer = [...sequence].reverse().join(' > ');
 			return {
 				memorize: sequence,
 				revealSeconds,
 				prompt: t('memory.reversePrompt'),
-				answer: [...sequence].reverse().join(' > '),
-				distractors: [
-					sequence.join(' > '),
-					rng.shuffle(sequence).join(' > '),
-					rng.shuffle(activePool).slice(0, seqLength).join(' > ')
-				],
+				answer,
+				distractors: generateSequenceDistractors(answer, sequence, activePool, seqLength, rng),
 				explanation: t('memory.reverseExplain')
 			};
+		}
 	}
+}
+
+function generateSequenceDistractors(
+	targetAnswer: string,
+	baseSequence: string[],
+	activePool: string[],
+	seqLength: number,
+	rng: ReturnType<typeof createSeededRng>,
+	targetCount = 6
+): string[] {
+	const distractors = new Set<string>();
+
+	// 1. Reversed sequence
+	const rev = [...baseSequence].reverse().join(' > ');
+	if (rev !== targetAnswer) distractors.add(rev);
+
+	// 2. Transpositions (swap adjacent elements)
+	for (let i = 0; i < baseSequence.length - 1; i++) {
+		if (baseSequence[i] !== baseSequence[i + 1]) {
+			const swapped = [...baseSequence];
+			swapped[i] = baseSequence[i + 1]!;
+			swapped[i + 1] = baseSequence[i]!;
+			const str = swapped.join(' > ');
+			if (str !== targetAnswer) distractors.add(str);
+		}
+	}
+
+	// 3. Single symbol mutations (replace one position with a different symbol from activePool)
+	for (let i = 0; i < baseSequence.length; i++) {
+		for (const alt of activePool) {
+			if (alt !== baseSequence[i]) {
+				const mutated = [...baseSequence];
+				mutated[i] = alt;
+				const str = mutated.join(' > ');
+				if (str !== targetAnswer) distractors.add(str);
+				if (distractors.size >= targetCount + 4) break;
+			}
+		}
+	}
+
+	// 4. Random sequences of length seqLength from activePool
+	for (let attempt = 0; attempt < 50 && distractors.size < targetCount; attempt++) {
+		const randomSeq = Array.from({ length: seqLength }, () => rng.pick(activePool)).join(' > ');
+		if (randomSeq !== targetAnswer) {
+			distractors.add(randomSeq);
+		}
+	}
+
+	return [...distractors];
 }

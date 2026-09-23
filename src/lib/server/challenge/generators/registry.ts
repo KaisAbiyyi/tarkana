@@ -31,6 +31,37 @@ const GENERATORS: Record<QuestionType, QuestionGenerator> = {
 	memory_pattern: generateMemoryPatternQuestion
 };
 
+export const RULES_BY_QUESTION_TYPE: Record<QuestionType, readonly string[]> = {
+	number_sequence: NUMBER_SEQUENCE_RULES,
+	symbol_pattern: SYMBOL_PATTERN_RULES,
+	mini_deduction: MINI_DEDUCTION_RULES,
+	memory_pattern: MEMORY_PATTERN_RULES
+};
+
+export type RuleInventoryItem = {
+	ruleType: string;
+	questionType: QuestionType;
+	generator: QuestionGenerator;
+};
+
+export function getRuleInventory(): RuleInventoryItem[] {
+	const inventory: RuleInventoryItem[] = [];
+	for (const [qType, rules] of Object.entries(RULES_BY_QUESTION_TYPE) as [
+		QuestionType,
+		readonly string[]
+	][]) {
+		const generator = GENERATORS[qType];
+		for (const ruleType of rules) {
+			inventory.push({ ruleType, questionType: qType, generator });
+		}
+	}
+	return inventory;
+}
+
+export function getAllRuleTypes(): string[] {
+	return getRuleInventory().map((item) => item.ruleType);
+}
+
 export function getQuestionTypeForRuleType(ruleType: string): QuestionType | null {
 	return RULE_TYPE_TO_QUESTION_TYPE.get(ruleType) ?? null;
 }
