@@ -152,3 +152,143 @@ export function createShareRepositoryFake(
 		}
 	};
 }
+
+export function createDuelRepositoryFake(): import('$lib/server/db/repositories/duel-repository').DuelRepository & {
+	duels: import('$lib/server/db/schema').ChallengeDuel[];
+	participants: import('$lib/server/db/schema').DuelParticipant[];
+} {
+	const duels: import('$lib/server/db/schema').ChallengeDuel[] = [];
+	const participants: import('$lib/server/db/schema').DuelParticipant[] = [];
+
+	return {
+		duels,
+		participants,
+		async createDuel(data) {
+			const existing = duels.find(
+				(d) => d.creatorSessionId === data.creatorSessionId && !d.isRevoked
+			);
+			if (existing) return existing;
+
+			const created: import('$lib/server/db/schema').ChallengeDuel = {
+				id: `duel-id-${duels.length + 1}`,
+				publicId: data.publicId,
+				creatorSessionId: data.creatorSessionId,
+				creatorUserId: data.creatorUserId ?? null,
+				creatorDisplayName: data.creatorDisplayName,
+				creatorScore: data.creatorScore,
+				creatorAccuracy: data.creatorAccuracy,
+				creatorTotalTimeSeconds: data.creatorTotalTimeSeconds,
+				sourceChallengeType: data.sourceChallengeType,
+				totalQuestions: data.totalQuestions,
+				puzzleSnapshot: data.puzzleSnapshot,
+				isRevoked: false,
+				revokedAt: null,
+				expiresAt: data.expiresAt,
+				createdAt: new Date(),
+				updatedAt: new Date()
+			};
+			duels.push(created);
+			return created;
+		},
+		async findDuelByPublicId(publicId) {
+			return duels.find((d) => d.publicId === publicId) ?? null;
+		},
+		async findActiveDuelBySessionId(sessionId) {
+			return duels.find((d) => d.creatorSessionId === sessionId && !d.isRevoked) ?? null;
+		},
+		async findDuelById(id) {
+			return duels.find((d) => d.id === id) ?? null;
+		},
+		async revokeDuel(publicId) {
+			const duel = duels.find((d) => d.publicId === publicId);
+			if (duel) {
+				duel.isRevoked = true;
+				duel.revokedAt = new Date();
+				duel.updatedAt = new Date();
+			}
+		},
+		async addParticipant(data) {
+			if (data.userId) {
+				const existing = participants.find(
+					(p) => p.duelId === data.duelId && p.userId === data.userId
+				);
+				if (existing) return existing;
+			} else if (data.guestTokenHash) {
+				const existing = participants.find(
+					(p) => p.duelId === data.duelId && p.guestTokenHash === data.guestTokenHash && !p.userId
+				);
+				if (existing) return existing;
+			}
+
+			const created: import('$lib/server/db/schema').DuelParticipant = {
+				id: `part-id-${participants.length + 1}`,
+				duelId: data.duelId,
+				sessionId: data.sessionId,
+				userId: data.userId ?? null,
+				guestTokenHash: data.guestTokenHash ?? null,
+				displayName: data.displayName,
+				status: data.status ?? 'in_progress',
+				score: data.score ?? 0,
+				accuracy: data.accuracy ?? 0,
+				totalTimeSeconds: data.totalTimeSeconds ?? 0,
+				isSuspicious: data.isSuspicious ?? false,
+				completedAt: data.completedAt ?? null,
+				createdAt: new Date()
+			};
+			participants.push(created);
+			return created;
+		},
+		async findParticipantBySessionId(sessionId) {
+			return participants.find((p) => p.sessionId === sessionId) ?? null;
+		},
+		async findParticipantByUser(duelId, userId) {
+			return participants.find((p) => p.duelId === duelId && p.userId === userId) ?? null;
+		},
+		async findParticipantByGuest(duelId, guestTokenHash) {
+			return (
+				participants.find(
+					(p) => p.duelId === duelId && p.guestTokenHash === guestTokenHash && !p.userId
+				) ?? null
+			);
+		},
+		async findParticipantsByDuelId(duelId) {
+			return participants.filter((p) => p.duelId === duelId);
+		},
+		async completeParticipant(input) {
+			const p = participants.find((item) => item.sessionId === input.sessionId);
+			if (p) {
+				p.status = 'completed';
+				p.score = input.score;
+				p.accuracy = input.accuracy;
+				p.totalTimeSeconds = input.totalTimeSeconds;
+				p.isSuspicious = input.isSuspicious;
+				p.completedAt = input.completedAt;
+			}
+		},
+		async claimGuestDuelParticipants(input) {
+			const guestParts = participants.filter(
+				(p) => p.guestTokenHash === input.guestTokenHash && !p.userId
+			);
+			let claimedCount = 0;
+			for (const gp of guestParts) {
+				const existing = participants.find(
+					(p) => p.duelId === gp.duelId && p.userId === input.userId
+				);
+				if (!existing) {
+					gp.userId = input.userId;
+					claimedCount++;
+				}
+			}
+			return { claimedCount };
+		},
+		async claimGuestCreatedDuels(input) {
+			const matching = duels.filter(
+				(d) => input.claimedSessionIds.includes(d.creatorSessionId) && !d.creatorUserId
+			);
+			for (const d of matching) {
+				d.creatorUserId = input.userId;
+			}
+			return { claimedCount: matching.length };
+		}
+	};
+}

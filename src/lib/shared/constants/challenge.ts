@@ -14,7 +14,8 @@ export const CHALLENGE_TYPES = [
 	'daily',
 	'custom',
 	'mixed',
-	'mode'
+	'mode',
+	'duel'
 ] as const;
 
 export type ChallengeType = (typeof CHALLENGE_TYPES)[number];
@@ -34,5 +35,6 @@ export const DEFAULT_CHALLENGE_QUESTION_COUNTS: Record<ChallengeType, number> = 
 	daily: 10,
 	custom: 10,
 	mixed: 10,
-	mode: 10
+	mode: 10,
+	duel: 10
 };

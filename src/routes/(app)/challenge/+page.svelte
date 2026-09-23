@@ -374,12 +374,20 @@
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ sessionId, tabSwitchCount })
 		});
-		const payload = (await response.json()) as ApiResponse<{ sessionId: string }>;
+		const payload = (await response.json()) as ApiResponse<{
+			sessionId: string;
+			duelPublicId?: string;
+		}>;
 		loading = false;
 
 		if (!payload.ok) {
 			errorMessage = payload.error.message;
 			transitioning = false;
+			return;
+		}
+
+		if (payload.data?.duelPublicId) {
+			await goto(`/duel/${payload.data.duelPublicId}`);
 			return;
 		}
 

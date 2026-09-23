@@ -17,6 +17,11 @@ export const CANONICAL_EVENTS = [
 	'share_created',
 	'shared_result_viewed',
 	'shared_result_cta_clicked',
+	'duel_created',
+	'duel_accepted',
+	'duel_completed',
+	'duel_viewed',
+	'duel_link_copied',
 	'return_visit'
 ] as const;
 
@@ -118,6 +123,35 @@ export interface SharedResultCtaClickedProperties {
 	destination: string;
 }
 
+export interface DuelCreatedProperties {
+	duel_id: string;
+	challenge_type: string;
+	is_guest: boolean;
+}
+
+export interface DuelAcceptedProperties {
+	duel_id: string;
+	challenge_type?: string;
+	is_guest?: boolean;
+}
+
+export interface DuelCompletedProperties {
+	duel_id: string;
+	outcome: string;
+	is_guest: boolean;
+}
+
+export interface DuelViewedProperties {
+	duel_id: string;
+	state: string;
+	challenge_type: string;
+	referrer?: string;
+}
+
+export interface DuelLinkCopiedProperties {
+	duel_id: string;
+}
+
 export interface ReturnVisitProperties {
 	days_since_last_visit?: number;
 	has_active_account?: boolean;
@@ -138,6 +172,11 @@ export type EventPropertyMap = {
 	share_created: ShareCreatedProperties;
 	shared_result_viewed: SharedResultViewedProperties;
 	shared_result_cta_clicked: SharedResultCtaClickedProperties;
+	duel_created: DuelCreatedProperties;
+	duel_accepted: DuelAcceptedProperties;
+	duel_completed: DuelCompletedProperties;
+	duel_viewed: DuelViewedProperties;
+	duel_link_copied: DuelLinkCopiedProperties;
 	return_visit: ReturnVisitProperties;
 };
 
@@ -179,6 +218,11 @@ export const EVENT_PROPERTY_ALLOWLIST: Record<CanonicalEventName, readonly strin
 	share_created: ['share_id', 'session_id', 'challenge_type', 'is_guest'],
 	shared_result_viewed: ['share_id', 'challenge_type', 'referrer'],
 	shared_result_cta_clicked: ['share_id', 'challenge_type', 'destination'],
+	duel_created: ['duel_id', 'challenge_type', 'is_guest'],
+	duel_accepted: ['duel_id', 'challenge_type', 'is_guest'],
+	duel_completed: ['duel_id', 'outcome', 'is_guest'],
+	duel_viewed: ['duel_id', 'state', 'challenge_type', 'referrer'],
+	duel_link_copied: ['duel_id'],
 	return_visit: ['days_since_last_visit', 'has_active_account']
 };
 

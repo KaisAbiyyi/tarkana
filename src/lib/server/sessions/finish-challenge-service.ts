@@ -14,6 +14,12 @@ import {
 	createDailyRepository,
 	type DailyRepository
 } from '$lib/server/db/repositories/daily-repository';
+import {
+	createDuelRepository,
+	type DuelRepository
+} from '$lib/server/db/repositories/duel-repository';
+import { toAnalyticsDuelId } from '$lib/server/duel/duel-service';
+import { resolveDuelOutcome } from '$lib/server/duel/outcome';
 import type { ChallengeSession, SessionAnswer, SessionQuestion } from '$lib/server/db/schema';
 import { calculateRatingDelta, applyRatingDelta } from '$lib/server/scoring/rating';
 import { resolveCompletedRank, isRankPromotion, getRankProgress } from '$lib/server/scoring/rank';
@@ -33,6 +39,7 @@ export type FinishChallengeResult = {
 	sessionId: string;
 	challengeType?: ChallengeSession['challengeType'];
 	challengeDate?: string;
+	duelPublicId?: string;
 	totalScore: number;
 	accuracy: number;
 	correctAnswers: number;
@@ -60,8 +67,32 @@ export type FinishChallengeService = {
 export function createFinishChallengeService(
 	sessionRepository: SessionRepository = createSessionRepository(),
 	profileRepository: ProfileRepository = createProfileRepository(),
-	dailyRepository: DailyRepository = createDailyRepository()
+	dailyRepository: DailyRepository = createDailyRepository(),
+	duelRepository: DuelRepository = createDuelRepository()
 ): FinishChallengeService {
+	async function syncDuelParticipantCompletion(
+		sessionId: string,
+		scoreSummary: { totalScore: number; accuracy: number; totalTimeSeconds: number },
+		isSuspicious: boolean
+	): Promise<string | undefined> {
+		const participant = await duelRepository.findParticipantBySessionId(sessionId);
+		if (participant) {
+			if (participant.status === 'in_progress') {
+				await duelRepository.completeParticipant({
+					sessionId,
+					score: scoreSummary.totalScore,
+					accuracy: scoreSummary.accuracy,
+					totalTimeSeconds: scoreSummary.totalTimeSeconds,
+					isSuspicious,
+					completedAt: new Date()
+				});
+			}
+			const duel = await duelRepository.findDuelById(participant.duelId);
+			return duel?.publicId;
+		}
+		return undefined;
+	}
+
 	async function finishGuestSession(session: ChallengeSession, input: FinishChallengeInput) {
 		const [questions, answers] = await Promise.all([
 			sessionRepository.listSessionQuestions(session.id),
@@ -95,13 +126,13 @@ export function createFinishChallengeService(
 			requestAnomalyFlags: input.requestAnomalyFlags
 		});
 		const isDaily = session.challengeType === 'daily';
-		const ratingDelta =
-			isDaily || suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
-		const ratingAfter = isDaily
+		const isDuel = session.challengeType === 'duel';
+		const isUnrated = isDaily || isDuel || suspicious.isSuspicious;
+		const ratingDelta = isUnrated ? 0 : calculateRatingDelta(scoreSummary.accuracy);
+		const ratingAfter = isUnrated
 			? session.ratingBefore
 			: applyRatingDelta(session.ratingBefore, ratingDelta);
-		const rankAfter =
-			isDaily || suspicious.isSuspicious ? session.rankBefore : resolveCompletedRank(ratingAfter);
+		const rankAfter = isUnrated ? session.rankBefore : resolveCompletedRank(ratingAfter);
 
 		await sessionRepository.markCompleted({
 			sessionId: session.id,
@@ -118,6 +149,8 @@ export function createFinishChallengeService(
 
 		if (isDaily) {
 			await syncDailyAttemptCompletion(session.id, scoreSummary);
+		} else if (isDuel) {
+			await syncDuelParticipantCompletion(session.id, scoreSummary, suspicious.isSuspicious);
 		}
 	}
 
@@ -207,10 +240,19 @@ export function createFinishChallengeService(
 						}
 					}
 				}
+				let duelPublicId: string | undefined;
+				if (session.challengeType === 'duel') {
+					const participant = await duelRepository.findParticipantBySessionId(session.id);
+					if (participant) {
+						const duel = await duelRepository.findDuelById(participant.duelId);
+						duelPublicId = duel?.publicId;
+					}
+				}
 				const result = toFinishResult({ session, questions, answers, suspiciousReasons: [] });
 				return {
 					...result,
 					challengeDate,
+					duelPublicId,
 					isGuest,
 					canClaim: isGuest && !session.claimedAt
 				};
@@ -252,15 +294,15 @@ export function createFinishChallengeService(
 				requestAnomalyFlags: input.requestAnomalyFlags
 			});
 			const isDaily = session.challengeType === 'daily';
-			const ratingDelta =
-				isDaily || suspicious.isSuspicious ? 0 : calculateRatingDelta(scoreSummary.accuracy);
+			const isDuel = session.challengeType === 'duel';
+			const isUnrated = isDaily || isDuel || suspicious.isSuspicious;
+			const ratingDelta = isUnrated ? 0 : calculateRatingDelta(scoreSummary.accuracy);
 
 			if (profile) {
-				const ratingAfter = isDaily
+				const ratingAfter = isUnrated
 					? profile.rating
 					: applyRatingDelta(profile.rating, ratingDelta);
-				const rankAfter =
-					isDaily || suspicious.isSuspicious ? profile.rank : resolveCompletedRank(ratingAfter);
+				const rankAfter = isUnrated ? profile.rank : resolveCompletedRank(ratingAfter);
 
 				const completedSession = await sessionRepository.completeSessionAndUpdateProfile({
 					sessionId: session.id,
@@ -274,13 +316,20 @@ export function createFinishChallengeService(
 					rankAfter,
 					isSuspicious: suspicious.isSuspicious,
 					suspiciousReason: suspicious.reasons.join(', ') || null,
-					profileRating: isDaily ? profile.rating : ratingAfter,
-					profileRank: isDaily ? profile.rank : rankAfter
+					profileRating: isUnrated ? profile.rating : ratingAfter,
+					profileRank: isUnrated ? profile.rank : rankAfter
 				});
 
 				let challengeDate: string | undefined;
+				let duelPublicId: string | undefined;
 				if (isDaily) {
 					challengeDate = await syncDailyAttemptCompletion(session.id, scoreSummary);
+				} else if (isDuel) {
+					duelPublicId = await syncDuelParticipantCompletion(
+						session.id,
+						scoreSummary,
+						suspicious.isSuspicious
+					);
 				}
 
 				const finishResult = {
@@ -291,6 +340,7 @@ export function createFinishChallengeService(
 						suspiciousReasons: suspicious.reasons
 					}),
 					challengeDate,
+					duelPublicId,
 					isGuest: false,
 					canClaim: false
 				};
@@ -314,19 +364,50 @@ export function createFinishChallengeService(
 							}
 						})
 						.catch(() => {});
+
+					if (isDuel && duelPublicId) {
+						const participantRecord = await duelRepository.findParticipantBySessionId(session.id);
+						if (participantRecord) {
+							const duel = await duelRepository.findDuelById(participantRecord.duelId);
+							if (duel) {
+								const outcome = resolveDuelOutcome(
+									{
+										score: completedSession.totalScore,
+										accuracy: completedSession.accuracy,
+										totalTimeSeconds: completedSession.totalTimeSeconds,
+										isSuspicious: completedSession.isSuspicious
+									},
+									{
+										score: duel.creatorScore,
+										accuracy: duel.creatorAccuracy,
+										totalTimeSeconds: duel.creatorTotalTimeSeconds
+									}
+								);
+								getAnalyticsService()
+									.track({
+										distinctId,
+										userId: profile.id,
+										event: 'duel_completed',
+										properties: {
+											duel_id: toAnalyticsDuelId(duel.publicId),
+											outcome,
+											is_guest: false
+										}
+									})
+									.catch(() => {});
+							}
+						}
+					}
 				} catch {
 					/* ignore */
 				}
 
 				return finishResult;
 			} else {
-				const ratingAfter = isDaily
+				const ratingAfter = isUnrated
 					? session.ratingBefore
 					: applyRatingDelta(session.ratingBefore, ratingDelta);
-				const rankAfter =
-					isDaily || suspicious.isSuspicious
-						? session.rankBefore
-						: resolveCompletedRank(ratingAfter);
+				const rankAfter = isUnrated ? session.rankBefore : resolveCompletedRank(ratingAfter);
 
 				const completedSession = await sessionRepository.markCompleted({
 					sessionId: session.id,
@@ -342,8 +423,15 @@ export function createFinishChallengeService(
 				});
 
 				let challengeDate: string | undefined;
+				let duelPublicId: string | undefined;
 				if (isDaily) {
 					challengeDate = await syncDailyAttemptCompletion(session.id, scoreSummary);
+				} else if (isDuel) {
+					duelPublicId = await syncDuelParticipantCompletion(
+						session.id,
+						scoreSummary,
+						suspicious.isSuspicious
+					);
 				}
 
 				const finishResult = {
@@ -354,6 +442,7 @@ export function createFinishChallengeService(
 						suspiciousReasons: suspicious.reasons
 					}),
 					challengeDate,
+					duelPublicId,
 					isGuest: true,
 					canClaim: true
 				};
@@ -377,6 +466,40 @@ export function createFinishChallengeService(
 							}
 						})
 						.catch(() => {});
+
+					if (isDuel && duelPublicId) {
+						const participantRecord = await duelRepository.findParticipantBySessionId(session.id);
+						if (participantRecord) {
+							const duel = await duelRepository.findDuelById(participantRecord.duelId);
+							if (duel) {
+								const outcome = resolveDuelOutcome(
+									{
+										score: completedSession.totalScore,
+										accuracy: completedSession.accuracy,
+										totalTimeSeconds: completedSession.totalTimeSeconds,
+										isSuspicious: completedSession.isSuspicious
+									},
+									{
+										score: duel.creatorScore,
+										accuracy: duel.creatorAccuracy,
+										totalTimeSeconds: duel.creatorTotalTimeSeconds
+									}
+								);
+								getAnalyticsService()
+									.track({
+										distinctId,
+										userId: null,
+										event: 'duel_completed',
+										properties: {
+											duel_id: toAnalyticsDuelId(duel.publicId),
+											outcome,
+											is_guest: true
+										}
+									})
+									.catch(() => {});
+							}
+						}
+					}
 				} catch {
 					/* ignore */
 				}

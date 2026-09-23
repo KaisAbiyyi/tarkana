@@ -48,6 +48,26 @@
 	let linkCopied = $state(false);
 	let textCopied = $state(false);
 	let canNativeShare = $state(false);
+	let creatingDuel = $state(false);
+
+	async function createDuelAndNavigate() {
+		creatingDuel = true;
+		try {
+			const res = await fetch('/api/duel/create', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sessionId })
+			});
+			const body = await res.json();
+			if (body.ok && body.data) {
+				window.location.href = `/duel/${body.data.publicId}`;
+			}
+		} catch {
+			/* ignore */
+		} finally {
+			creatingDuel = false;
+		}
+	}
 
 	onMount(() => {
 		canNativeShare = typeof navigator !== 'undefined' && 'share' in navigator;
@@ -277,6 +297,26 @@
 						{/if}
 					</div>
 				</div>
+
+				{#if challengeType === 'standard' || challengeType === 'quick'}
+					<div
+						class="border-2 border-[var(--color-border)] bg-[var(--color-warning-subtle,#fef3c7)] p-3"
+					>
+						<div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+							<div>
+								<p class="text-xs font-black text-[var(--color-foreground)] uppercase">
+									⚔️ Head-to-Head Duel
+								</p>
+								<p class="text-xs font-medium text-[var(--color-foreground)]">
+									Challenge a friend to solve these exact same puzzles in a blind duel.
+								</p>
+							</div>
+							<Button variant="primary" onclick={createDuelAndNavigate} disabled={creatingDuel}>
+								{creatingDuel ? 'Creating...' : t('duel.createInvite')}
+							</Button>
+						</div>
+					</div>
+				{/if}
 			</div>
 		</div>
 	</div>

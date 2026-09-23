@@ -7,6 +7,7 @@
 	import ShareResultModal from '$lib/components/result/ShareResultModal.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { analytics } from '$lib/client/analytics';
 
 	type Props = {
@@ -19,6 +20,7 @@
 
 	let isShareModalOpen = $state(false);
 	let isCreatingShare = $state(false);
+	let isCreatingDuel = $state(false);
 	let sharePublicId = $state<string | null>(null);
 	let shareUrl = $state<string | null>(null);
 	let shareAnalyticsId = $state<string | null>(null);
@@ -59,6 +61,26 @@
 			isCreatingShare = false;
 		}
 	}
+
+	async function handleChallengeFriend() {
+		if (result.isSuspicious) return;
+		isCreatingDuel = true;
+		try {
+			const res = await fetch('/api/duel/create', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ sessionId: result.sessionId })
+			});
+			const body = await res.json();
+			if (body.ok && body.data) {
+				await goto(`/duel/${body.data.publicId}`);
+			}
+		} catch {
+			/* ignore */
+		} finally {
+			isCreatingDuel = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -73,6 +95,11 @@
 			<h1 class="page-title">{t('result.review')}</h1>
 		</div>
 		<div class="flex flex-wrap gap-3">
+			{#if !result.isSuspicious && (result.challengeType === 'standard' || result.challengeType === 'quick')}
+				<Button onclick={handleChallengeFriend} variant="primary" disabled={isCreatingDuel}>
+					{isCreatingDuel ? 'Creating Duel...' : t('duel.challengeAFriend')}
+				</Button>
+			{/if}
 			{#if !result.isSuspicious}
 				<Button onclick={handleShare} variant="secondary" disabled={isCreatingShare}>
 					{isCreatingShare ? 'Loading...' : 'Share Result'}
