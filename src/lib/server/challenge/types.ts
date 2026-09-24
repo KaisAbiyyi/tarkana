@@ -76,12 +76,20 @@ export type GenerateQuestionInput = {
 
 export type QuestionGenerator = (input: GenerateQuestionInput) => GeneratedQuestion;
 
+export type AdaptiveQuestionContext = {
+	questionType: QuestionType;
+	effectiveSkillRating: number;
+	ratingSource: 'category_mastery' | 'logic_rating_fallback';
+	difficultyBand: DifficultyBand;
+};
+
 export type ChallengeBuildInput = {
 	locale?: Locale;
 	config: ChallengeConfigDefinition;
 	categories: ChallengeCategoryDefinition[];
 	rules: QuestionRuleDefinition[];
 	userRating: number;
+	categoryRatings?: Partial<Record<QuestionType, number>>;
 	selectedMode?: QuestionType;
 	seed: string;
 };

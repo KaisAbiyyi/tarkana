@@ -80,11 +80,16 @@ export function createStartChallengeService(
 				setGuestTokenCookie(event, guestToken);
 			}
 
-			const [config, categories, rawRules] = await Promise.all([
+			const [config, categories, rawRules, userMasteries] = await Promise.all([
 				sessionRepository.findActiveConfig(input.challengeType),
 				sessionRepository.listActiveCategories(),
-				sessionRepository.listActiveQuestionRules()
+				sessionRepository.listActiveQuestionRules(),
+				profile ? sessionRepository.listUserCategoryMastery(profile.id) : Promise.resolve([])
 			]);
+			const categoryRatings: Partial<Record<QuestionType, number>> = {};
+			for (const m of userMasteries) {
+				categoryRatings[m.questionType] = m.rating;
+			}
 			const rules = rawRules
 				.map(toRuleDefinition)
 				.filter((rule): rule is QuestionRuleDefinition => rule !== null);
@@ -97,6 +102,7 @@ export function createStartChallengeService(
 				categories: challengeCategories,
 				rules,
 				userRating,
+				categoryRatings,
 				selectedMode: input.selectedMode,
 				seed: input.seed ?? randomUUID()
 			});

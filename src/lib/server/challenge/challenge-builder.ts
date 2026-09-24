@@ -11,6 +11,7 @@ import {
 } from '$lib/server/challenge/generators/registry';
 import { validateGeneratedQuestion } from '$lib/server/challenge/rule-validator';
 import type {
+	AdaptiveQuestionContext,
 	BuiltChallengeQuestion,
 	ChallengeBuildInput,
 	ChallengeCategoryDefinition,
@@ -20,6 +21,38 @@ import type {
 } from '$lib/server/challenge/types';
 
 const MAX_GENERATION_ATTEMPTS_PER_QUESTION = 12;
+
+/**
+ * Resolves the effective skill rating for difficulty adaptation in a specific category.
+ * Qualified or provisional category mastery takes precedence; otherwise falls back to Logic Rating.
+ */
+export function resolveEffectiveSkillRating(
+	questionType: QuestionType,
+	userRating: number,
+	categoryRatings?: Partial<Record<QuestionType, number>> | null
+): { effectiveSkillRating: number; ratingSource: 'category_mastery' | 'logic_rating_fallback' } {
+	const catRating = categoryRatings?.[questionType];
+	if (typeof catRating === 'number' && Number.isFinite(catRating)) {
+		return {
+			effectiveSkillRating: Math.max(0, catRating),
+			ratingSource: 'category_mastery'
+		};
+	}
+	return {
+		effectiveSkillRating:
+			typeof userRating === 'number' && Number.isFinite(userRating) ? Math.max(0, userRating) : 0,
+		ratingSource: 'logic_rating_fallback'
+	};
+}
+
+function hasExplicitDifficultyDistribution(
+	configured: Record<string, unknown> | null | undefined
+): boolean {
+	if (!configured) return false;
+	return DIFFICULTY_BANDS.some(
+		(d) => typeof configured[d] === 'number' && (configured[d] as number) > 0
+	);
+}
 
 export function buildChallengeQuestions(input: ChallengeBuildInput): BuiltChallengeQuestion[] {
 	validateBuildInput(input);
@@ -34,15 +67,84 @@ export function buildChallengeQuestions(input: ChallengeBuildInput): BuiltChalle
 		availableTypes: [...activeQuestionTypes],
 		rng
 	});
-	const difficulties = rng.shuffle(
-		expandDifficultyPlan({
-			questionCount: input.config.questionCount,
-			distribution: resolveConfiguredDifficultyDistribution(
-				input.config.difficultyDistribution,
-				resolveDifficultyDistribution(input.userRating)
-			)
-		})
-	);
+
+	const assignedDifficulties: DifficultyBand[] = [];
+	const assignedContexts: AdaptiveQuestionContext[] = [];
+
+	if (input.config.challengeType === 'daily') {
+		// Daily challenge uses the canonical globally-fixed difficulty distribution across the entire round
+		const difficulties = rng.shuffle(
+			expandDifficultyPlan({
+				questionCount: input.config.questionCount,
+				distribution: resolveConfiguredDifficultyDistribution(input.config.difficultyDistribution, {
+					easy: 30,
+					medium: 40,
+					hard: 30
+				})
+			})
+		);
+		for (let i = 0; i < input.config.questionCount; i++) {
+			const diff = difficulties[i] as DifficultyBand;
+			assignedDifficulties[i] = diff;
+			assignedContexts[i] = {
+				questionType: requestedTypes[i] as QuestionType,
+				effectiveSkillRating: 0,
+				ratingSource: 'logic_rating_fallback',
+				difficultyBand: diff
+			};
+		}
+	} else {
+		// Deterministic per-category planning for competitive and custom challenges
+		// 1. Group question slots by questionType
+		const slotsByType = new Map<QuestionType, number[]>();
+		for (let i = 0; i < input.config.questionCount; i++) {
+			const qType = requestedTypes[i] as QuestionType;
+			const list = slotsByType.get(qType) ?? [];
+			list.push(i);
+			slotsByType.set(qType, list);
+		}
+
+		const isExplicitCustom = hasExplicitDifficultyDistribution(input.config.difficultyDistribution);
+
+		// 2. Plan and shuffle each category independently
+		for (const [qType, slotIndices] of slotsByType.entries()) {
+			// 3. Resolve effective skill rating for this category
+			const { effectiveSkillRating, ratingSource } = resolveEffectiveSkillRating(
+				qType,
+				input.userRating,
+				input.categoryRatings
+			);
+
+			// 4. Resolve distribution: explicit custom config overrides adaptive behavior
+			const distribution = isExplicitCustom
+				? resolveConfiguredDifficultyDistribution(
+						input.config.difficultyDistribution,
+						resolveDifficultyDistribution(effectiveSkillRating)
+					)
+				: resolveDifficultyDistribution(effectiveSkillRating);
+
+			// 5. Generate and shuffle that category's difficulty plan using a derived deterministic RNG seed
+			const categoryPlan = expandDifficultyPlan({
+				questionCount: slotIndices.length,
+				distribution
+			});
+			const categoryRng = createSeededRng(`${input.seed}:adaptive:${qType}`);
+			const shuffledCategoryDifficulties = categoryRng.shuffle(categoryPlan);
+
+			// 6. Assign those difficulty bands and contexts back to the original question slots
+			for (let j = 0; j < slotIndices.length; j++) {
+				const slotIndex = slotIndices[j]!;
+				const difficulty = shuffledCategoryDifficulties[j] as DifficultyBand;
+				assignedDifficulties[slotIndex] = difficulty;
+				assignedContexts[slotIndex] = {
+					questionType: qType,
+					effectiveSkillRating,
+					ratingSource,
+					difficultyBand: difficulty
+				};
+			}
+		}
+	}
 
 	const activeRules = input.rules.filter((rule) => rule.isActive);
 	const questions: BuiltChallengeQuestion[] = [];
@@ -57,7 +159,8 @@ export function buildChallengeQuestions(input: ChallengeBuildInput): BuiltChalle
 
 	for (let orderIndex = 0; orderIndex < input.config.questionCount; orderIndex += 1) {
 		const questionType = requestedTypes[orderIndex] as QuestionType;
-		const difficulty = difficulties[orderIndex] as DifficultyBand;
+		const difficulty = assignedDifficulties[orderIndex] as DifficultyBand;
+		const adaptiveContext = assignedContexts[orderIndex]!;
 		const category = pickCategory(activeCategories, questionType, rng);
 		const rules = activeRules.filter(
 			(rule) =>
@@ -82,7 +185,8 @@ export function buildChallengeQuestions(input: ChallengeBuildInput): BuiltChalle
 			rng,
 			seenFingerprints,
 			usedRuleIds: categoryUsedRuleIds,
-			lastRuleId
+			lastRuleId,
+			adaptiveContext
 		});
 
 		questions.push(question);
@@ -121,6 +225,7 @@ function generateWithRetries(input: {
 	seenFingerprints: Set<string>;
 	usedRuleIds: Set<string>;
 	lastRuleId: string | null;
+	adaptiveContext?: AdaptiveQuestionContext;
 }): BuiltChallengeQuestion {
 	const generator = getGeneratorForQuestionType(input.questionType);
 	let lastError: unknown = null;
@@ -177,7 +282,12 @@ function generateWithRetries(input: {
 			return {
 				...question,
 				categoryId: input.categoryId,
-				metadata: { ...question.metadata, fingerprint, ruleId: rule.id }
+				metadata: {
+					...question.metadata,
+					fingerprint,
+					ruleId: rule.id,
+					adaptiveContext: input.adaptiveContext
+				}
 			};
 		} catch (error) {
 			lastError = error;
