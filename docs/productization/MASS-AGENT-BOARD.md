@@ -111,5 +111,5 @@ Do not resolve semantic conflicts by mechanically accepting "ours" or "theirs".
 | Category-Adaptive Difficulty (P1.10B) | Antigravity | #53 | feat/p1.10b-category-adaptive-difficulty | MERGED |
 | Category & Tier Leaderboards (P1.10C) | Antigravity | #55 | feat/p1.10c-category-and-tier-leaderboards | MERGED |
 | Weekly Leaderboard & Profile (P1.10D) | Antigravity | #57 | feat/p1.10d-weekly-leaderboard-and-profile-depth | MERGED |
-| Weekly Competitive Fairness (P1.10D.1) | Antigravity | #59 | feat/p1.10d.1-weekly-fairness-and-roadmap-reconciliation | IN_PROGRESS |
+| Weekly Competitive Fairness (P1.10D.1) | Antigravity | #59 | feat/p1.10d.1-weekly-fairness-and-roadmap-reconciliation | MERGED |
 
