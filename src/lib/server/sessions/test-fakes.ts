@@ -117,6 +117,7 @@ export function createSessionRepositoryFake(
 		config?: ChallengeConfig | null;
 		questions?: SessionQuestion[];
 		answers?: SessionAnswer[];
+		userCategoryMasteries?: UserCategoryMastery[];
 	} = {}
 ): SessionRepository & {
 	createdSessions: NewChallengeSession[];
@@ -128,6 +129,9 @@ export function createSessionRepositoryFake(
 	const createdSessions: NewChallengeSession[] = [];
 	const completedSessions: CompleteSessionAndProfileInput[] = [];
 	const userCategoryMasteries: Map<string, UserCategoryMastery> = new Map();
+	for (const m of input.userCategoryMasteries ?? []) {
+		userCategoryMasteries.set(`${m.userId}:${m.questionType}`, m);
+	}
 	const sessionMasteryChanges: SessionCategoryMasteryChange[] = [];
 
 	return {

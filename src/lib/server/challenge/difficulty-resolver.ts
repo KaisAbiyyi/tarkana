@@ -6,12 +6,19 @@ export const DEFAULT_DIFFICULTY_DISTRIBUTIONS: readonly {
 	maxRating: number | null;
 	distribution: DifficultyDistribution;
 }[] = [
-	{ minRating: 0, maxRating: 499, distribution: { easy: 30, medium: 60, hard: 10 } },
-	{ minRating: 500, maxRating: 999, distribution: { easy: 40, medium: 50, hard: 10 } },
+	{ minRating: 0, maxRating: 499, distribution: { easy: 50, medium: 40, hard: 10 } },
+	{ minRating: 500, maxRating: 999, distribution: { easy: 35, medium: 50, hard: 15 } },
 	{ minRating: 1000, maxRating: 1499, distribution: { easy: 20, medium: 60, hard: 20 } },
 	{ minRating: 1500, maxRating: 1999, distribution: { easy: 10, medium: 50, hard: 40 } },
 	{ minRating: 2000, maxRating: null, distribution: { easy: 0, medium: 40, hard: 60 } }
 ] as const;
+
+/**
+ * Computes the weighted mean difficulty score (1 = easy, 2 = medium, 3 = hard).
+ */
+export function calculateMeanDifficulty(distribution: DifficultyDistribution): number {
+	return (distribution.easy * 1 + distribution.medium * 2 + distribution.hard * 3) / 100;
+}
 
 export function resolveDifficultyDistribution(userRating: number): DifficultyDistribution {
 	const rating = Math.max(0, Math.floor(userRating));
