@@ -11,7 +11,7 @@ Tarkana should become a product that a user can discover, try immediately, retur
 - [x] Add web CI for typecheck, formatting, lint, unit tests, build, and critical E2E tests.
 - [x] Add Android CI for unit tests, lint, and build.
 - [ ] Add dependency update automation.
-- [ ] Add CodeQL or equivalent static security scanning.
+- [x] Add CodeQL or equivalent static security scanning.
 - [ ] Add secret scanning workflow where available.
 - [x] Protect `main` with required checks.
 - [x] Require PR workflow for non-trivial changes.
@@ -84,16 +84,18 @@ Tarkana should become a product that a user can discover, try immediately, retur
 
 ## P1.5: Competitive Product Depth
 
-- [ ] Per-category mastery rating.
-- [ ] Adaptive difficulty based on category mastery and recent performance.
-- [ ] Weekly leaderboard.
-- [ ] Category leaderboard.
-- [ ] Rank-tier leaderboard.
-- [ ] Initial achievement set.
-- [ ] Improved suspicious-session signals and admin review.
-- [x] Admin generator health dashboard.
+> **Status: Complete & Frozen.** Core competitive mechanics (Category Mastery, Adaptive Difficulty, Category/Tier Leaderboards, and Normalized Weekly Leaderboard) are shipped, verified, and merged. P1 competitive product development is now frozen. Further additions are strictly evidence-gated.
 
-## P1: Android Production Path
+- [x] Per-category mastery rating (Milestones P1.10A, P1.10A.1).
+- [x] Adaptive difficulty based on category mastery (Milestones P1.10B, P1.10D.1).
+- [x] Weekly leaderboard with normalized performance (Milestones P1.10D, P1.10D.1).
+- [x] Category leaderboard with provisional gating (Milestone P1.10C).
+- [x] Rank-tier leaderboard (Milestone P1.10C).
+- [x] Admin generator health dashboard (Milestones P1.8, P1.8.1).
+- [ ] Initial achievement set (evidence/retention-gated).
+- [ ] Additional suspicious-session/admin-review sophistication (volume/anomaly-gated).
+
+## Android Production Path (Independent Delivery Track)
 
 - [x] Dedicated release signing.
 - [x] Secure signing secret storage.
@@ -104,20 +106,26 @@ Tarkana should become a product that a user can discover, try immediately, retur
 - [ ] Store-ready app metadata and screenshots.
 - [ ] Closed/internal Play Store testing.
 
-## P2: AIMA-Oriented AI Engineering
+## P2A: AI Coach Foundation
 
 - [ ] Add AI Coach only after deterministic answer submission.
 - [ ] Keep canonical explanation as fallback.
 - [ ] Use strict structured outputs.
-- [ ] Add prompt/model versioning.
-- [ ] Add cost and latency telemetry.
-- [ ] Add timeout/retry/circuit-breaker behavior.
+
+## P2B: AI Evaluation Dataset & Automated Eval Harness
+
 - [ ] Build evaluation dataset from deterministic Tarkana questions.
 - [ ] Add automated AI response evaluation.
 - [ ] Compare models using reproducible eval reports.
+
+## P2C: AI Model/Prompt Versioning, Cost, Latency & Reliability
+
+- [ ] Add prompt/model versioning.
+- [ ] Add cost and latency telemetry.
+- [ ] Add timeout/retry/circuit-breaker behavior.
 - [ ] Add background processing only where latency isolation is useful.
 
-## P2: Fanvue Integration Experiment
+## Fanvue Integration Experiment (Evidence/Use-Case Gated)
 
 - [ ] Research and document exact integration use case before coding.
 - [ ] Implement OAuth securely.
@@ -126,7 +134,7 @@ Tarkana should become a product that a user can discover, try immediately, retur
 - [ ] Provide creator-facing engagement metrics.
 - [ ] Keep integration isolated from core Tarkana domain logic.
 
-## P2: Public API and Platform
+## Public API and Platform (Usage Gated)
 
 Only after product usage justifies it:
 

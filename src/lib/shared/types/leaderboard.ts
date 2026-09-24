@@ -8,19 +8,23 @@ export type WeeklyLeaderboardEntryDto = {
 	displayName: string;
 	rank: string;
 	logicRating: number;
-	weeklyScore: number;
-	weeklyRatingDelta: number;
+	averageScorePerAnswer: number;
 	averageAccuracy: number;
+	responseTimeRatio: number;
 	totalQuestions: number;
 	totalSessions: number;
+	weeklyScore: number;
+	weeklyRatingDelta: number;
 };
 
 export type WeeklyProgressDto = {
 	totalQuestions: number;
 	totalSessions: number;
+	averageScorePerAnswer: number;
+	averageAccuracy: number;
+	responseTimeRatio: number;
 	weeklyScore: number;
 	weeklyRatingDelta: number;
-	averageAccuracy: number;
 	isQualified: boolean;
 	questionsNeeded: number;
 };

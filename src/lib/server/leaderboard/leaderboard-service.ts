@@ -88,11 +88,13 @@ function toWeeklyLeaderboardEntryDto(row: WeeklyLeaderboardRow): WeeklyLeaderboa
 		displayName: row.displayName,
 		rank: row.rank,
 		logicRating: row.rating,
-		weeklyScore: row.weeklyScore,
-		weeklyRatingDelta: row.weeklyRatingDelta,
+		averageScorePerAnswer: Math.round(Number(row.averageScorePerAnswer) * 10) / 10,
 		averageAccuracy: Math.round(Number(row.averageAccuracy) * 10) / 10,
+		responseTimeRatio: Math.round(Number(row.responseTimeRatio) * 1000) / 1000,
 		totalQuestions: row.totalQuestions,
-		totalSessions: row.totalSessions
+		totalSessions: row.totalSessions,
+		weeklyScore: row.weeklyScore,
+		weeklyRatingDelta: row.weeklyRatingDelta
 	};
 }
 
@@ -259,9 +261,11 @@ export function createLeaderboardService(
 					? {
 							totalQuestions: progress.totalQuestions,
 							totalSessions: progress.totalSessions,
+							averageScorePerAnswer: Math.round(Number(progress.averageScorePerAnswer) * 10) / 10,
+							averageAccuracy: Math.round(Number(progress.averageAccuracy) * 10) / 10,
+							responseTimeRatio: Math.round(Number(progress.responseTimeRatio) * 1000) / 1000,
 							weeklyScore: progress.weeklyScore,
 							weeklyRatingDelta: progress.weeklyRatingDelta,
-							averageAccuracy: Math.round(Number(progress.averageAccuracy) * 10) / 10,
 							isQualified: progress.isQualified,
 							questionsNeeded: progress.questionsNeeded
 						}
