@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "generatedAt": "2026-09-24T03:38:05.364Z",
+    "generatedAt": "2026-09-24T04:17:51.384Z",
     "nodeVersion": "v22.17.0",
     "platform": "win32",
     "arch": "x64",
-    "commitSha": "52a4010420b2a0c7beb4b8e4dcb2720aa0e98774",
+    "commitSha": "b707470345289ba70902b2d1e1ac5fcb499c33b8",
     "seedPrefix": "tarkana-bench-v1",
     "configVersions": {
       "dailyChallengeConfigVersion": 1,
@@ -12,15 +12,15 @@
       "generatorBenchmarkVersion": "1.8.1"
     },
     "iterationsPerCombination": 100,
-    "totalExecutionTimeMs": 407.44
+    "totalExecutionTimeMs": 582.66
   },
   "generators": {
     "runtime": {
       "nodeVersion": "v22.17.0",
       "platform": "win32",
       "arch": "x64",
-      "timestamp": "2026-09-24T03:38:05.279Z",
-      "commitSha": "52a4010420b2a0c7beb4b8e4dcb2720aa0e98774",
+      "timestamp": "2026-09-24T04:17:51.276Z",
+      "commitSha": "b707470345289ba70902b2d1e1ac5fcb499c33b8",
       "generatorVersion": "1.0.0"
     },
     "totalSamples": 6600,
@@ -33,13 +33,13 @@
     "overallObservedFailureRatePct": 0,
     "summaryStatement": "0 failures in 6600 generated samples across 66 rule combinations (observed rate: 0.00%)",
     "aggregateLatency": {
-      "minMs": 0.004,
-      "p50Ms": 0.01,
-      "p90Ms": 0.052,
-      "p95Ms": 0.144,
-      "p99Ms": 0.17,
-      "maxMs": 1.686,
-      "avgMs": 0.025
+      "minMs": 0.005,
+      "p50Ms": 0.012,
+      "p90Ms": 0.094,
+      "p95Ms": 0.154,
+      "p99Ms": 0.454,
+      "maxMs": 2.42,
+      "avgMs": 0.036
     },
     "results": [
       {
@@ -57,11 +57,11 @@
         "latency": {
           "minMs": 0.016,
           "p50Ms": 0.021,
-          "p90Ms": 0.037,
-          "p95Ms": 0.063,
-          "p99Ms": 1.686,
-          "maxMs": 1.686,
-          "avgMs": 0.042
+          "p90Ms": 0.065,
+          "p95Ms": 0.125,
+          "p99Ms": 2.42,
+          "maxMs": 2.42,
+          "avgMs": 0.057
         },
         "sampleErrors": []
       },
@@ -79,12 +79,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.013,
-          "p50Ms": 0.019,
-          "p90Ms": 0.022,
-          "p95Ms": 0.025,
-          "p99Ms": 0.081,
-          "maxMs": 0.081,
-          "avgMs": 0.019
+          "p50Ms": 0.014,
+          "p90Ms": 0.018,
+          "p95Ms": 0.021,
+          "p99Ms": 0.084,
+          "maxMs": 0.084,
+          "avgMs": 0.016
         },
         "sampleErrors": []
       },
@@ -102,12 +102,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.014,
-          "p50Ms": 0.015,
-          "p90Ms": 0.02,
-          "p95Ms": 0.029,
-          "p99Ms": 0.072,
-          "maxMs": 0.072,
-          "avgMs": 0.017
+          "p50Ms": 0.033,
+          "p90Ms": 0.045,
+          "p95Ms": 0.079,
+          "p99Ms": 0.124,
+          "maxMs": 0.124,
+          "avgMs": 0.037
         },
         "sampleErrors": []
       },
@@ -125,12 +125,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.012,
-          "p50Ms": 0.013,
-          "p90Ms": 0.016,
-          "p95Ms": 0.018,
-          "p99Ms": 0.078,
-          "maxMs": 0.078,
-          "avgMs": 0.015
+          "p50Ms": 0.03,
+          "p90Ms": 0.034,
+          "p95Ms": 0.035,
+          "p99Ms": 0.143,
+          "maxMs": 0.143,
+          "avgMs": 0.029
         },
         "sampleErrors": []
       },
@@ -148,11 +148,11 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.011,
-          "p50Ms": 0.012,
+          "p50Ms": 0.013,
           "p90Ms": 0.014,
-          "p95Ms": 0.019,
-          "p99Ms": 0.048,
-          "maxMs": 0.048,
+          "p95Ms": 0.018,
+          "p99Ms": 0.035,
+          "maxMs": 0.035,
           "avgMs": 0.013
         },
         "sampleErrors": []
@@ -172,11 +172,11 @@
         "latency": {
           "minMs": 0.011,
           "p50Ms": 0.012,
-          "p90Ms": 0.013,
-          "p95Ms": 0.014,
-          "p99Ms": 0.016,
-          "maxMs": 0.016,
-          "avgMs": 0.012
+          "p90Ms": 0.014,
+          "p95Ms": 0.016,
+          "p99Ms": 0.027,
+          "maxMs": 0.027,
+          "avgMs": 0.013
         },
         "sampleErrors": []
       },
@@ -184,6 +184,29 @@
         "ruleType": "square_number",
         "questionType": "number_sequence",
         "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.009,
+          "p50Ms": 0.011,
+          "p90Ms": 0.016,
+          "p95Ms": 0.021,
+          "p99Ms": 0.085,
+          "maxMs": 0.085,
+          "avgMs": 0.013
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "square_number",
+        "questionType": "number_sequence",
+        "difficulty": "medium",
         "sampleCount": 100,
         "structuralFailures": 0,
         "semanticFailures": 0,
@@ -194,35 +217,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.01,
-          "p50Ms": 0.011,
-          "p90Ms": 0.012,
-          "p95Ms": 0.013,
-          "p99Ms": 0.064,
-          "maxMs": 0.064,
-          "avgMs": 0.012
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "square_number",
-        "questionType": "number_sequence",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.009,
-          "p50Ms": 0.01,
-          "p90Ms": 0.012,
-          "p95Ms": 0.014,
-          "p99Ms": 0.017,
-          "maxMs": 0.017,
-          "avgMs": 0.011
+          "p50Ms": 0.026,
+          "p90Ms": 0.047,
+          "p95Ms": 0.072,
+          "p99Ms": 0.122,
+          "maxMs": 0.122,
+          "avgMs": 0.029
         },
         "sampleErrors": []
       },
@@ -239,13 +239,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.009,
-          "p50Ms": 0.01,
-          "p90Ms": 0.011,
-          "p95Ms": 0.013,
-          "p99Ms": 0.074,
-          "maxMs": 0.074,
-          "avgMs": 0.011
+          "minMs": 0.022,
+          "p50Ms": 0.025,
+          "p90Ms": 0.028,
+          "p95Ms": 0.038,
+          "p99Ms": 0.069,
+          "maxMs": 0.069,
+          "avgMs": 0.027
         },
         "sampleErrors": []
       },
@@ -262,12 +262,12 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.009,
+          "minMs": 0.008,
           "p50Ms": 0.009,
-          "p90Ms": 0.01,
-          "p95Ms": 0.014,
-          "p99Ms": 0.037,
-          "maxMs": 0.037,
+          "p90Ms": 0.009,
+          "p95Ms": 0.021,
+          "p99Ms": 0.054,
+          "maxMs": 0.054,
           "avgMs": 0.01
         },
         "sampleErrors": []
@@ -285,13 +285,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.008,
+          "minMs": 0.009,
           "p50Ms": 0.009,
-          "p90Ms": 0.01,
-          "p95Ms": 0.01,
-          "p99Ms": 0.015,
-          "maxMs": 0.015,
-          "avgMs": 0.009
+          "p90Ms": 0.015,
+          "p95Ms": 0.016,
+          "p99Ms": 0.033,
+          "maxMs": 0.033,
+          "avgMs": 0.011
         },
         "sampleErrors": []
       },
@@ -309,12 +309,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.008,
-          "p50Ms": 0.009,
-          "p90Ms": 0.009,
-          "p95Ms": 0.01,
+          "p50Ms": 0.014,
+          "p90Ms": 0.016,
+          "p95Ms": 0.017,
           "p99Ms": 0.028,
           "maxMs": 0.028,
-          "avgMs": 0.009
+          "avgMs": 0.013
         },
         "sampleErrors": []
       },
@@ -333,11 +333,11 @@
         "latency": {
           "minMs": 0.008,
           "p50Ms": 0.009,
-          "p90Ms": 0.009,
-          "p95Ms": 0.01,
-          "p99Ms": 0.041,
-          "maxMs": 0.041,
-          "avgMs": 0.009
+          "p90Ms": 0.017,
+          "p95Ms": 0.018,
+          "p99Ms": 0.168,
+          "maxMs": 0.168,
+          "avgMs": 0.014
         },
         "sampleErrors": []
       },
@@ -355,12 +355,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.008,
-          "p50Ms": 0.009,
-          "p90Ms": 0.01,
-          "p95Ms": 0.01,
-          "p99Ms": 0.04,
-          "maxMs": 0.04,
-          "avgMs": 0.009
+          "p50Ms": 0.011,
+          "p90Ms": 0.015,
+          "p95Ms": 0.015,
+          "p99Ms": 0.02,
+          "maxMs": 0.02,
+          "avgMs": 0.011
         },
         "sampleErrors": []
       },
@@ -379,11 +379,11 @@
         "latency": {
           "minMs": 0.008,
           "p50Ms": 0.009,
-          "p90Ms": 0.011,
-          "p95Ms": 0.013,
-          "p99Ms": 0.138,
-          "maxMs": 0.138,
-          "avgMs": 0.011
+          "p90Ms": 0.015,
+          "p95Ms": 0.017,
+          "p99Ms": 0.059,
+          "maxMs": 0.059,
+          "avgMs": 0.012
         },
         "sampleErrors": []
       },
@@ -391,6 +391,29 @@
         "ruleType": "increasing_difference",
         "questionType": "number_sequence",
         "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.008,
+          "p50Ms": 0.014,
+          "p90Ms": 0.015,
+          "p95Ms": 0.034,
+          "p99Ms": 0.103,
+          "maxMs": 0.103,
+          "avgMs": 0.015
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "increasing_difference",
+        "questionType": "number_sequence",
+        "difficulty": "medium",
         "sampleCount": 100,
         "structuralFailures": 0,
         "semanticFailures": 0,
@@ -403,33 +426,10 @@
           "minMs": 0.008,
           "p50Ms": 0.008,
           "p90Ms": 0.013,
-          "p95Ms": 0.016,
-          "p99Ms": 0.079,
-          "maxMs": 0.079,
-          "avgMs": 0.011
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "increasing_difference",
-        "questionType": "number_sequence",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.008,
-          "p50Ms": 0.008,
-          "p90Ms": 0.009,
-          "p95Ms": 0.01,
-          "p99Ms": 0.079,
-          "maxMs": 0.079,
-          "avgMs": 0.01
+          "p95Ms": 0.014,
+          "p99Ms": 0.034,
+          "maxMs": 0.034,
+          "avgMs": 0.009
         },
         "sampleErrors": []
       },
@@ -448,11 +448,11 @@
         "latency": {
           "minMs": 0.008,
           "p50Ms": 0.008,
-          "p90Ms": 0.008,
-          "p95Ms": 0.009,
-          "p99Ms": 0.011,
-          "maxMs": 0.011,
-          "avgMs": 0.008
+          "p90Ms": 0.012,
+          "p95Ms": 0.018,
+          "p99Ms": 0.04,
+          "maxMs": 0.04,
+          "avgMs": 0.01
         },
         "sampleErrors": []
       },
@@ -471,39 +471,315 @@
         "latency": {
           "minMs": 0.008,
           "p50Ms": 0.009,
+          "p90Ms": 0.016,
+          "p95Ms": 0.026,
+          "p99Ms": 0.583,
+          "maxMs": 0.583,
+          "avgMs": 0.018
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "symbol_rotation",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.009,
+          "p50Ms": 0.01,
+          "p90Ms": 0.011,
+          "p95Ms": 0.013,
+          "p99Ms": 0.052,
+          "maxMs": 0.052,
+          "avgMs": 0.011
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "symbol_rotation",
+        "questionType": "symbol_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.01,
+          "p50Ms": 0.011,
+          "p90Ms": 0.012,
+          "p95Ms": 0.015,
+          "p99Ms": 0.026,
+          "maxMs": 0.026,
+          "avgMs": 0.011
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "alternating_symbol",
+        "questionType": "symbol_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.008,
+          "p50Ms": 0.009,
+          "p90Ms": 0.013,
+          "p95Ms": 0.017,
+          "p99Ms": 0.138,
+          "maxMs": 0.138,
+          "avgMs": 0.012
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "alternating_symbol",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.008,
+          "p50Ms": 0.01,
+          "p90Ms": 0.023,
+          "p95Ms": 0.024,
+          "p99Ms": 0.033,
+          "maxMs": 0.033,
+          "avgMs": 0.014
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "alternating_symbol",
+        "questionType": "symbol_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.01,
+          "p50Ms": 0.01,
+          "p90Ms": 0.011,
+          "p95Ms": 0.013,
+          "p99Ms": 0.108,
+          "maxMs": 0.108,
+          "avgMs": 0.012
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "repeating_cycle",
+        "questionType": "symbol_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.007,
+          "p50Ms": 0.008,
+          "p90Ms": 0.008,
+          "p95Ms": 0.009,
+          "p99Ms": 0.062,
+          "maxMs": 0.062,
+          "avgMs": 0.008
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "repeating_cycle",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.007,
+          "p50Ms": 0.008,
+          "p90Ms": 0.011,
+          "p95Ms": 0.012,
+          "p99Ms": 0.028,
+          "maxMs": 0.028,
+          "avgMs": 0.009
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "repeating_cycle",
+        "questionType": "symbol_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.008,
+          "p50Ms": 0.008,
+          "p90Ms": 0.009,
+          "p95Ms": 0.011,
+          "p99Ms": 0.036,
+          "maxMs": 0.036,
+          "avgMs": 0.009
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "shape_order",
+        "questionType": "symbol_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.007,
+          "p50Ms": 0.007,
+          "p90Ms": 0.01,
+          "p95Ms": 0.012,
+          "p99Ms": 0.091,
+          "maxMs": 0.091,
+          "avgMs": 0.009
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "shape_order",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.006,
+          "p50Ms": 0.007,
+          "p90Ms": 0.009,
+          "p95Ms": 0.012,
+          "p99Ms": 0.012,
+          "maxMs": 0.012,
+          "avgMs": 0.007
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "shape_order",
+        "questionType": "symbol_pattern",
+        "difficulty": "hard",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.007,
+          "p50Ms": 0.016,
+          "p90Ms": 0.033,
+          "p95Ms": 0.04,
+          "p99Ms": 0.116,
+          "maxMs": 0.116,
+          "avgMs": 0.018
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "growing_count",
+        "questionType": "symbol_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.012,
+          "p50Ms": 0.014,
+          "p90Ms": 0.015,
+          "p95Ms": 0.018,
+          "p99Ms": 0.122,
+          "maxMs": 0.122,
+          "avgMs": 0.015
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "growing_count",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.005,
+          "p50Ms": 0.013,
           "p90Ms": 0.018,
-          "p95Ms": 0.025,
-          "p99Ms": 0.577,
-          "maxMs": 0.577,
+          "p95Ms": 0.041,
+          "p99Ms": 0.165,
+          "maxMs": 0.165,
           "avgMs": 0.016
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "symbol_rotation",
-        "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.009,
-          "p50Ms": 0.01,
-          "p90Ms": 0.011,
-          "p95Ms": 0.014,
-          "p99Ms": 0.052,
-          "maxMs": 0.052,
-          "avgMs": 0.01
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "symbol_rotation",
+        "ruleType": "growing_count",
         "questionType": "symbol_pattern",
         "difficulty": "hard",
         "sampleCount": 100,
@@ -515,20 +791,66 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.01,
-          "p50Ms": 0.011,
-          "p90Ms": 0.015,
-          "p95Ms": 0.019,
-          "p99Ms": 0.077,
-          "maxMs": 0.077,
+          "minMs": 0.006,
+          "p50Ms": 0.006,
+          "p90Ms": 0.007,
+          "p95Ms": 0.009,
+          "p99Ms": 0.011,
+          "maxMs": 0.011,
+          "avgMs": 0.006
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "mirrored_sequence",
+        "questionType": "symbol_pattern",
+        "difficulty": "easy",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.005,
+          "p50Ms": 0.005,
+          "p90Ms": 0.008,
+          "p95Ms": 0.009,
+          "p99Ms": 0.044,
+          "maxMs": 0.044,
+          "avgMs": 0.006
+        },
+        "sampleErrors": []
+      },
+      {
+        "ruleType": "mirrored_sequence",
+        "questionType": "symbol_pattern",
+        "difficulty": "medium",
+        "sampleCount": 100,
+        "structuralFailures": 0,
+        "semanticFailures": 0,
+        "reconstructionMismatches": 0,
+        "duplicateChoiceAnomalies": 0,
+        "ambiguousChoiceAnomalies": 0,
+        "observedFailureRatePct": 0,
+        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
+        "latency": {
+          "minMs": 0.011,
+          "p50Ms": 0.012,
+          "p90Ms": 0.013,
+          "p95Ms": 0.013,
+          "p99Ms": 0.03,
+          "maxMs": 0.03,
           "avgMs": 0.012
         },
         "sampleErrors": []
       },
       {
-        "ruleType": "alternating_symbol",
+        "ruleType": "mirrored_sequence",
         "questionType": "symbol_pattern",
-        "difficulty": "easy",
+        "difficulty": "hard",
         "sampleCount": 100,
         "structuralFailures": 0,
         "semanticFailures": 0,
@@ -538,335 +860,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.008,
-          "p50Ms": 0.009,
-          "p90Ms": 0.011,
+          "minMs": 0.011,
+          "p50Ms": 0.012,
+          "p90Ms": 0.013,
           "p95Ms": 0.013,
-          "p99Ms": 0.129,
-          "maxMs": 0.129,
-          "avgMs": 0.011
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "alternating_symbol",
-        "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.008,
-          "p50Ms": 0.009,
-          "p90Ms": 0.01,
-          "p95Ms": 0.01,
-          "p99Ms": 0.039,
-          "maxMs": 0.039,
-          "avgMs": 0.009
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "alternating_symbol",
-        "questionType": "symbol_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.009,
-          "p50Ms": 0.01,
-          "p90Ms": 0.011,
-          "p95Ms": 0.012,
-          "p99Ms": 0.07,
-          "maxMs": 0.07,
-          "avgMs": 0.011
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "repeating_cycle",
-        "questionType": "symbol_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.007,
-          "p50Ms": 0.008,
-          "p90Ms": 0.008,
-          "p95Ms": 0.008,
-          "p99Ms": 0.074,
-          "maxMs": 0.074,
-          "avgMs": 0.008
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "repeating_cycle",
-        "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.007,
-          "p50Ms": 0.008,
-          "p90Ms": 0.009,
-          "p95Ms": 0.011,
-          "p99Ms": 0.056,
-          "maxMs": 0.056,
-          "avgMs": 0.009
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "repeating_cycle",
-        "questionType": "symbol_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.008,
-          "p50Ms": 0.008,
-          "p90Ms": 0.009,
-          "p95Ms": 0.01,
-          "p99Ms": 0.019,
-          "maxMs": 0.019,
-          "avgMs": 0.009
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "shape_order",
-        "questionType": "symbol_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.007,
-          "p50Ms": 0.007,
-          "p90Ms": 0.009,
-          "p95Ms": 0.015,
-          "p99Ms": 0.094,
-          "maxMs": 0.094,
-          "avgMs": 0.009
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "shape_order",
-        "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.007,
-          "p50Ms": 0.008,
-          "p90Ms": 0.008,
-          "p95Ms": 0.009,
-          "p99Ms": 0.013,
-          "maxMs": 0.013,
-          "avgMs": 0.008
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "shape_order",
-        "questionType": "symbol_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.006,
-          "p50Ms": 0.007,
-          "p90Ms": 0.008,
-          "p95Ms": 0.024,
-          "p99Ms": 0.099,
-          "maxMs": 0.099,
-          "avgMs": 0.009
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "growing_count",
-        "questionType": "symbol_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.005,
-          "p50Ms": 0.005,
-          "p90Ms": 0.006,
-          "p95Ms": 0.007,
-          "p99Ms": 0.061,
-          "maxMs": 0.061,
-          "avgMs": 0.006
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "growing_count",
-        "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.005,
-          "p50Ms": 0.006,
-          "p90Ms": 0.007,
-          "p95Ms": 0.014,
-          "p99Ms": 0.051,
-          "maxMs": 0.051,
-          "avgMs": 0.007
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "growing_count",
-        "questionType": "symbol_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.006,
-          "p50Ms": 0.006,
-          "p90Ms": 0.006,
-          "p95Ms": 0.007,
-          "p99Ms": 0.075,
-          "maxMs": 0.075,
-          "avgMs": 0.007
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "mirrored_sequence",
-        "questionType": "symbol_pattern",
-        "difficulty": "easy",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.004,
-          "p50Ms": 0.005,
-          "p90Ms": 0.005,
-          "p95Ms": 0.007,
-          "p99Ms": 0.028,
-          "maxMs": 0.028,
-          "avgMs": 0.005
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "mirrored_sequence",
-        "questionType": "symbol_pattern",
-        "difficulty": "medium",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.005,
-          "p50Ms": 0.005,
-          "p90Ms": 0.006,
-          "p95Ms": 0.007,
-          "p99Ms": 0.007,
-          "maxMs": 0.007,
-          "avgMs": 0.005
-        },
-        "sampleErrors": []
-      },
-      {
-        "ruleType": "mirrored_sequence",
-        "questionType": "symbol_pattern",
-        "difficulty": "hard",
-        "sampleCount": 100,
-        "structuralFailures": 0,
-        "semanticFailures": 0,
-        "reconstructionMismatches": 0,
-        "duplicateChoiceAnomalies": 0,
-        "ambiguousChoiceAnomalies": 0,
-        "observedFailureRatePct": 0,
-        "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
-        "latency": {
-          "minMs": 0.005,
-          "p50Ms": 0.005,
-          "p90Ms": 0.005,
-          "p95Ms": 0.006,
-          "p99Ms": 0.03,
-          "maxMs": 0.03,
-          "avgMs": 0.006
+          "p99Ms": 0.038,
+          "maxMs": 0.038,
+          "avgMs": 0.012
         },
         "sampleErrors": []
       },
@@ -885,11 +885,11 @@
         "latency": {
           "minMs": 0.022,
           "p50Ms": 0.023,
-          "p90Ms": 0.034,
-          "p95Ms": 0.105,
-          "p99Ms": 0.567,
-          "maxMs": 0.567,
-          "avgMs": 0.037
+          "p90Ms": 0.028,
+          "p95Ms": 0.039,
+          "p99Ms": 0.797,
+          "maxMs": 0.797,
+          "avgMs": 0.034
         },
         "sampleErrors": []
       },
@@ -908,11 +908,11 @@
         "latency": {
           "minMs": 0.014,
           "p50Ms": 0.014,
-          "p90Ms": 0.015,
-          "p95Ms": 0.017,
-          "p99Ms": 0.133,
-          "maxMs": 0.133,
-          "avgMs": 0.016
+          "p90Ms": 0.019,
+          "p95Ms": 0.02,
+          "p99Ms": 0.163,
+          "maxMs": 0.163,
+          "avgMs": 0.017
         },
         "sampleErrors": []
       },
@@ -930,11 +930,11 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.014,
-          "p50Ms": 0.014,
-          "p90Ms": 0.015,
-          "p95Ms": 0.015,
-          "p99Ms": 0.038,
-          "maxMs": 0.038,
+          "p50Ms": 0.015,
+          "p90Ms": 0.016,
+          "p95Ms": 0.019,
+          "p99Ms": 0.058,
+          "maxMs": 0.058,
           "avgMs": 0.015
         },
         "sampleErrors": []
@@ -954,11 +954,11 @@
         "latency": {
           "minMs": 0.023,
           "p50Ms": 0.024,
-          "p90Ms": 0.029,
-          "p95Ms": 0.035,
-          "p99Ms": 0.128,
-          "maxMs": 0.128,
-          "avgMs": 0.027
+          "p90Ms": 0.025,
+          "p95Ms": 0.026,
+          "p99Ms": 0.397,
+          "maxMs": 0.397,
+          "avgMs": 0.028
         },
         "sampleErrors": []
       },
@@ -976,12 +976,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.01,
-          "p50Ms": 0.011,
-          "p90Ms": 0.013,
-          "p95Ms": 0.021,
-          "p99Ms": 0.07,
-          "maxMs": 0.07,
-          "avgMs": 0.012
+          "p50Ms": 0.01,
+          "p90Ms": 0.011,
+          "p95Ms": 0.011,
+          "p99Ms": 0.041,
+          "maxMs": 0.041,
+          "avgMs": 0.011
         },
         "sampleErrors": []
       },
@@ -1001,9 +1001,9 @@
           "minMs": 0.01,
           "p50Ms": 0.01,
           "p90Ms": 0.011,
-          "p95Ms": 0.011,
-          "p99Ms": 0.026,
-          "maxMs": 0.026,
+          "p95Ms": 0.012,
+          "p99Ms": 0.019,
+          "maxMs": 0.019,
           "avgMs": 0.011
         },
         "sampleErrors": []
@@ -1022,12 +1022,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.021,
-          "p50Ms": 0.023,
-          "p90Ms": 0.026,
-          "p95Ms": 0.031,
-          "p99Ms": 0.085,
-          "maxMs": 0.085,
-          "avgMs": 0.024
+          "p50Ms": 0.022,
+          "p90Ms": 0.023,
+          "p95Ms": 0.027,
+          "p99Ms": 0.072,
+          "maxMs": 0.072,
+          "avgMs": 0.023
         },
         "sampleErrors": []
       },
@@ -1045,12 +1045,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.008,
-          "p50Ms": 0.009,
-          "p90Ms": 0.01,
-          "p95Ms": 0.011,
-          "p99Ms": 0.06,
-          "maxMs": 0.06,
-          "avgMs": 0.01
+          "p50Ms": 0.008,
+          "p90Ms": 0.009,
+          "p95Ms": 0.012,
+          "p99Ms": 0.036,
+          "maxMs": 0.036,
+          "avgMs": 0.009
         },
         "sampleErrors": []
       },
@@ -1069,11 +1069,11 @@
         "latency": {
           "minMs": 0.008,
           "p50Ms": 0.008,
-          "p90Ms": 0.008,
-          "p95Ms": 0.009,
-          "p99Ms": 0.012,
-          "maxMs": 0.012,
-          "avgMs": 0.008
+          "p90Ms": 0.009,
+          "p95Ms": 0.013,
+          "p99Ms": 0.064,
+          "maxMs": 0.064,
+          "avgMs": 0.009
         },
         "sampleErrors": []
       },
@@ -1093,9 +1093,9 @@
           "minMs": 0.007,
           "p50Ms": 0.007,
           "p90Ms": 0.008,
-          "p95Ms": 0.008,
-          "p99Ms": 0.13,
-          "maxMs": 0.13,
+          "p95Ms": 0.009,
+          "p99Ms": 0.122,
+          "maxMs": 0.122,
           "avgMs": 0.009
         },
         "sampleErrors": []
@@ -1116,10 +1116,10 @@
           "minMs": 0.007,
           "p50Ms": 0.008,
           "p90Ms": 0.008,
-          "p95Ms": 0.011,
-          "p99Ms": 0.298,
-          "maxMs": 0.298,
-          "avgMs": 0.011
+          "p95Ms": 0.013,
+          "p99Ms": 0.049,
+          "maxMs": 0.049,
+          "avgMs": 0.009
         },
         "sampleErrors": []
       },
@@ -1140,8 +1140,8 @@
           "p50Ms": 0.008,
           "p90Ms": 0.008,
           "p95Ms": 0.008,
-          "p99Ms": 0.083,
-          "maxMs": 0.083,
+          "p99Ms": 0.014,
+          "maxMs": 0.014,
           "avgMs": 0.008
         },
         "sampleErrors": []
@@ -1159,13 +1159,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.021,
+          "minMs": 0.02,
           "p50Ms": 0.022,
-          "p90Ms": 0.024,
-          "p95Ms": 0.027,
-          "p99Ms": 0.347,
-          "maxMs": 0.347,
-          "avgMs": 0.028
+          "p90Ms": 0.023,
+          "p95Ms": 0.042,
+          "p99Ms": 0.359,
+          "maxMs": 0.359,
+          "avgMs": 0.027
         },
         "sampleErrors": []
       },
@@ -1183,11 +1183,11 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.013,
-          "p50Ms": 0.013,
+          "p50Ms": 0.014,
           "p90Ms": 0.014,
-          "p95Ms": 0.014,
-          "p99Ms": 0.059,
-          "maxMs": 0.059,
+          "p95Ms": 0.016,
+          "p99Ms": 0.065,
+          "maxMs": 0.065,
           "avgMs": 0.014
         },
         "sampleErrors": []
@@ -1206,12 +1206,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.013,
-          "p50Ms": 0.014,
+          "p50Ms": 0.013,
           "p90Ms": 0.014,
           "p95Ms": 0.02,
-          "p99Ms": 0.176,
-          "maxMs": 0.176,
-          "avgMs": 0.016
+          "p99Ms": 0.088,
+          "maxMs": 0.088,
+          "avgMs": 0.015
         },
         "sampleErrors": []
       },
@@ -1230,10 +1230,10 @@
         "latency": {
           "minMs": 0.007,
           "p50Ms": 0.007,
-          "p90Ms": 0.013,
-          "p95Ms": 0.026,
-          "p99Ms": 0.527,
-          "maxMs": 0.527,
+          "p90Ms": 0.019,
+          "p95Ms": 0.031,
+          "p99Ms": 0.538,
+          "maxMs": 0.538,
           "avgMs": 0.015
         },
         "sampleErrors": []
@@ -1253,10 +1253,10 @@
         "latency": {
           "minMs": 0.007,
           "p50Ms": 0.008,
-          "p90Ms": 0.008,
-          "p95Ms": 0.009,
-          "p99Ms": 0.011,
-          "maxMs": 0.011,
+          "p90Ms": 0.009,
+          "p95Ms": 0.011,
+          "p99Ms": 0.051,
+          "maxMs": 0.051,
           "avgMs": 0.008
         },
         "sampleErrors": []
@@ -1276,10 +1276,10 @@
         "latency": {
           "minMs": 0.008,
           "p50Ms": 0.008,
-          "p90Ms": 0.011,
-          "p95Ms": 0.013,
-          "p99Ms": 0.058,
-          "maxMs": 0.058,
+          "p90Ms": 0.009,
+          "p95Ms": 0.009,
+          "p99Ms": 0.11,
+          "maxMs": 0.11,
           "avgMs": 0.009
         },
         "sampleErrors": []
@@ -1299,11 +1299,11 @@
         "latency": {
           "minMs": 0.009,
           "p50Ms": 0.01,
-          "p90Ms": 0.011,
-          "p95Ms": 0.015,
-          "p99Ms": 0.175,
-          "maxMs": 0.175,
-          "avgMs": 0.012
+          "p90Ms": 0.013,
+          "p95Ms": 0.038,
+          "p99Ms": 0.385,
+          "maxMs": 0.385,
+          "avgMs": 0.017
         },
         "sampleErrors": []
       },
@@ -1321,12 +1321,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.01,
-          "p50Ms": 0.01,
-          "p90Ms": 0.011,
-          "p95Ms": 0.011,
-          "p99Ms": 0.017,
-          "maxMs": 0.017,
-          "avgMs": 0.01
+          "p50Ms": 0.026,
+          "p90Ms": 0.044,
+          "p95Ms": 0.059,
+          "p99Ms": 0.191,
+          "maxMs": 0.191,
+          "avgMs": 0.03
         },
         "sampleErrors": []
       },
@@ -1343,13 +1343,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.01,
-          "p50Ms": 0.011,
-          "p90Ms": 0.012,
-          "p95Ms": 0.013,
-          "p99Ms": 0.024,
-          "maxMs": 0.024,
-          "avgMs": 0.011
+          "minMs": 0.011,
+          "p50Ms": 0.028,
+          "p90Ms": 0.052,
+          "p95Ms": 0.107,
+          "p99Ms": 0.191,
+          "maxMs": 0.191,
+          "avgMs": 0.037
         },
         "sampleErrors": []
       },
@@ -1366,13 +1366,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.125,
-          "p50Ms": 0.131,
-          "p90Ms": 0.146,
-          "p95Ms": 0.156,
-          "p99Ms": 0.702,
-          "maxMs": 0.702,
-          "avgMs": 0.141
+          "minMs": 0.124,
+          "p50Ms": 0.13,
+          "p90Ms": 0.17,
+          "p95Ms": 0.39,
+          "p99Ms": 1.218,
+          "maxMs": 1.218,
+          "avgMs": 0.163
         },
         "sampleErrors": []
       },
@@ -1389,13 +1389,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.139,
-          "p50Ms": 0.145,
-          "p90Ms": 0.173,
-          "p95Ms": 0.235,
-          "p99Ms": 0.367,
-          "maxMs": 0.367,
-          "avgMs": 0.156
+          "minMs": 0.137,
+          "p50Ms": 0.148,
+          "p90Ms": 0.183,
+          "p95Ms": 0.209,
+          "p99Ms": 0.339,
+          "maxMs": 0.339,
+          "avgMs": 0.158
         },
         "sampleErrors": []
       },
@@ -1412,13 +1412,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.151,
-          "p50Ms": 0.157,
-          "p90Ms": 0.173,
-          "p95Ms": 0.196,
-          "p99Ms": 0.281,
-          "maxMs": 0.281,
-          "avgMs": 0.162
+          "minMs": 0.15,
+          "p50Ms": 0.178,
+          "p90Ms": 0.7,
+          "p95Ms": 0.755,
+          "p99Ms": 1.27,
+          "maxMs": 1.27,
+          "avgMs": 0.317
         },
         "sampleErrors": []
       },
@@ -1437,10 +1437,10 @@
         "latency": {
           "minMs": 0.008,
           "p50Ms": 0.009,
-          "p90Ms": 0.009,
-          "p95Ms": 0.01,
-          "p99Ms": 0.392,
-          "maxMs": 0.392,
+          "p90Ms": 0.017,
+          "p95Ms": 0.021,
+          "p99Ms": 0.25,
+          "maxMs": 0.25,
           "avgMs": 0.015
         },
         "sampleErrors": []
@@ -1459,12 +1459,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.009,
-          "p50Ms": 0.009,
-          "p90Ms": 0.01,
-          "p95Ms": 0.01,
-          "p99Ms": 0.015,
-          "maxMs": 0.015,
-          "avgMs": 0.01
+          "p50Ms": 0.01,
+          "p90Ms": 0.096,
+          "p95Ms": 0.101,
+          "p99Ms": 0.173,
+          "maxMs": 0.173,
+          "avgMs": 0.026
         },
         "sampleErrors": []
       },
@@ -1482,12 +1482,12 @@
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
           "minMs": 0.01,
-          "p50Ms": 0.01,
-          "p90Ms": 0.011,
-          "p95Ms": 0.014,
-          "p99Ms": 0.03,
-          "maxMs": 0.03,
-          "avgMs": 0.011
+          "p50Ms": 0.012,
+          "p90Ms": 0.034,
+          "p95Ms": 0.044,
+          "p99Ms": 0.258,
+          "maxMs": 0.258,
+          "avgMs": 0.02
         },
         "sampleErrors": []
       },
@@ -1504,13 +1504,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.121,
-          "p50Ms": 0.127,
-          "p90Ms": 0.133,
-          "p95Ms": 0.137,
-          "p99Ms": 0.189,
-          "maxMs": 0.189,
-          "avgMs": 0.128
+          "minMs": 0.123,
+          "p50Ms": 0.161,
+          "p90Ms": 0.389,
+          "p95Ms": 0.565,
+          "p99Ms": 0.82,
+          "maxMs": 0.82,
+          "avgMs": 0.215
         },
         "sampleErrors": []
       },
@@ -1527,13 +1527,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.135,
-          "p50Ms": 0.142,
-          "p90Ms": 0.196,
-          "p95Ms": 0.238,
-          "p99Ms": 0.326,
-          "maxMs": 0.326,
-          "avgMs": 0.154
+          "minMs": 0.134,
+          "p50Ms": 0.153,
+          "p90Ms": 0.512,
+          "p95Ms": 0.617,
+          "p99Ms": 0.938,
+          "maxMs": 0.938,
+          "avgMs": 0.247
         },
         "sampleErrors": []
       },
@@ -1550,13 +1550,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 100 generated samples (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.15,
-          "p50Ms": 0.156,
-          "p90Ms": 0.171,
-          "p95Ms": 0.204,
-          "p99Ms": 0.298,
-          "maxMs": 0.298,
-          "avgMs": 0.161
+          "minMs": 0.148,
+          "p50Ms": 0.174,
+          "p90Ms": 0.687,
+          "p95Ms": 0.861,
+          "p99Ms": 0.986,
+          "maxMs": 0.986,
+          "avgMs": 0.312
         },
         "sampleErrors": []
       }
@@ -1572,13 +1572,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.101,
-          "p50Ms": 0.185,
-          "p90Ms": 0.627,
-          "p95Ms": 1.272,
-          "p99Ms": 1.272,
-          "maxMs": 1.272,
-          "avgMs": 0.294
+          "minMs": 0.102,
+          "p50Ms": 0.247,
+          "p90Ms": 0.606,
+          "p95Ms": 1.309,
+          "p99Ms": 1.309,
+          "maxMs": 1.309,
+          "avgMs": 0.319
         }
       },
       {
@@ -1589,13 +1589,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.197,
-          "p50Ms": 0.373,
-          "p90Ms": 0.526,
-          "p95Ms": 0.621,
-          "p99Ms": 0.621,
-          "maxMs": 0.621,
-          "avgMs": 0.367
+          "minMs": 0.227,
+          "p50Ms": 0.425,
+          "p90Ms": 0.786,
+          "p95Ms": 3.516,
+          "p99Ms": 3.516,
+          "maxMs": 3.516,
+          "avgMs": 0.605
         }
       },
       {
@@ -1606,13 +1606,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.395,
-          "p50Ms": 0.746,
-          "p90Ms": 1.042,
-          "p95Ms": 1.578,
-          "p99Ms": 1.578,
-          "maxMs": 1.578,
-          "avgMs": 0.764
+          "minMs": 0.533,
+          "p50Ms": 1.039,
+          "p90Ms": 2.283,
+          "p95Ms": 4.137,
+          "p99Ms": 4.137,
+          "maxMs": 4.137,
+          "avgMs": 1.258
         }
       },
       {
@@ -1623,13 +1623,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.155,
-          "p50Ms": 0.164,
-          "p90Ms": 0.199,
-          "p95Ms": 0.403,
-          "p99Ms": 0.403,
-          "maxMs": 0.403,
-          "avgMs": 0.181
+          "minMs": 0.143,
+          "p50Ms": 0.151,
+          "p90Ms": 0.194,
+          "p95Ms": 0.197,
+          "p99Ms": 0.197,
+          "maxMs": 0.197,
+          "avgMs": 0.158
         }
       },
       {
@@ -1640,13 +1640,13 @@
         "observedFailureRatePct": 0,
         "formattedResult": "0 failures in 20 challenge builds (observed rate: 0.00%)",
         "latency": {
-          "minMs": 0.188,
-          "p50Ms": 0.221,
-          "p90Ms": 0.253,
-          "p95Ms": 0.342,
-          "p99Ms": 0.342,
-          "maxMs": 0.342,
-          "avgMs": 0.223
+          "minMs": 0.189,
+          "p50Ms": 0.229,
+          "p90Ms": 0.768,
+          "p95Ms": 0.948,
+          "p99Ms": 0.948,
+          "maxMs": 0.948,
+          "avgMs": 0.294
         }
       }
     ],
@@ -1659,13 +1659,13 @@
     "observedFailureRatePct": 0,
     "formattedResult": "0 failures in 20 daily snapshot generations (observed rate: 0.00%)",
     "latency": {
-      "minMs": 0.539,
-      "p50Ms": 1.011,
-      "p90Ms": 2.471,
-      "p95Ms": 2.589,
-      "p99Ms": 2.589,
-      "maxMs": 2.589,
-      "avgMs": 1.117
+      "minMs": 0.597,
+      "p50Ms": 1.026,
+      "p90Ms": 1.974,
+      "p95Ms": 2.444,
+      "p99Ms": 2.444,
+      "maxMs": 2.444,
+      "avgMs": 1.111
     }
   },
   "syntheticDuelDtoReplay": {
@@ -1677,10 +1677,10 @@
     "latency": {
       "minMs": 0.004,
       "p50Ms": 0.004,
-      "p90Ms": 0.049,
-      "p95Ms": 0.095,
-      "p99Ms": 0.095,
-      "maxMs": 0.095,
+      "p90Ms": 0.048,
+      "p95Ms": 0.1,
+      "p99Ms": 0.1,
+      "maxMs": 0.1,
       "avgMs": 0.011
     }
   }
