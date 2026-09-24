@@ -7,7 +7,9 @@ import type {
 	NewSessionQuestion,
 	QuestionRule,
 	SessionAnswer,
-	SessionQuestion
+	SessionCategoryMasteryChange,
+	SessionQuestion,
+	UserCategoryMastery
 } from '$lib/server/db/schema';
 import type {
 	CompleteSessionAndProfileInput,
@@ -16,6 +18,12 @@ import type {
 	SessionRepository
 } from '$lib/server/db/repositories/session-repository';
 import { hashGuestToken } from '$lib/server/sessions/guest-token';
+import {
+	calculateCategoryMasteryUpdate,
+	isMasteryEligibleChallengeType,
+	MASTERY_RATING_VERSION
+} from '$lib/server/scoring/mastery';
+import type { QuestionType } from '$lib/shared/constants/challenge';
 
 export function createChallengeSession(
 	overrides: Partial<ChallengeSession> = {}
@@ -118,6 +126,8 @@ export function createSessionRepositoryFake(
 	const answers = [...(input.answers ?? [])];
 	const createdSessions: NewChallengeSession[] = [];
 	const completedSessions: CompleteSessionAndProfileInput[] = [];
+	const userCategoryMasteries: Map<string, UserCategoryMastery> = new Map();
+	const sessionMasteryChanges: SessionCategoryMasteryChange[] = [];
 
 	return {
 		createdSessions,
@@ -225,7 +235,82 @@ export function createSessionRepositoryFake(
 				...input,
 				status: 'completed'
 			});
+
+			if (
+				isMasteryEligibleChallengeType(session.challengeType) &&
+				!input.isSuspicious &&
+				input.userId
+			) {
+				const sQuestions = questions.filter((q) => q.sessionId === session.id);
+				const sAnswers = answers.filter((a) => !a.userId || a.userId === input.userId);
+				const answerMap = new Map(sAnswers.map((a) => [a.sessionQuestionId, a]));
+
+				const questionsByType = new Map<
+					QuestionType,
+					Array<{ difficultyScore: number; isCorrect: boolean }>
+				>();
+
+				for (const q of sQuestions) {
+					const ans = answerMap.get(q.id);
+					if (!ans) continue;
+					const list = questionsByType.get(q.questionType) ?? [];
+					list.push({
+						difficultyScore: q.difficultyScore,
+						isCorrect: ans.isCorrect
+					});
+					questionsByType.set(q.questionType, list);
+				}
+
+				for (const [qType, qList] of questionsByType.entries()) {
+					if (qList.length === 0) continue;
+					const key = `${input.userId}:${qType}`;
+					const existing = userCategoryMasteries.get(key);
+					const currentRating = existing?.rating ?? Math.max(0, session.ratingBefore);
+					const totalQuestions = existing?.totalQuestions ?? 0;
+					const totalSessions = existing?.totalSessions ?? 0;
+
+					const updateResult = calculateCategoryMasteryUpdate({
+						currentRating,
+						totalQuestions,
+						totalSessions,
+						questions: qList
+					});
+
+					sessionMasteryChanges.push({
+						id: `mastery-change-${sessionMasteryChanges.length + 1}`,
+						sessionId: session.id,
+						userId: input.userId,
+						questionType: qType,
+						ratingBefore: updateResult.ratingBefore,
+						ratingAfter: updateResult.ratingAfter,
+						ratingDelta: updateResult.ratingDelta,
+						ratedQuestions: updateResult.ratedQuestions,
+						correctAnswers: updateResult.correctAnswers,
+						createdAt: new Date()
+					});
+
+					userCategoryMasteries.set(key, {
+						id: existing?.id ?? `mastery-${qType}-${input.userId}`,
+						userId: input.userId,
+						questionType: qType,
+						rating: updateResult.ratingAfter,
+						totalQuestions: totalQuestions + updateResult.ratedQuestions,
+						correctAnswers: (existing?.correctAnswers ?? 0) + updateResult.correctAnswers,
+						totalSessions: totalSessions + 1,
+						ratingVersion: MASTERY_RATING_VERSION,
+						createdAt: existing?.createdAt ?? new Date(),
+						updatedAt: new Date()
+					});
+				}
+			}
+
 			return session;
+		},
+		async listUserCategoryMastery(userId: string) {
+			return Array.from(userCategoryMasteries.values()).filter((m) => m.userId === userId);
+		},
+		async listSessionCategoryMasteryChanges(sessionId: string) {
+			return sessionMasteryChanges.filter((c) => c.sessionId === sessionId);
 		},
 		async findActiveSession(userId: string) {
 			return session.userId === userId && session.status === 'in_progress' ? session : null;
@@ -261,16 +346,17 @@ export function createSessionRepositoryFake(
 				userId: input.userId,
 				claimedAt: new Date(),
 				ratingBefore: 0,
-				ratingAfter: session.status === 'completed' ? 1200 : 0,
+				ratingAfter: 0,
+				ratingDelta: 0,
 				rankBefore: 'Unranked',
-				rankAfter: session.status === 'completed' ? 'Bronze Mind' : 'Unranked'
+				rankAfter: 'Unranked'
 			});
 			return {
 				claimedSessions: [session],
 				primarySession: session,
-				profileRating: session.status === 'completed' ? 1200 : 0,
-				profileRank: session.status === 'completed' ? 'Bronze Mind' : 'Unranked',
-				isProvisional: true,
+				profileRating: 0,
+				profileRank: 'Unranked',
+				isProvisional: false,
 				alreadyClaimed: false
 			};
 		},

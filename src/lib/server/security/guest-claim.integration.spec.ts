@@ -251,7 +251,7 @@ describe('Real Database Guest Claim & Auth Isolation Integration', () => {
 		});
 
 		expect(claimResult.claimedSessions).toHaveLength(2);
-		expect(claimResult.isProvisional).toBe(true);
+		expect(claimResult.isProvisional).toBe(false);
 
 		// Both sessions must now belong to userId
 		const claimedRows = await db
@@ -263,14 +263,15 @@ describe('Real Database Guest Claim & Auth Isolation Integration', () => {
 		expect(claimedRows.every((s) => s.userId === userId)).toBe(true);
 		expect(claimedRows.every((s) => s.claimedAt !== null)).toBe(true);
 
-		// Profile rating provisionally calibrated sequentially: starting 100 + 35 + 40 = 175
+		// Profile rating is NOT mutated: claimed guest sessions are history only
 		const [updatedProfile] = await db
 			.select()
 			.from(usersProfile)
 			.where(eq(usersProfile.id, userId))
 			.limit(1);
 
-		expect(updatedProfile?.rating).toBe(175);
+		expect(updatedProfile?.rating).toBe(0);
+		expect(updatedProfile?.rank).toBe('Unranked');
 	});
 
 	it('anti-farming protection: guest sessions claimed by existing active accounts add 0 competitive rating delta', async () => {
