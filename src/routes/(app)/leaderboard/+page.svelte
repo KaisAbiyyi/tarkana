@@ -6,12 +6,15 @@
 	import LeaderboardTable from '$lib/components/leaderboard/LeaderboardTable.svelte';
 	import DailyLeaderboardTable from '$lib/components/leaderboard/DailyLeaderboardTable.svelte';
 	import CategoryLeaderboardTable from '$lib/components/leaderboard/CategoryLeaderboardTable.svelte';
+	import WeeklyLeaderboardTable from '$lib/components/leaderboard/WeeklyLeaderboardTable.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
 	import Badge from '$lib/components/primitives/Badge.svelte';
+	import { analytics } from '$lib/client/analytics';
 	import type {
 		CategoryLeaderboardEntryDto,
 		LeaderboardEntryDto,
-		LeaderboardTab
+		LeaderboardTab,
+		WeeklyLeaderboardEntryDto
 	} from '$lib/shared/types/leaderboard';
 	import { QUESTION_TYPES, type QuestionType } from '$lib/shared/constants/challenge';
 	import { RANKED_TIERS, type RankedTier } from '$lib/shared/constants/rank';
@@ -29,6 +32,12 @@
 	let selectedDate = $derived(data.date);
 	let selectedTier = $derived(data.selectedTier as RankedTier);
 	let selectedCategory = $derived(data.selectedCategory as QuestionType);
+
+	// Weekly leaderboard state
+	let weeklyEntries = $state<WeeklyLeaderboardEntryDto[]>([]);
+	let isLoadingWeekly = $state(false);
+	let weeklyError = $state<string | null>(null);
+	let hasMoreWeekly = $state(false);
 
 	// Global leaderboard state
 	let globalEntries = $state<LeaderboardEntryDto[]>([]);
@@ -48,11 +57,18 @@
 	let categoryError = $state<string | null>(null);
 	let hasMoreCategory = $state(false);
 
-	// Countdown timer for daily reset
+	// Countdown timer for daily and weekly reset
 	let elapsedSeconds = $state(0);
 	let initialResetSeconds = $derived(data.dailyLeaderboard.secondsUntilReset);
 	let secondsLeft = $derived(
 		initialResetSeconds !== null ? Math.max(0, initialResetSeconds - elapsedSeconds) : null
+	);
+
+	let initialWeeklyResetSeconds = $derived(data.weeklyLeaderboard?.secondsUntilReset ?? null);
+	let weeklySecondsLeft = $derived(
+		initialWeeklyResetSeconds !== null
+			? Math.max(0, initialWeeklyResetSeconds - elapsedSeconds)
+			: null
 	);
 
 	let timer: ReturnType<typeof setInterval> | undefined;
@@ -74,6 +90,25 @@
 		const pad = (n: number) => String(n).padStart(2, '0');
 		return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 	}
+
+	function formatWeeklyCountdown(totalSec: number): string {
+		const days = Math.floor(totalSec / 86400);
+		const hours = Math.floor((totalSec % 86400) / 3600);
+		const minutes = Math.floor((totalSec % 3600) / 60);
+		const seconds = totalSec % 60;
+		const pad = (n: number) => String(n).padStart(2, '0');
+		if (days > 0) {
+			return `${days}d ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+		}
+		return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+	}
+
+	$effect(() => {
+		if (data.weeklyLeaderboard) {
+			weeklyEntries = data.weeklyLeaderboard.items;
+			hasMoreWeekly = data.weeklyLeaderboard.items.length === 50;
+		}
+	});
 
 	$effect(() => {
 		if (data.globalLeaderboard) {
@@ -97,6 +132,13 @@
 	});
 
 	function handleTabChange(tab: LeaderboardTab) {
+		analytics.track('leaderboard_tab_switched', {
+			from_tab: activeTab,
+			to_tab: tab,
+			selected_filter:
+				tab === 'tier' ? selectedTier : tab === 'category' ? selectedCategory : undefined
+		});
+
 		const url = new URL(window.location.href);
 		url.searchParams.set('tab', tab);
 		if (tab === 'tier' && !url.searchParams.has('tier')) {
@@ -106,6 +148,28 @@
 			url.searchParams.set('category', selectedCategory);
 		}
 		goto(url.toString(), { keepFocus: true, noScroll: true });
+	}
+
+	async function loadMoreWeekly() {
+		if (isLoadingWeekly) return;
+		isLoadingWeekly = true;
+		weeklyError = null;
+		try {
+			const res = await fetch(
+				`/api/leaderboard?scope=weekly&limit=50&offset=${weeklyEntries.length}`
+			);
+			if (!res.ok) throw new Error(t('leaderboard.loadFailed'));
+			const json = await res.json();
+			const newEntries = json.items as WeeklyLeaderboardEntryDto[];
+			if (newEntries.length < 50) {
+				hasMoreWeekly = false;
+			}
+			weeklyEntries = [...weeklyEntries, ...newEntries];
+		} catch (e: unknown) {
+			weeklyError = e instanceof Error ? e.message : t('leaderboard.loadFailed');
+		} finally {
+			isLoadingWeekly = false;
+		}
 	}
 
 	function handleTierChange(tier: RankedTier) {
@@ -220,6 +284,16 @@
 		<button
 			type="button"
 			class="px-5 py-3 text-sm font-black uppercase transition-colors sm:text-base
+			{activeTab === 'weekly'
+				? 'border-b-4 border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-text)]'
+				: 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}"
+			onclick={() => handleTabChange('weekly')}
+		>
+			{t('leaderboard.tabWeekly')}
+		</button>
+		<button
+			type="button"
+			class="px-5 py-3 text-sm font-black uppercase transition-colors sm:text-base
 			{activeTab === 'global'
 				? 'border-b-4 border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-text)]'
 				: 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}"
@@ -308,6 +382,76 @@
 				guestHypotheticalEntry={data.dailyLeaderboard.guestHypotheticalEntry}
 			/>
 		</Card>
+	{:else if activeTab === 'weekly'}
+		<!-- Weekly Performance Leaderboard View -->
+		{#if data.isGuest}
+			<div
+				class="border-[3px] border-[var(--color-border)] bg-amber-50 p-8 text-center shadow-[var(--shadow-hard-sm)]"
+			>
+				<h2 class="text-2xl font-black text-amber-950">{t('leaderboard.tabWeekly')}</h2>
+				<p class="mt-2 text-sm font-bold text-amber-800">
+					{t('leaderboard.weeklyIntro')}
+				</p>
+				<Button href="/auth/login" variant="primary" class="mt-4">
+					{t('nav.login')}
+				</Button>
+			</div>
+		{:else if data.weeklyLeaderboard}
+			<header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<div class="flex flex-wrap items-center gap-2">
+						<p class="page-kicker">{t('leaderboard.tabWeekly')}</p>
+						<Badge tone="accent">{data.weeklyLeaderboard.weekLabel}</Badge>
+						<Badge tone="neutral">
+							{data.weeklyLeaderboard.totalParticipants}
+							{t('leaderboard.sessionsPlayed')}
+						</Badge>
+					</div>
+					<h1 class="page-title mt-1">{t('leaderboard.tabWeekly')}</h1>
+					<p class="mt-2 max-w-2xl text-base font-semibold text-[var(--color-muted)] sm:text-lg">
+						{t('leaderboard.weeklyIntro')}
+					</p>
+				</div>
+
+				{#if weeklySecondsLeft !== null}
+					<div
+						class="border-2 border-[var(--color-border)] bg-[var(--color-paper)] px-3 py-1.5 text-right sm:self-start"
+					>
+						<span class="text-[10px] font-black text-[var(--color-muted)] uppercase">
+							{t('leaderboard.weeklyResetIn')}
+						</span>
+						<p class="font-mono text-base font-black text-[var(--color-text)]">
+							{formatWeeklyCountdown(weeklySecondsLeft)}
+						</p>
+					</div>
+				{/if}
+			</header>
+
+			<Card title={t('leaderboard.tabWeekly')}>
+				<WeeklyLeaderboardTable
+					entries={weeklyEntries}
+					currentUserEntry={data.weeklyCurrentUserEntry}
+					currentUserProgress={data.weeklyCurrentUserProgress}
+					isQualified={data.weeklyIsQualified}
+					currentUserId={data.currentUserId ?? undefined}
+				/>
+
+				{#if hasMoreWeekly}
+					<div class="mt-6 flex flex-col items-center gap-2">
+						{#if weeklyError}
+							<p class="text-sm font-bold text-red-600">{weeklyError}</p>
+							<Button variant="secondary" onclick={loadMoreWeekly} disabled={isLoadingWeekly}>
+								{isLoadingWeekly ? t('prep.loading') : t('common.tryAgain')}
+							</Button>
+						{:else}
+							<Button variant="secondary" onclick={loadMoreWeekly} disabled={isLoadingWeekly}>
+								{isLoadingWeekly ? t('prep.loading') : t('history.loadMore')}
+							</Button>
+						{/if}
+					</div>
+				{/if}
+			</Card>
+		{/if}
 	{:else if activeTab === 'global'}
 		<!-- Global All-Time Leaderboard View -->
 		{#if data.isGuest}

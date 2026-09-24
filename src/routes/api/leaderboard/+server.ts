@@ -41,6 +41,10 @@ export const GET: RequestHandler = async (event) => {
 			return jsonOk(await leaderboardService.listCategory(event, categoryParam, pagination));
 		}
 
+		if (scope === 'weekly') {
+			return jsonOk(await leaderboardService.listWeekly(event, pagination));
+		}
+
 		return jsonOk(await leaderboardService.listGlobal(event, pagination));
 	} catch (error) {
 		return jsonError(error, event.locals.locale);

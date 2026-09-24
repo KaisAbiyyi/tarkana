@@ -9,7 +9,9 @@ import type { LeaderboardTab } from '$lib/shared/types/leaderboard';
 export const load: PageServerLoad = async (event) => {
 	const tabRaw = event.url.searchParams.get('tab');
 	const tab: LeaderboardTab =
-		tabRaw === 'global' || tabRaw === 'tier' || tabRaw === 'category' ? tabRaw : 'daily';
+		tabRaw === 'weekly' || tabRaw === 'global' || tabRaw === 'tier' || tabRaw === 'category'
+			? tabRaw
+			: 'daily';
 
 	const date = event.url.searchParams.get('date') ?? getUtcDateString();
 	const limit = 50;
@@ -39,6 +41,10 @@ export const load: PageServerLoad = async (event) => {
 	const selectedCategory: QuestionType =
 		categoryParam && QUESTION_TYPES.includes(categoryParam) ? categoryParam : 'number_sequence';
 
+	let weeklyLeaderboard = null;
+	let weeklyCurrentUserEntry = null;
+	let weeklyCurrentUserProgress = null;
+	let weeklyIsQualified = false;
 	let globalLeaderboard = null;
 	let globalCurrentUserEntry = null;
 	let tierLeaderboard = null;
@@ -48,7 +54,13 @@ export const load: PageServerLoad = async (event) => {
 
 	if (event.locals.profile) {
 		const leaderboardService = createLeaderboardService();
-		if (tab === 'global') {
+		if (tab === 'weekly') {
+			weeklyLeaderboard = await leaderboardService.listWeekly(event, { limit, offset });
+			const weeklyStatus = await leaderboardService.getCurrentUserWeeklyEntry(event);
+			weeklyCurrentUserEntry = weeklyStatus.entry;
+			weeklyCurrentUserProgress = weeklyStatus.weeklyProgress;
+			weeklyIsQualified = weeklyStatus.isQualified;
+		} else if (tab === 'global') {
 			globalLeaderboard = await leaderboardService.listGlobal(event, { limit, offset });
 			globalCurrentUserEntry = await leaderboardService.getCurrentUserGlobalEntry(event);
 		} else if (tab === 'tier') {
@@ -72,6 +84,10 @@ export const load: PageServerLoad = async (event) => {
 		selectedTier,
 		selectedCategory,
 		dailyLeaderboard,
+		weeklyLeaderboard,
+		weeklyCurrentUserEntry,
+		weeklyCurrentUserProgress,
+		weeklyIsQualified,
 		globalLeaderboard,
 		globalCurrentUserEntry,
 		tierLeaderboard,

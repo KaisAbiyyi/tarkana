@@ -52,6 +52,23 @@ describe('Tier and Category Leaderboard API and Contracts', () => {
 				isQualified: false,
 				provisionalProgress: null
 			})),
+			listWeekly: vi.fn(async () => ({
+				weekLabel: '2026-W39',
+				startOfWeek: '2026-09-21T00:00:00.000Z',
+				endOfWeek: '2026-09-28T00:00:00.000Z',
+				secondsUntilReset: 345600,
+				items: [],
+				currentUserEntry: null,
+				currentUserProgress: null,
+				totalParticipants: 0,
+				limit: 50,
+				offset: 0
+			})),
+			getCurrentUserWeeklyEntry: vi.fn(async () => ({
+				entry: null,
+				isQualified: false,
+				weeklyProgress: null
+			})),
 			listLeaderboard: vi.fn(async () => ({ items: [], limit: 50, offset: 0, total: null })),
 			getCurrentUserEntry: vi.fn(async () => null)
 		});
