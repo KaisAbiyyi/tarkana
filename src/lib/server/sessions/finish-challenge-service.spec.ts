@@ -269,5 +269,105 @@ describe('finish challenge service', () => {
 			duelPublicId: 'chf_test12345678'
 		});
 		expect(duelRepo.completeParticipant).toHaveBeenCalledTimes(1);
+
+		const masteryChanges = await sessionRepo.listSessionCategoryMasteryChanges(session.id);
+		expect(masteryChanges).toHaveLength(0);
+	});
+
+	it('calibrates category mastery on completion of eligible quick challenge', async () => {
+		const profile = createProfile({ rating: 1200, rank: 'Bronze Mind' });
+		const session = createChallengeSession({
+			userId: profile.id,
+			challengeType: 'quick',
+			ratingBefore: 1200,
+			ratingAfter: 1200,
+			rankBefore: profile.rank,
+			rankAfter: profile.rank,
+			totalQuestions: 2
+		});
+		const q1 = createSessionQuestion({
+			id: 'q1-1111-4111-8111-111111111111',
+			sessionId: session.id,
+			questionType: 'number_sequence',
+			difficultyScore: 250,
+			orderIndex: 0
+		});
+		const q2 = createSessionQuestion({
+			id: 'q2-2222-4222-8222-222222222222',
+			sessionId: session.id,
+			questionType: 'number_sequence',
+			difficultyScore: 300,
+			orderIndex: 1
+		});
+		const sessionRepo = createSessionRepositoryFake({
+			session,
+			questions: [q1, q2],
+			answers: [
+				createSessionAnswer({ sessionQuestionId: q1.id, userId: profile.id, isCorrect: true }),
+				createSessionAnswer({ sessionQuestionId: q2.id, userId: profile.id, isCorrect: true })
+			]
+		});
+		const service = createFinishChallengeService(sessionRepo, createProfileRepositoryFake(profile));
+
+		await service.finish(createFakeEvent(createFakeUser({ id: profile.id })), {
+			sessionId: session.id
+		});
+
+		const masteryChanges = await sessionRepo.listSessionCategoryMasteryChanges(session.id);
+		expect(masteryChanges).toHaveLength(1);
+		expect(masteryChanges[0].questionType).toBe('number_sequence');
+		expect(masteryChanges[0].ratedQuestions).toBe(2);
+		expect(masteryChanges[0].correctAnswers).toBe(2);
+		expect(masteryChanges[0].ratingAfter).toBeGreaterThan(1200);
+
+		const userMasteries = await sessionRepo.listUserCategoryMastery(profile.id);
+		expect(userMasteries).toHaveLength(1);
+		expect(userMasteries[0].rating).toBe(masteryChanges[0].ratingAfter);
+		expect(userMasteries[0].totalQuestions).toBe(2);
+		expect(userMasteries[0].totalSessions).toBe(1);
+	});
+
+	it('does not mutate category mastery when session is flagged suspicious', async () => {
+		const profile = createProfile({ rating: 1200, rank: 'Bronze Mind' });
+		const session = createChallengeSession({
+			userId: profile.id,
+			challengeType: 'quick',
+			ratingBefore: 1200,
+			ratingAfter: 1200,
+			rankBefore: profile.rank,
+			rankAfter: profile.rank,
+			totalQuestions: 1
+		});
+		const q1 = createSessionQuestion({
+			id: 'q1-1111-4111-8111-111111111111',
+			sessionId: session.id,
+			questionType: 'number_sequence',
+			difficultyScore: 250,
+			orderIndex: 0
+		});
+		const sessionRepo = createSessionRepositoryFake({
+			session,
+			questions: [q1],
+			answers: [
+				createSessionAnswer({
+					sessionQuestionId: q1.id,
+					userId: profile.id,
+					isCorrect: true,
+					timeSpentSeconds: 5
+				})
+			]
+		});
+		const service = createFinishChallengeService(sessionRepo, createProfileRepositoryFake(profile));
+
+		await service.finish(createFakeEvent(createFakeUser({ id: profile.id })), {
+			sessionId: session.id,
+			tabSwitchCount: 6
+		});
+
+		const masteryChanges = await sessionRepo.listSessionCategoryMasteryChanges(session.id);
+		expect(masteryChanges).toHaveLength(0);
+
+		const userMasteries = await sessionRepo.listUserCategoryMastery(profile.id);
+		expect(userMasteries).toHaveLength(0);
 	});
 });

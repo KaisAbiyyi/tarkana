@@ -442,6 +442,57 @@ export const duelParticipants = pgTable(
 	]
 );
 
+export const userCategoryMastery = pgTable(
+	'user_category_mastery',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => usersProfile.id, { onDelete: 'cascade' }),
+		questionType: questionTypeEnum('question_type').notNull(),
+		rating: integer('rating').notNull().default(0),
+		totalQuestions: integer('total_questions').notNull().default(0),
+		correctAnswers: integer('correct_answers').notNull().default(0),
+		totalSessions: integer('total_sessions').notNull().default(0),
+		ratingVersion: integer('rating_version').notNull().default(1),
+		createdAt: now(),
+		updatedAt: updatedAt()
+	},
+	(table) => [
+		uniqueIndex('user_category_mastery_user_type_uidx').on(table.userId, table.questionType),
+		index('user_category_mastery_type_rating_idx').on(table.questionType, table.rating.desc()),
+		index('user_category_mastery_user_id_idx').on(table.userId)
+	]
+);
+
+export const sessionCategoryMasteryChanges = pgTable(
+	'session_category_mastery_changes',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		sessionId: uuid('session_id')
+			.notNull()
+			.references(() => challengeSessions.id, { onDelete: 'cascade' }),
+		userId: uuid('user_id')
+			.notNull()
+			.references(() => usersProfile.id, { onDelete: 'cascade' }),
+		questionType: questionTypeEnum('question_type').notNull(),
+		ratingBefore: integer('rating_before').notNull(),
+		ratingAfter: integer('rating_after').notNull(),
+		ratingDelta: integer('rating_delta').notNull(),
+		ratedQuestions: integer('rated_questions').notNull(),
+		correctAnswers: integer('correct_answers').notNull(),
+		createdAt: now()
+	},
+	(table) => [
+		uniqueIndex('session_category_mastery_changes_session_type_uidx').on(
+			table.sessionId,
+			table.questionType
+		),
+		index('session_category_mastery_changes_session_id_idx').on(table.sessionId),
+		index('session_category_mastery_changes_user_id_idx').on(table.userId)
+	]
+);
+
 export const completedSessionStatusSql = sql`status = 'completed'`;
 
 export type UserProfile = typeof usersProfile.$inferSelect;
@@ -474,3 +525,7 @@ export type ChallengeDuel = typeof challengeDuels.$inferSelect;
 export type NewChallengeDuel = typeof challengeDuels.$inferInsert;
 export type DuelParticipant = typeof duelParticipants.$inferSelect;
 export type NewDuelParticipant = typeof duelParticipants.$inferInsert;
+export type UserCategoryMastery = typeof userCategoryMastery.$inferSelect;
+export type NewUserCategoryMastery = typeof userCategoryMastery.$inferInsert;
+export type SessionCategoryMasteryChange = typeof sessionCategoryMasteryChanges.$inferSelect;
+export type NewSessionCategoryMasteryChange = typeof sessionCategoryMasteryChanges.$inferInsert;

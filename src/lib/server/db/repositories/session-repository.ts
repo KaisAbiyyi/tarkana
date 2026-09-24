@@ -14,10 +14,7 @@ import {
 	sql
 } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
-import { resolveCompletedRank } from '$lib/server/scoring/rank';
-import { applyRatingDelta } from '$lib/server/scoring/rating';
 import { hashGuestToken } from '$lib/server/sessions/guest-token';
-import { isCompetitiveChallengeType } from '$lib/shared/constants/challenge';
 import {
 	categories,
 	challengeConfigs,
@@ -27,7 +24,9 @@ import {
 	duelParticipants,
 	questionRules,
 	sessionAnswers,
+	sessionCategoryMasteryChanges,
 	sessionQuestions,
+	userCategoryMastery,
 	usersProfile,
 	type Category,
 	type ChallengeConfig,
@@ -37,8 +36,15 @@ import {
 	type NewSessionQuestion,
 	type QuestionRule,
 	type SessionAnswer,
-	type SessionQuestion
+	type SessionCategoryMasteryChange,
+	type SessionQuestion,
+	type UserCategoryMastery
 } from '$lib/server/db/schema';
+import {
+	calculateCategoryMasteryUpdate,
+	isMasteryEligibleChallengeType,
+	MASTERY_RATING_VERSION
+} from '$lib/server/scoring/mastery';
 import type { ChallengeType, QuestionType } from '$lib/shared/constants/challenge';
 
 export type SessionRepository = {
@@ -80,6 +86,8 @@ export type SessionRepository = {
 	pruneStaleGuestSessions(olderThanDays?: number): Promise<{ deletedCount: number }>;
 	abandonSession(sessionId: string): Promise<void>;
 	touchSessionUpdatedAt(sessionId: string): Promise<void>;
+	listUserCategoryMastery(userId: string): Promise<UserCategoryMastery[]>;
+	listSessionCategoryMasteryChanges(sessionId: string): Promise<SessionCategoryMasteryChange[]>;
 };
 
 export type ClaimGuestSessionInput = {
@@ -717,8 +725,150 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 						.where(eq(usersProfile.id, input.userId));
 				}
 
+				if (
+					isMasteryEligibleChallengeType(currentSession.challengeType) &&
+					!input.isSuspicious &&
+					input.userId
+				) {
+					const sQuestions = await tx
+						.select()
+						.from(sessionQuestions)
+						.where(eq(sessionQuestions.sessionId, input.sessionId))
+						.orderBy(asc(sessionQuestions.orderIndex));
+
+					const sAnswers = await tx
+						.select({
+							sessionQuestionId: sessionAnswers.sessionQuestionId,
+							isCorrect: sessionAnswers.isCorrect
+						})
+						.from(sessionAnswers)
+						.innerJoin(sessionQuestions, eq(sessionAnswers.sessionQuestionId, sessionQuestions.id))
+						.where(
+							and(
+								eq(sessionQuestions.sessionId, input.sessionId),
+								eq(sessionAnswers.userId, input.userId)
+							)
+						);
+
+					const answerMap = new Map(sAnswers.map((a) => [a.sessionQuestionId, a]));
+
+					const questionsByType = new Map<
+						QuestionType,
+						Array<{ difficultyScore: number; isCorrect: boolean }>
+					>();
+
+					for (const q of sQuestions) {
+						const ans = answerMap.get(q.id);
+						if (!ans) continue;
+						const list = questionsByType.get(q.questionType) ?? [];
+						list.push({
+							difficultyScore: q.difficultyScore,
+							isCorrect: ans.isCorrect
+						});
+						questionsByType.set(q.questionType, list);
+					}
+
+					for (const [qType, qList] of questionsByType.entries()) {
+						if (qList.length === 0) continue;
+
+						const [existingMastery] = await tx
+							.select()
+							.from(userCategoryMastery)
+							.where(
+								and(
+									eq(userCategoryMastery.userId, input.userId),
+									eq(userCategoryMastery.questionType, qType)
+								)
+							)
+							.for('update')
+							.limit(1);
+
+						const initialPrior = Math.max(0, currentSession.ratingBefore);
+						const currentRating = existingMastery?.rating ?? initialPrior;
+						const totalQuestions = existingMastery?.totalQuestions ?? 0;
+						const totalSessions = existingMastery?.totalSessions ?? 0;
+
+						const updateResult = calculateCategoryMasteryUpdate({
+							currentRating,
+							totalQuestions,
+							totalSessions,
+							questions: qList
+						});
+
+						await tx
+							.insert(sessionCategoryMasteryChanges)
+							.values({
+								sessionId: input.sessionId,
+								userId: input.userId,
+								questionType: qType,
+								ratingBefore: updateResult.ratingBefore,
+								ratingAfter: updateResult.ratingAfter,
+								ratingDelta: updateResult.ratingDelta,
+								ratedQuestions: updateResult.ratedQuestions,
+								correctAnswers: updateResult.correctAnswers
+							})
+							.onConflictDoNothing({
+								target: [
+									sessionCategoryMasteryChanges.sessionId,
+									sessionCategoryMasteryChanges.questionType
+								]
+							});
+
+						if (existingMastery) {
+							await tx
+								.update(userCategoryMastery)
+								.set({
+									rating: updateResult.ratingAfter,
+									totalQuestions: existingMastery.totalQuestions + updateResult.ratedQuestions,
+									correctAnswers: existingMastery.correctAnswers + updateResult.correctAnswers,
+									totalSessions: existingMastery.totalSessions + 1,
+									updatedAt: new Date()
+								})
+								.where(eq(userCategoryMastery.id, existingMastery.id));
+						} else {
+							await tx
+								.insert(userCategoryMastery)
+								.values({
+									userId: input.userId,
+									questionType: qType,
+									rating: updateResult.ratingAfter,
+									totalQuestions: updateResult.ratedQuestions,
+									correctAnswers: updateResult.correctAnswers,
+									totalSessions: 1,
+									ratingVersion: MASTERY_RATING_VERSION
+								})
+								.onConflictDoUpdate({
+									target: [userCategoryMastery.userId, userCategoryMastery.questionType],
+									set: {
+										rating: updateResult.ratingAfter,
+										totalQuestions: sql`${userCategoryMastery.totalQuestions} + ${updateResult.ratedQuestions}`,
+										correctAnswers: sql`${userCategoryMastery.correctAnswers} + ${updateResult.correctAnswers}`,
+										totalSessions: sql`${userCategoryMastery.totalSessions} + 1`,
+										updatedAt: new Date()
+									}
+								});
+						}
+					}
+				}
+
 				return updatedSession;
 			});
+		},
+
+		async listUserCategoryMastery(userId) {
+			return database
+				.select()
+				.from(userCategoryMastery)
+				.where(eq(userCategoryMastery.userId, userId))
+				.orderBy(asc(userCategoryMastery.questionType));
+		},
+
+		async listSessionCategoryMasteryChanges(sessionId) {
+			return database
+				.select()
+				.from(sessionCategoryMasteryChanges)
+				.where(eq(sessionCategoryMasteryChanges.sessionId, sessionId))
+				.orderBy(asc(sessionCategoryMasteryChanges.questionType));
 		},
 
 		async findActiveSession(userId) {
@@ -866,78 +1016,23 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 					throw new Error('Guest session not found or token mismatch');
 				}
 
-				// 3. Determine provisional status:
-				// An account is provisional if it has 0 prior completed sessions and is Unranked with 0 rating
-				const [priorCompletedSession] = await tx
-					.select({ id: challengeSessions.id })
-					.from(challengeSessions)
-					.where(
-						and(
-							eq(challengeSessions.userId, input.userId),
-							eq(challengeSessions.status, 'completed')
-						)
-					)
-					.limit(1);
-
-				const isProvisional =
-					!priorCompletedSession && profile.rank === 'Unranked' && profile.rating === 0;
-
-				let runningRating = isProvisional ? 100 : profile.rating;
-				let runningRank = profile.rank;
-				let completedCountDelta = 0;
-
+				// 3. Claimed guest sessions are history only:
+				// They NEVER establish or mutate Logic Rating or Category Mastery.
+				// Session rating/rank on claimed sessions reflect profile state with 0 delta.
 				const updatedSessions: ChallengeSession[] = [];
 				const sessionIds = unclaimedSessions.map((s) => s.id);
 
 				for (const session of unclaimedSessions) {
-					let sessionRatingBefore: number;
-					let sessionRatingAfter: number;
-					let sessionRatingDelta: number;
-					let sessionRankBefore: (typeof profile)['rank'];
-					let sessionRankAfter: (typeof profile)['rank'];
-
-					if (
-						session.status === 'completed' &&
-						!session.isSuspicious &&
-						isCompetitiveChallengeType(session.challengeType)
-					) {
-						completedCountDelta += 1;
-
-						if (isProvisional) {
-							sessionRatingBefore = runningRating;
-							sessionRatingDelta = session.ratingDelta;
-							runningRating = applyRatingDelta(runningRating, sessionRatingDelta);
-							runningRank = resolveCompletedRank(runningRating);
-							sessionRatingAfter = runningRating;
-							sessionRankBefore = resolveCompletedRank(sessionRatingBefore);
-							sessionRankAfter = runningRank;
-						} else {
-							// ANTI-FARMING: Existing accounts get +0 rating delta from guest sessions
-							sessionRatingBefore = profile.rating;
-							sessionRatingAfter = profile.rating;
-							sessionRatingDelta = 0;
-							sessionRankBefore = profile.rank;
-							sessionRankAfter = profile.rank;
-						}
-					} else {
-						// Daily challenges, duels, or suspicious sessions always contribute 0 rating delta
-						sessionRatingBefore = profile.rating;
-						sessionRatingAfter = profile.rating;
-						sessionRatingDelta = 0;
-						sessionRankBefore = profile.rank;
-						sessionRankAfter = profile.rank;
-					}
-
 					const [updatedSession] = await tx
 						.update(challengeSessions)
 						.set({
 							userId: profile.id,
 							claimedAt: new Date(),
-							ratingBefore: sessionRatingBefore,
-							ratingAfter: sessionRatingAfter,
-							ratingDelta: sessionRatingDelta,
-							rankBefore: sessionRankBefore,
-							rankAfter: sessionRankAfter
+							ratingBefore: profile.rating,
+							ratingAfter: profile.rating,
+							ratingDelta: 0,
+							rankBefore: profile.rank,
+							rankAfter: profile.rank
 						})
 						.where(eq(challengeSessions.id, session.id))
 						.returning();
@@ -1058,22 +1153,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 						);
 				}
 
-				// 5. Update user profile if rating or rank changed
-				const finalRating =
-					isProvisional && completedCountDelta > 0 ? runningRating : profile.rating;
-				const finalRank = isProvisional && completedCountDelta > 0 ? runningRank : profile.rank;
-
-				if (finalRating !== profile.rating || finalRank !== profile.rank) {
-					await tx
-						.update(usersProfile)
-						.set({
-							rating: finalRating,
-							rank: finalRank,
-							updatedAt: new Date()
-						})
-						.where(eq(usersProfile.id, profile.id));
-				}
-
+				// 5. Profile rating and rank NEVER change from claiming guest sessions
 				const primary = input.specificSessionId
 					? (updatedSessions.find((s) => s.id === input.specificSessionId) ?? updatedSessions[0]!)
 					: updatedSessions[0]!;
@@ -1081,9 +1161,9 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				return {
 					claimedSessions: updatedSessions,
 					primarySession: primary ?? null,
-					profileRating: finalRating,
-					profileRank: finalRank,
-					isProvisional,
+					profileRating: profile.rating,
+					profileRank: profile.rank,
+					isProvisional: false,
 					alreadyClaimed: false
 				};
 			});
