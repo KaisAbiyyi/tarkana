@@ -87,7 +87,7 @@ function buildPattern(
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: pool,
-				explanation: t('explain.rotation')
+				explanation: step > 1 ? t('explain.rotationStep', { step }) : t('explain.rotation')
 			};
 		}
 		case 'alternating_symbol': {
@@ -121,7 +121,7 @@ function buildPattern(
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: shapePool,
-				explanation: t('explain.cycle')
+				explanation: t('explain.cycleCount', { count: cycleLength })
 			};
 		}
 		case 'shape_order': {

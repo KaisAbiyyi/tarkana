@@ -12,7 +12,7 @@ import type {
 import type { Category, DailyPuzzleSnapshotQuestion, QuestionRule } from '$lib/server/db/schema';
 
 export const DAILY_CHALLENGE_CONFIG_VERSION = 1;
-export const DAILY_CHALLENGE_GENERATOR_VERSION = 1;
+export const DAILY_CHALLENGE_GENERATOR_VERSION = 2;
 export const DAILY_CHALLENGE_QUESTION_COUNT = DEFAULT_CHALLENGE_QUESTION_COUNTS.daily ?? 10;
 
 /**
