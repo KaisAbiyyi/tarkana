@@ -53,7 +53,8 @@ export const usersProfile = pgTable(
 	},
 	(table) => [
 		index('users_profile_display_name_idx').on(table.displayName),
-		index('users_profile_rating_idx').on(table.rating)
+		index('users_profile_rating_idx').on(table.rating),
+		index('users_profile_rank_rating_idx').on(table.rank, table.rating.desc())
 	]
 );
 
