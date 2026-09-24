@@ -1,6 +1,7 @@
-import { count, desc, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
 import { challengeSessions, usersProfile } from '$lib/server/db/schema';
+import { isCompetitiveSessionFilter } from '$lib/server/db/repositories/session-repository';
 
 export type LeaderboardRepository = {
 	list(input: { limit: number; offset: number }): Promise<LeaderboardRow[]>;
@@ -33,10 +34,10 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 				.from(usersProfile)
 				.leftJoin(
 					challengeSessions,
-					sql`${challengeSessions.userId} = ${usersProfile.id}
-						and ${challengeSessions.status} = 'completed'
-						and ${challengeSessions.isSuspicious} = false
-						and ${challengeSessions.challengeType} not in ('daily', 'duel')`
+					and(
+						eq(challengeSessions.userId, usersProfile.id),
+						isCompetitiveSessionFilter(challengeSessions)
+					)
 				)
 				.groupBy(usersProfile.id)
 				.orderBy(desc(usersProfile.rating), desc(sql<number>`count(${challengeSessions.id})`))
@@ -58,7 +59,7 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 							ORDER BY u.rating DESC, count(cs.id) DESC
 						) as position
 					FROM users_profile u
-					LEFT JOIN challenge_sessions cs ON cs.user_id = u.id AND cs.status = 'completed' AND cs.is_suspicious = false AND cs.challenge_type NOT IN ('daily', 'duel')
+					LEFT JOIN challenge_sessions cs ON cs.user_id = u.id AND cs.status = 'completed' AND cs.is_suspicious = false AND cs.claimed_at IS NULL AND cs.challenge_type NOT IN ('daily', 'duel')
 					GROUP BY u.id, u.display_name, u.rank, u.rating
 				)
 				SELECT * FROM ranked_users WHERE "userId" = ${userId}

@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { getDb, type Database } from '$lib/server/db';
 import {
 	challengeSessions,
@@ -11,6 +11,7 @@ import {
 	calculateCategoryMasteryUpdate,
 	isMasteryEligibleChallengeType,
 	MASTERY_RATING_VERSION,
+	resolveInitialCategoryMasteryPrior,
 	type MasteryQuestionResult
 } from '$lib/server/scoring/mastery';
 import type { QuestionType } from '$lib/shared/constants/challenge';
@@ -20,6 +21,11 @@ export interface CategoryMasteryState {
 	totalQuestions: number;
 	correctAnswers: number;
 	totalSessions: number;
+}
+
+export interface ExistingUserMasteryState {
+	version: number;
+	masteries: Map<QuestionType, CategoryMasteryState>;
 }
 
 export interface BackfillUserResult {
@@ -50,13 +56,14 @@ export interface BackfillOptions extends BackfillReplayOptions {
 export interface BackfillDataProvider {
 	getEligibleUserIds(): Promise<string[]>;
 	getExistingProcessedSessionIds(userId: string): Promise<Set<string>>;
-	getExistingMasteryState(userId: string): Promise<Map<QuestionType, CategoryMasteryState>>;
+	getExistingMasteryState(userId: string): Promise<ExistingUserMasteryState>;
 	getEligibleSessions(userId: string): Promise<
 		Array<{
 			id: string;
 			challengeType: string;
 			ratingBefore: number;
 			completedAt: Date | null;
+			claimedAt?: Date | null;
 		}>
 	>;
 	getSessionQuestionsAndAnswers(
@@ -107,6 +114,7 @@ export function createDrizzleBackfillProvider(database: Database): BackfillDataP
 					and(
 						eq(challengeSessions.status, 'completed'),
 						eq(challengeSessions.isSuspicious, false),
+						isNull(challengeSessions.claimedAt),
 						sql`${challengeSessions.userId} IS NOT NULL`,
 						inArray(challengeSessions.challengeType, ['quick', 'standard', 'long', 'mode'])
 					)
@@ -131,16 +139,22 @@ export function createDrizzleBackfillProvider(database: Database): BackfillDataP
 				.select()
 				.from(userCategoryMastery)
 				.where(eq(userCategoryMastery.userId, userId));
-			const map = new Map<QuestionType, CategoryMasteryState>();
+			const masteries = new Map<QuestionType, CategoryMasteryState>();
+			let minVersion = MASTERY_RATING_VERSION;
+
 			for (const m of existing) {
-				map.set(m.questionType, {
+				if (m.ratingVersion < minVersion) {
+					minVersion = m.ratingVersion;
+				}
+				masteries.set(m.questionType, {
 					rating: m.rating,
 					totalQuestions: m.totalQuestions,
 					correctAnswers: m.correctAnswers,
 					totalSessions: m.totalSessions
 				});
 			}
-			return map;
+
+			return { version: minVersion, masteries };
 		},
 
 		async getEligibleSessions(userId: string) {
@@ -149,7 +163,8 @@ export function createDrizzleBackfillProvider(database: Database): BackfillDataP
 					id: challengeSessions.id,
 					challengeType: challengeSessions.challengeType,
 					ratingBefore: challengeSessions.ratingBefore,
-					completedAt: challengeSessions.completedAt
+					completedAt: challengeSessions.completedAt,
+					claimedAt: challengeSessions.claimedAt
 				})
 				.from(challengeSessions)
 				.where(
@@ -157,6 +172,7 @@ export function createDrizzleBackfillProvider(database: Database): BackfillDataP
 						eq(challengeSessions.userId, userId),
 						eq(challengeSessions.status, 'completed'),
 						eq(challengeSessions.isSuspicious, false),
+						isNull(challengeSessions.claimedAt),
 						inArray(challengeSessions.challengeType, ['quick', 'standard', 'long', 'mode'])
 					)
 				)
@@ -240,6 +256,7 @@ export function createDrizzleBackfillProvider(database: Database): BackfillDataP
 							totalQuestions: data.mastery.totalQuestions,
 							correctAnswers: data.mastery.correctAnswers,
 							totalSessions: data.mastery.totalSessions,
+							ratingVersion: MASTERY_RATING_VERSION,
 							updatedAt: new Date()
 						})
 						.where(eq(userCategoryMastery.id, existing.id));
@@ -262,6 +279,7 @@ export function createDrizzleBackfillProvider(database: Database): BackfillDataP
 								totalQuestions: data.mastery.totalQuestions,
 								correctAnswers: data.mastery.correctAnswers,
 								totalSessions: data.mastery.totalSessions,
+								ratingVersion: MASTERY_RATING_VERSION,
 								updatedAt: new Date()
 							}
 						});
@@ -279,7 +297,7 @@ export async function executeMasteryReplay(
 	options: BackfillReplayOptions = {}
 ): Promise<BackfillSummary> {
 	const dryRun = options.dryRun ?? false;
-	const recomputeAll = options.recomputeAll ?? false;
+	const explicitRecompute = options.recomputeAll ?? false;
 
 	const targetUserIds = options.userId ? [options.userId] : await provider.getEligibleUserIds();
 
@@ -288,17 +306,21 @@ export async function executeMasteryReplay(
 	let totalSessionsSkipped = 0;
 
 	for (const userId of targetUserIds) {
-		if (recomputeAll && !dryRun) {
+		const existingState = await provider.getExistingMasteryState(userId);
+		const versionOutdated = existingState.version < MASTERY_RATING_VERSION;
+		const shouldRecompute = explicitRecompute || versionOutdated;
+
+		if (shouldRecompute && !dryRun) {
 			await provider.resetUserMastery(userId);
 		}
 
-		const processedSessionIds = recomputeAll
+		const processedSessionIds = shouldRecompute
 			? new Set<string>()
 			: await provider.getExistingProcessedSessionIds(userId);
 
-		const masteryStateMap = recomputeAll
+		const masteryStateMap = shouldRecompute
 			? new Map<QuestionType, CategoryMasteryState>()
-			: await provider.getExistingMasteryState(userId);
+			: new Map(existingState.masteries);
 
 		const sessions = await provider.getEligibleSessions(userId);
 
@@ -311,7 +333,13 @@ export async function executeMasteryReplay(
 				continue;
 			}
 
-			if (!recomputeAll && processedSessionIds.has(session.id)) {
+			// Strictly exclude claimed guest history sessions
+			if (session.claimedAt !== null && session.claimedAt !== undefined) {
+				userSkipped++;
+				continue;
+			}
+
+			if (!shouldRecompute && processedSessionIds.has(session.id)) {
 				userSkipped++;
 				continue;
 			}
@@ -344,7 +372,7 @@ export async function executeMasteryReplay(
 				if (qList.length === 0) continue;
 
 				const currentState = masteryStateMap.get(qType) ?? {
-					rating: Math.max(0, session.ratingBefore),
+					rating: resolveInitialCategoryMasteryPrior(session.ratingBefore),
 					totalQuestions: 0,
 					correctAnswers: 0,
 					totalSessions: 0

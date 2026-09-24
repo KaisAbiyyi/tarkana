@@ -21,7 +21,8 @@ import { hashGuestToken } from '$lib/server/sessions/guest-token';
 import {
 	calculateCategoryMasteryUpdate,
 	isMasteryEligibleChallengeType,
-	MASTERY_RATING_VERSION
+	MASTERY_RATING_VERSION,
+	resolveInitialCategoryMasteryPrior
 } from '$lib/server/scoring/mastery';
 import type { QuestionType } from '$lib/shared/constants/challenge';
 
@@ -239,6 +240,7 @@ export function createSessionRepositoryFake(
 			if (
 				isMasteryEligibleChallengeType(session.challengeType) &&
 				!input.isSuspicious &&
+				!session.claimedAt &&
 				input.userId
 			) {
 				const sQuestions = questions.filter((q) => q.sessionId === session.id);
@@ -265,7 +267,8 @@ export function createSessionRepositoryFake(
 					if (qList.length === 0) continue;
 					const key = `${input.userId}:${qType}`;
 					const existing = userCategoryMasteries.get(key);
-					const currentRating = existing?.rating ?? Math.max(0, session.ratingBefore);
+					const currentRating =
+						existing?.rating ?? resolveInitialCategoryMasteryPrior(session.ratingBefore);
 					const totalQuestions = existing?.totalQuestions ?? 0;
 					const totalSessions = existing?.totalSessions ?? 0;
 

@@ -65,7 +65,7 @@ Unlike casual puzzle apps where questions may be client-generated or varied per 
 ## ADR-0003: Category Mastery Architecture & Question-Level Elo Calibration Model
 
 ### Status
-Accepted (Milestone P1.10A)
+Accepted (Milestone P1.10A, Calibrated in Milestone P1.10A.1)
 
 ### Context
 In prior milestones, player skill was represented solely by a single global Logic Rating and a coarse session accuracy-band delta (`calculateRatingDelta`: $\ge 90\% \to +40, \ge 80\% \to +25, \dots$).
@@ -80,6 +80,7 @@ Applying the coarse session-level rating delta to category mastery would suffer 
 1. **Difficulty Blindness**: An easy session with 90% accuracy would reward the same mastery delta as a hard-mode session with 90% accuracy.
 2. **Farming Vulnerability**: High-rated players could play easy mode challenges to artificially inflate mastery.
 3. **Inappropriate Penalty Curves**: Missing an intensely difficult question would be penalized as harshly as blundering an obvious question.
+4. **Prior Mismatch (P1.10A.1)**: Initializing an unranked player at prior 0 against 600–900 difficulty implied a 1% expected accuracy for entry-level Easy questions.
 
 ### Decision
 
@@ -90,11 +91,11 @@ Applying the coarse session-level rating delta to category mastery would suffer 
    $$\text{Question Delta } \delta_i = K \times (S_i - E_i)$$
    where $S_i \in \{0, 1\}$ represents answer correctness, and $K$ is the sensitivity factor ($K_{\text{provisional}} = 16$, $K_{\text{established}} = 8$).
 
-2. **Difficulty-to-Rating Mapping**:
-   Each question's difficulty band maps to a canonical difficulty benchmark:
-   - `easy`: $D_{\text{easy}} = 700 + \text{scoreOffset}$ (nominal 700, range 600–900)
-   - `medium`: $D_{\text{medium}} = 1250 + \text{scoreOffset}$ (nominal 1250, range 1100–1450)
-   - `hard`: $D_{\text{hard}} = 1850 + \text{scoreOffset}$ (nominal 1850, range 1700–2100)
+2. **Calibrated Difficulty-to-Rating Mapping (Version 2)**:
+   Each question's difficulty score maps continuously into Tarkana's rank tier scale:
+   - `easy` (scores 100–180): $D_{\text{easy}} = 350 + \frac{\text{score} - 100}{80} \times 300$ (range 350–650, Bronze/Silver boundary).
+   - `medium` (scores 200–320): $D_{\text{medium}} = 900 + \frac{\text{score} - 200}{120} \times 600$ (range 900–1500, Gold tier).
+   - `hard` (scores 350–520+): $D_{\text{hard}} = 1750 + \min\left(1.5, \frac{\text{score} - 350}{170}\right) \times 800$ (range 1750–2550+, Platinum to Mastermind).
 
 3. **Mathematical Invariant Guarantees**:
    - **Monotonic Reward**: For identical mastery, $\delta_{\text{correct}}(D_{\text{hard}}) > \delta_{\text{correct}}(D_{\text{easy}})$. Harder questions always reward strictly more rating points.
@@ -102,18 +103,25 @@ Applying the coarse session-level rating delta to category mastery would suffer 
    - **Blunder Asymmetry**: For incorrect answers, $\delta_{\text{wrong}} = -K \times E$. Missing an unexpectedly easy question ($E \approx 1$) penalizes $-K$; missing a question far above one's mastery ($E \approx 0$) produces a negligible penalty.
    - **Strict Bounds**: Category mastery is deterministically bounded within $[0, 3000]$.
 
-4. **Provisional Mastery & Priors**:
-   - When a player first attempts a category, initial mastery initializes from the player's current global Logic Rating prior (or 0 if Unranked).
+4. **Provisional Mastery & Calibrated Entry Priors**:
+   - When an unranked player first attempts a category, initial mastery initializes from `DEFAULT_UNRANKED_MASTERY_PRIOR = 400` (Bronze Mind midpoint). An entry-level player facing an entry-level Easy question ($D \approx 400$) now has a plausible expected accuracy of $\approx 50\%$.
+   - Ranked players inherit $\max(400, R_{\text{logic}})$ as their initial category prior.
    - Category mastery remains **Provisional** until the player completes at least **20 rated questions** and **3 rated sessions** in that category.
    - Provisional mastery drives personal adaptive difficulty (P1.10B) but is excluded from public Category Leaderboards (P1.10C).
+   - Rating semantics are versioned via `MASTERY_RATING_VERSION = 2`. Any legacy version 1 records are deterministically recomputed upon backfill.
 
-5. **Session Eligibility & Historical Integrity**:
-   - Category mastery mutations are strictly restricted to authenticated, non-suspicious, competitive sessions (`isMasteryEligibleChallengeType`: `quick`, `standard`, `long`, `mode`).
-   - Daily Challenges, Duels, Custom sessions, and claimed guest history award strictly **`+0`** category mastery.
+5. **Centralized Session Eligibility & Claimed-Guest Historical Integrity**:
+   - Category mastery mutations are strictly restricted to authenticated, non-suspicious, competitive sessions (`isCompetitiveSessionFilter`: `status = 'completed'`, `isSuspicious = false`, `claimedAt IS NULL`, and competitive types `quick`, `standard`, `long`, `mode`).
+   - Claimed guest history (`claimedAt IS NOT NULL`) remains visible in personal history lists, but is strictly excluded from:
+     - competitive completed-round counts;
+     - average competitive accuracy;
+     - leaderboard tie-breaks;
+     - historical Category Mastery backfill and live calibration.
    - Updates occur within the atomic PostgreSQL session-completion transaction and record an immutable entry in `session_category_mastery_changes` keyed by unique `(sessionId, questionType)`.
    - Guest sessions claimed in `claimAllGuestSessions` are history only and never mutate Logic Rating or Category Mastery.
 
 ### Consequences
+- Plausible, natural entry-level calibration: new players start with sensible expected performance rather than 1% accuracy assumptions.
 - True cognitive depth: players receive personalized feedback and progression across each distinct reasoning discipline.
 - Prevents leaderboard abuse and farming.
-- Provides a solid foundation for Category-Adaptive Difficulty (P1.10B) and Category Leaderboards (P1.10C).
+- Provides a rock-solid foundation for Category-Adaptive Difficulty (P1.10B) and Category Leaderboards (P1.10C).
