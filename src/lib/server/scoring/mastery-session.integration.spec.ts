@@ -64,10 +64,10 @@ describe('Real Database Session Category Mastery Integration', () => {
 			return;
 		}
 
-		const testUserId = '00000000-0000-4000-8000-000000000010';
-		const testCategoryId = '00000000-0000-4000-8000-000000000011';
-		const testSessionId = '00000000-0000-4000-8000-000000000012';
-		const testQuestionId = '00000000-0000-4000-8000-000000000013';
+		const testUserId = '00000000-0000-4000-8000-000000000080';
+		const testCategoryId = '00000000-0000-4000-8000-000000000081';
+		const testSessionId = '00000000-0000-4000-8000-000000000082';
+		const testQuestionId = '00000000-0000-4000-8000-000000000083';
 
 		// Clean up
 		await db

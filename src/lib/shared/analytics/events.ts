@@ -26,7 +26,9 @@ export const CANONICAL_EVENTS = [
 	'duel_link_copied',
 	'return_visit',
 	'review_filter_applied',
-	'practice_weakest_category_clicked'
+	'practice_weakest_category_clicked',
+	'leaderboard_tab_switched',
+	'category_mastery_viewed'
 ] as const;
 
 export type CanonicalEventName = (typeof CANONICAL_EVENTS)[number];
@@ -173,6 +175,17 @@ export interface PracticeWeakestCategoryClickedProperties {
 	is_single_category?: boolean;
 }
 
+export interface LeaderboardTabSwitchedProperties {
+	from_tab?: string;
+	to_tab: string;
+	selected_filter?: string;
+}
+
+export interface CategoryMasteryViewedProperties {
+	source: 'profile' | 'leaderboard';
+	question_type?: string;
+}
+
 export type EventPropertyMap = {
 	landing_view: LandingViewProperties;
 	challenge_started: ChallengeStartedProperties;
@@ -196,6 +209,8 @@ export type EventPropertyMap = {
 	return_visit: ReturnVisitProperties;
 	review_filter_applied: ReviewFilterAppliedProperties;
 	practice_weakest_category_clicked: PracticeWeakestCategoryClickedProperties;
+	leaderboard_tab_switched: LeaderboardTabSwitchedProperties;
+	category_mastery_viewed: CategoryMasteryViewedProperties;
 };
 
 /**
@@ -248,7 +263,9 @@ export const EVENT_PROPERTY_ALLOWLIST: Record<CanonicalEventName, readonly strin
 		'category',
 		'round_accuracy',
 		'is_single_category'
-	]
+	],
+	leaderboard_tab_switched: ['from_tab', 'to_tab', 'selected_filter'],
+	category_mastery_viewed: ['source', 'question_type']
 };
 
 /**

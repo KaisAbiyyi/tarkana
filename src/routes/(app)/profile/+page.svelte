@@ -1,14 +1,17 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import gsap from 'gsap';
 	import type { ActionData, PageData } from './$types';
 	import RankBadge from '$lib/components/primitives/RankBadge.svelte';
+	import Badge from '$lib/components/primitives/Badge.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
 	import Input from '$lib/components/primitives/Input.svelte';
 	import PlayerPublicIdentity from '$lib/components/primitives/PlayerPublicIdentity.svelte';
-	import { formatPercent, labelRank } from '$lib/shared/presentation/format';
+	import { formatPercent, labelQuestionType, labelRank } from '$lib/shared/presentation/format';
 	import { calculateRankProgress } from '$lib/shared/constants/rank';
 	import { enhance } from '$app/forms';
 	import { getI18nContext } from '$lib/i18n/context';
+	import { analytics } from '$lib/client/analytics';
 
 	type Props = {
 		data: PageData;
@@ -19,6 +22,13 @@
 	const { locale, t } = getI18nContext();
 	let profile = $derived(form?.profile ?? data.profile);
 	let stats = $derived(data.stats);
+	let categoryMasteries = $derived(data.categoryMasteries ?? []);
+
+	onMount(() => {
+		analytics.track('category_mastery_viewed', {
+			source: 'profile'
+		});
+	});
 
 	let providerRaw = $derived(data.user?.app_metadata?.provider ?? 'email');
 	let provider = $derived(providerRaw.charAt(0).toUpperCase() + providerRaw.slice(1));
@@ -266,6 +276,100 @@
 			</section>
 		</div>
 	</div>
+
+	<section class="grid gap-4">
+		<div class="flex flex-col gap-1">
+			<h2 class="text-xl font-black">{t('profile.categoryMasteryTitle')}</h2>
+			<p class="text-sm font-semibold text-[var(--color-muted)]">
+				{t('profile.categoryMasteryIntro')}
+			</p>
+		</div>
+
+		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+			{#each categoryMasteries as mastery (mastery.questionType)}
+				<article
+					use:animateCard
+					class="flex flex-col justify-between border-[3px] border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-hard-sm)]"
+				>
+					<div>
+						<div
+							class="flex items-start justify-between gap-2 border-b-2 border-dashed border-[var(--color-border)] pb-3"
+						>
+							<span class="text-xs font-black text-[var(--color-text)] uppercase">
+								{labelQuestionType(mastery.questionType, locale)}
+							</span>
+							{#if mastery.isProvisional}
+								<Badge tone="accent">{t('profile.provisional')}</Badge>
+							{:else}
+								<Badge tone="neutral">{t('profile.established')}</Badge>
+							{/if}
+						</div>
+
+						<div class="mt-4 flex items-baseline justify-between">
+							<span class="text-xs font-black text-[var(--color-muted)] uppercase">
+								{t('leaderboard.masteryRating')}
+							</span>
+							<span class="text-3xl font-black text-[var(--color-text)]">
+								{mastery.masteryRating}
+							</span>
+						</div>
+
+						{#if mastery.isProvisional}
+							<div class="mt-3">
+								<div class="flex justify-between text-[10px] font-black uppercase">
+									<span class="text-[var(--color-muted)]">{t('leaderboard.provisionalTitle')}</span>
+									<span class="font-mono">{mastery.progressPercent}%</span>
+								</div>
+								<div
+									class="mt-1 h-2 w-full border border-[var(--color-border)] bg-gray-100 p-0.5"
+									role="progressbar"
+									aria-valuenow={mastery.progressPercent}
+									aria-valuemin="0"
+									aria-valuemax="100"
+									aria-label="{labelQuestionType(
+										mastery.questionType,
+										locale
+									)} qualification progress"
+								>
+									<div
+										class="h-full bg-amber-400 transition-all duration-300"
+										style="width: {mastery.progressPercent}%"
+									></div>
+								</div>
+								<p class="mt-1 text-[10px] font-bold text-amber-800">
+									{t('profile.masteryProgress', {
+										questions: mastery.totalQuestions,
+										sessions: mastery.totalSessions
+									})}
+								</p>
+							</div>
+						{/if}
+					</div>
+
+					<dl
+						class="mt-4 grid grid-cols-2 gap-2 border-t-2 border-dashed border-[var(--color-border)] pt-3 text-xs"
+					>
+						<div>
+							<dt class="text-[10px] font-black text-[var(--color-muted)] uppercase">
+								{t('leaderboard.accuracy')}
+							</dt>
+							<dd class="mt-0.5 text-base font-black">
+								{formatPercent(mastery.accuracy, locale)}
+							</dd>
+						</div>
+						<div>
+							<dt class="text-[10px] font-black text-[var(--color-muted)] uppercase">
+								{t('leaderboard.questionsSolved')}
+							</dt>
+							<dd class="mt-0.5 text-base font-black">
+								{mastery.totalQuestions}
+							</dd>
+						</div>
+					</dl>
+				</article>
+			{/each}
+		</div>
+	</section>
 
 	<section class="grid gap-4">
 		<h2 class="text-xl font-black">{t('profile.accountInfo')}</h2>

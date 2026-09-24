@@ -19,6 +19,10 @@ function createMockLeaderboardRepo(
 		listCategory: async () => [],
 		getUserCategoryPosition: async () => null,
 		getUserCategoryMastery: async () => null,
+		listWeekly: async () => [],
+		getUserWeeklyPosition: async () => null,
+		getUserWeeklyProgress: async () => null,
+		countWeeklyParticipants: async () => 0,
 		list: async () => [],
 		getUserPosition: async () => null,
 		...overrides
