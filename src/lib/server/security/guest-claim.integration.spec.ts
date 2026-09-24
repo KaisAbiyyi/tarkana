@@ -63,7 +63,7 @@ describe('Real Database Guest Claim & Auth Isolation Integration', () => {
 
 		const rawGuestToken = 'raw_guest_token_test_1234567890abcdef';
 		const expectedHash = hashGuestToken(rawGuestToken);
-		const testSessionId = '00000000-0000-4000-8000-000000000001';
+		const testSessionId = crypto.randomUUID();
 
 		await db.delete(challengeSessions).where(eq(challengeSessions.id, testSessionId));
 
@@ -107,9 +107,9 @@ describe('Real Database Guest Claim & Auth Isolation Integration', () => {
 			return;
 		}
 
-		const userAId = '00000000-0000-4000-8000-000000000010';
-		const userBId = '00000000-0000-4000-8000-000000000011';
-		const guestSessionId = '00000000-0000-4000-8000-000000000012';
+		const userAId = crypto.randomUUID();
+		const userBId = crypto.randomUUID();
+		const guestSessionId = crypto.randomUUID();
 		const rawGuestToken = 'concurrent_claim_raw_token_xyz_987654';
 
 		// Clean up any test records
@@ -196,9 +196,9 @@ describe('Real Database Guest Claim & Auth Isolation Integration', () => {
 			return;
 		}
 
-		const userId = '00000000-0000-4000-8000-000000000020';
-		const session1Id = '00000000-0000-4000-8000-000000000021';
-		const session2Id = '00000000-0000-4000-8000-000000000022';
+		const userId = crypto.randomUUID();
+		const session1Id = crypto.randomUUID();
+		const session2Id = crypto.randomUUID();
 		const rawToken = 'multi_session_claim_token_abc_123';
 
 		await db
@@ -280,8 +280,8 @@ describe('Real Database Guest Claim & Auth Isolation Integration', () => {
 			return;
 		}
 
-		const existingUserId = '00000000-0000-4000-8000-000000000030';
-		const guestSessionId = '00000000-0000-4000-8000-000000000031';
+		const existingUserId = crypto.randomUUID();
+		const guestSessionId = crypto.randomUUID();
 		const rawToken = 'anti_farming_protection_token_555';
 
 		await db.delete(challengeSessions).where(eq(challengeSessions.id, guestSessionId));
@@ -349,10 +349,10 @@ describe('Real Database Guest Claim & Auth Isolation Integration', () => {
 			return;
 		}
 
-		const userAId = '00000000-0000-4000-8000-000000000040';
-		const userBId = '00000000-0000-4000-8000-000000000041';
-		const userBSessionId = '00000000-0000-4000-8000-000000000042';
-		const guestSessionId = '00000000-0000-4000-8000-000000000043';
+		const userAId = crypto.randomUUID();
+		const userBId = crypto.randomUUID();
+		const userBSessionId = crypto.randomUUID();
+		const guestSessionId = crypto.randomUUID();
 		const tokenGuestA = 'token_for_guest_a_isolation_test_1';
 		const tokenGuestB = 'token_for_guest_b_isolation_test_2';
 
