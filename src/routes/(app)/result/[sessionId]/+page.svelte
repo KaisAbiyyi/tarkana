@@ -11,6 +11,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { analytics } from '$lib/client/analytics';
+	import type { QuestionType } from '$lib/shared/constants/challenge';
 
 	type Props = {
 		data: PageData;
@@ -92,7 +93,7 @@
 	}
 
 	function handlePracticeCategory(
-		category: string,
+		category: QuestionType,
 		roundAccuracy: number,
 		isSingleCategory: boolean
 	) {

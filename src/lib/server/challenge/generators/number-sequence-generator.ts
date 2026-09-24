@@ -128,12 +128,13 @@ function buildSequence(
 			const values = Array.from({ length: 6 }, (_, index) => (start + index * step) ** power);
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
 
-			return formatResult(
-				values,
-				answerIndex,
-				20 * step,
-				isCube ? t('explain.cube') : t('explain.square')
-			);
+			const explanation = isCube
+				? t('explain.cube')
+				: step > 1
+					? t('explain.squareStep', { step })
+					: t('explain.square');
+
+			return formatResult(values, answerIndex, 20 * step, explanation);
 		}
 		case 'fibonacci_like': {
 			const first = rng.intBetween(1, 7);

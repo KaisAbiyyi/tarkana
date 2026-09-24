@@ -94,23 +94,29 @@ function buildPattern(
 			const first = rng.pick(shapePool);
 			const second = rng.pick(shapePool.filter((shape) => shape !== first));
 			let values: string[];
+			let third: string | undefined;
 
 			if (difficulty === 'hard') {
-				// A B A B C D -> wait, alternating could be A B C A B C
-				const third = rng.pick(shapePool.filter((shape) => shape !== first && shape !== second));
+				// A B C A B C 3-symbol alternating pattern
+				third = rng.pick(shapePool.filter((shape) => shape !== first && shape !== second));
 				values = Array.from(
 					{ length: 6 },
-					(_, index) => [first, second, third][index % 3] as string
+					(_, index) => [first, second, third as string][index % 3] as string
 				);
 			} else {
 				values = Array.from({ length: 6 }, (_, index) => (index % 2 === 0 ? first : second));
 			}
 
+			const explanation =
+				difficulty === 'hard' && third
+					? t('explain.symbolAlternate3', { first, second, third })
+					: t('explain.symbolAlternate', { first, second });
+
 			return {
 				visible: values.slice(0, 5),
 				answer: values[5] as string,
 				distractors: shapePool,
-				explanation: t('explain.symbolAlternate', { first, second })
+				explanation
 			};
 		}
 		case 'repeating_cycle': {

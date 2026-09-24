@@ -123,5 +123,19 @@ describe('P1.9 Category Performance Breakdown Domain Logic', () => {
 			expect(result.canPracticeWeakest).toBe(false);
 			expect(result.practiceCategory).toBeNull();
 		});
+
+		it('ignores non-canonical question types without silently mapping them to number_sequence', () => {
+			const items: QuestionReviewItemInput[] = [
+				{ questionType: 'custom_hack', isCorrect: true, timeSpentSeconds: 2, scoreEarned: 100 },
+				{ questionType: 'unknown_category', isCorrect: false, timeSpentSeconds: 4, scoreEarned: 0 }
+			];
+
+			const result = calculateRoundCategoryBreakdown(items);
+			expect(result.categories).toHaveLength(0);
+			expect(result.isSingleCategory).toBe(false);
+			expect(result.strongestCategory).toBeNull();
+			expect(result.weakestCategory).toBeNull();
+			expect(result.practiceCategory).toBeNull();
+		});
 	});
 });
