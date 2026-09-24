@@ -143,4 +143,40 @@ describe('Analytics Events & Zero-PII Sanitizer', () => {
 			expect((sanitized.referrer as string).length).toBe(256);
 		});
 	});
+
+	describe('P1.9 Post-Round Review & Practice Loop Analytics', () => {
+		it('sanitizes review_filter_applied properties with strict zero-PII', () => {
+			const sanitized = sanitizeEventProperties('review_filter_applied', {
+				session_id: 'sess-123',
+				filter: 'missed',
+				user_token: 'secret',
+				prompt: 'What is 2+2?' // not on allowlist
+			});
+
+			expect(sanitized).toEqual({
+				session_id: 'sess-123',
+				filter: 'missed'
+			});
+			expect(sanitized).not.toHaveProperty('user_token');
+			expect(sanitized).not.toHaveProperty('prompt');
+		});
+
+		it('sanitizes practice_weakest_category_clicked properties with strict zero-PII', () => {
+			const sanitized = sanitizeEventProperties('practice_weakest_category_clicked', {
+				session_id: 'sess-456',
+				category: 'mini_deduction',
+				round_accuracy: 50.0,
+				is_single_category: false,
+				raw_questions: [{ text: 'secret' }]
+			});
+
+			expect(sanitized).toEqual({
+				session_id: 'sess-456',
+				category: 'mini_deduction',
+				round_accuracy: 50.0,
+				is_single_category: false
+			});
+			expect(sanitized).not.toHaveProperty('raw_questions');
+		});
+	});
 });

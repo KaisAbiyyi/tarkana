@@ -22,7 +22,9 @@ export const CANONICAL_EVENTS = [
 	'duel_completed',
 	'duel_viewed',
 	'duel_link_copied',
-	'return_visit'
+	'return_visit',
+	'review_filter_applied',
+	'practice_weakest_category_clicked'
 ] as const;
 
 export type CanonicalEventName = (typeof CANONICAL_EVENTS)[number];
@@ -157,6 +159,18 @@ export interface ReturnVisitProperties {
 	has_active_account?: boolean;
 }
 
+export interface ReviewFilterAppliedProperties {
+	session_id: string;
+	filter: 'all' | 'missed' | 'correct' | string;
+}
+
+export interface PracticeWeakestCategoryClickedProperties {
+	session_id: string;
+	category: string;
+	round_accuracy: number;
+	is_single_category?: boolean;
+}
+
 export type EventPropertyMap = {
 	landing_view: LandingViewProperties;
 	challenge_started: ChallengeStartedProperties;
@@ -178,6 +192,8 @@ export type EventPropertyMap = {
 	duel_viewed: DuelViewedProperties;
 	duel_link_copied: DuelLinkCopiedProperties;
 	return_visit: ReturnVisitProperties;
+	review_filter_applied: ReviewFilterAppliedProperties;
+	practice_weakest_category_clicked: PracticeWeakestCategoryClickedProperties;
 };
 
 /**
@@ -223,7 +239,14 @@ export const EVENT_PROPERTY_ALLOWLIST: Record<CanonicalEventName, readonly strin
 	duel_completed: ['duel_id', 'outcome', 'is_guest'],
 	duel_viewed: ['duel_id', 'state', 'challenge_type', 'referrer'],
 	duel_link_copied: ['duel_id'],
-	return_visit: ['days_since_last_visit', 'has_active_account']
+	return_visit: ['days_since_last_visit', 'has_active_account'],
+	review_filter_applied: ['session_id', 'filter'],
+	practice_weakest_category_clicked: [
+		'session_id',
+		'category',
+		'round_accuracy',
+		'is_single_category'
+	]
 };
 
 /**

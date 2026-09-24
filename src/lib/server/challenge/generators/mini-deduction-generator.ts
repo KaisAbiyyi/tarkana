@@ -68,9 +68,6 @@ function buildPuzzle(
 
 	switch (rule) {
 		case 'comparison_chain': {
-			// Easy: A > B, B > C.
-			// Medium: A > B, B > C, C > D.
-			// Hard: A > B, C < B, D < C, E < D.
 			if (difficulty === 'easy') {
 				const [first, second, third] = rng.shuffle(people).slice(0, 3) as [string, string, string];
 				return {
@@ -88,19 +85,13 @@ function buildPuzzle(
 					string,
 					string
 				];
-				const base = t('deduction.comparisonPrompt', { first, second, third });
-				const extra =
-					t('deduction.comparisonExplain', { first: third, second: fourth, third: 'x' }).split(
-						'.'
-					)[0] + '.';
-				// We combine base prompt with an extra clue from another translation
 				return {
-					prompt: `${base.replace('?', '')} ${extra} ?`,
+					prompt: t('deduction.comparisonPrompt4', { first, second, third, fourth }),
 					answer: first,
 					deductionTarget: first,
 					entities: [first, second, third, fourth],
 					distractors: [second, third, fourth, t('arena.cannotDetermine')],
-					explanation: t('deduction.comparisonExplain', { first, second, third })
+					explanation: t('deduction.comparisonExplain4', { first, second, third, fourth })
 				};
 			}
 		}
@@ -127,28 +118,27 @@ function buildPuzzle(
 				};
 			} else {
 				return {
-					prompt:
-						t('deduction.orderPrompt', {
-							first: selection[0]!,
-							second: selection[1]!,
-							third: selection[2]!
-						}) +
-						' ' +
-						t('deduction.orderExplain', {
-							first: selection[2]!,
-							second: selection[3]!,
-							third: 'x'
-						}),
+					prompt: t('deduction.orderPrompt4', {
+						first: selection[0]!,
+						second: selection[1]!,
+						third: selection[2]!,
+						fourth: selection[3]!
+					}),
 					answer: selection[3] as string,
 					deductionTarget: selection[3] as string,
 					entities: selection as string[],
 					distractors: [selection[0] as string, selection[1] as string, selection[2] as string],
-					explanation: 'Combined logic.'
+					explanation: t('deduction.orderExplain4', {
+						first: selection[0]!,
+						second: selection[1]!,
+						third: selection[2]!,
+						fourth: selection[3]!
+					})
 				};
 			}
 		}
 		case 'simple_elimination': {
-			const numPeople = difficulty === 'hard' ? 5 : difficulty === 'medium' ? 4 : 3;
+			const numPeople = difficulty === 'easy' ? 3 : 4;
 			const selection = rng.shuffle(people).slice(0, numPeople);
 
 			if (difficulty === 'easy') {
@@ -166,19 +156,17 @@ function buildPuzzle(
 				};
 			} else {
 				return {
-					prompt:
-						t('deduction.eliminationPrompt', {
-							correct: selection[0],
-							wrongA: selection[1],
-							wrongB: selection[2]
-						}) +
-						' ' +
-						t('deduction.eliminationExplain', { correct: selection[3] }),
+					prompt: t('deduction.eliminationPrompt4', {
+						correct: selection[0],
+						wrongA: selection[1],
+						wrongB: selection[2],
+						wrongC: selection[3]
+					}),
 					answer: selection[0] as string,
 					deductionTarget: selection[0] as string,
 					entities: selection as string[],
 					distractors: [selection[1] as string, selection[2] as string, selection[3] as string],
-					explanation: t('deduction.eliminationExplain', { correct: selection[0] })
+					explanation: t('deduction.eliminationExplain4', { correct: selection[0] })
 				};
 			}
 		}
@@ -195,15 +183,12 @@ function buildPuzzle(
 				};
 			} else {
 				return {
-					prompt:
-						t('deduction.truthPrompt', { truth, falsehood }) +
-						' ' +
-						t('deduction.truthExplain', { truth: third }),
+					prompt: t('deduction.truthPrompt3', { truth, falsehood, third }),
 					answer: truth,
 					deductionTarget: truth,
 					entities: [truth, falsehood, third],
 					distractors: [falsehood, third, t('deduction.neither')],
-					explanation: t('deduction.truthExplain', { truth })
+					explanation: t('deduction.truthExplain3', { truth })
 				};
 			}
 		}
@@ -225,15 +210,12 @@ function buildPuzzle(
 				};
 			} else {
 				return {
-					prompt:
-						t('deduction.positionPrompt', { left, middle, right }) +
-						' ' +
-						t('deduction.positionExplain', { middle: farRight }),
+					prompt: t('deduction.positionPrompt4', { left, middle, right, farRight }),
 					answer: middle,
 					deductionTarget: middle,
 					entities: [left, middle, right, farRight],
 					distractors: [left, right, farRight, t('arena.cannotDetermine')],
-					explanation: t('deduction.positionExplain', { middle })
+					explanation: t('deduction.positionExplain4', { middle, left, right })
 				};
 			}
 		}

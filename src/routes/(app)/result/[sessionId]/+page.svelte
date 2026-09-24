@@ -1,8 +1,10 @@
 <script lang="ts">
 	import type { PageData } from './$types';
 	import Button from '$lib/components/primitives/Button.svelte';
-	import Card from '$lib/components/primitives/Card.svelte';
-	import QuestionReviewList from '$lib/components/result/QuestionReviewList.svelte';
+	import QuestionReviewList, {
+		type ReviewFilter
+	} from '$lib/components/result/QuestionReviewList.svelte';
+	import RoundCategoryBreakdown from '$lib/components/result/RoundCategoryBreakdown.svelte';
 	import ResultSummary from '$lib/components/result/ResultSummary.svelte';
 	import ShareResultModal from '$lib/components/result/ShareResultModal.svelte';
 	import { getI18nContext } from '$lib/i18n/context';
@@ -81,6 +83,26 @@
 			isCreatingDuel = false;
 		}
 	}
+
+	function handleReviewFilterChange(filter: ReviewFilter) {
+		analytics.track('review_filter_applied', {
+			session_id: result.sessionId,
+			filter
+		});
+	}
+
+	function handlePracticeCategory(
+		category: string,
+		roundAccuracy: number,
+		isSingleCategory: boolean
+	) {
+		analytics.track('practice_weakest_category_clicked', {
+			session_id: result.sessionId,
+			category,
+			round_accuracy: roundAccuracy,
+			is_single_category: isSingleCategory
+		});
+	}
 </script>
 
 <svelte:head>
@@ -153,15 +175,11 @@
 		isSuspicious={result.isSuspicious}
 	/>
 
-	<Card title={t('dashboard.categoryMastery')}>
-		<p class="font-semibold text-[var(--color-muted)]">
-			{t('result.categoryBody')}
-		</p>
-	</Card>
+	<RoundCategoryBreakdown review={result.review} onPracticeClick={handlePracticeCategory} />
 
 	<section class="grid gap-4">
 		<h2 class="text-3xl font-black">{t('result.questionReview')}</h2>
-		<QuestionReviewList review={result.review} />
+		<QuestionReviewList review={result.review} onFilterChange={handleReviewFilterChange} />
 	</section>
 </section>
 

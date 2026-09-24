@@ -128,7 +128,12 @@ function buildSequence(
 			const values = Array.from({ length: 6 }, (_, index) => (start + index * step) ** power);
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
 
-			return formatResult(values, answerIndex, 20 * step, t('explain.square'));
+			return formatResult(
+				values,
+				answerIndex,
+				20 * step,
+				isCube ? t('explain.cube') : t('explain.square')
+			);
 		}
 		case 'fibonacci_like': {
 			const first = rng.intBetween(1, 7);
@@ -148,24 +153,24 @@ function buildSequence(
 			const add = rng.intBetween(3, 10);
 			const subtract = difficulty === 'easy' ? rng.intBetween(1, 4) : rng.intBetween(2, 8);
 			const isMultiplyAdd = difficulty === 'hard'; // Instead of +/- it's * / +
+			const mult = Math.max(2, add % 4);
 
 			const values = [start];
 			for (let index = 1; index < 6; index += 1) {
 				const previous = values[index - 1] as number;
 				if (isMultiplyAdd) {
-					values.push(index % 2 === 1 ? previous * Math.max(2, add % 4) : previous + subtract);
+					values.push(index % 2 === 1 ? previous * mult : previous + subtract);
 				} else {
 					values.push(index % 2 === 1 ? previous + add : previous - subtract);
 				}
 			}
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
 
-			return formatResult(
-				values,
-				answerIndex,
-				add + subtract + 5,
-				t('explain.alternating', { add, subtract })
-			);
+			const explanation = isMultiplyAdd
+				? t('explain.alternatingMultiplyAdd', { mult, add: subtract })
+				: t('explain.alternating', { add, subtract });
+
+			return formatResult(values, answerIndex, add + subtract + 5, explanation);
 		}
 		case 'increasing_difference': {
 			const start = rng.intBetween(1, 8);
@@ -180,7 +185,12 @@ function buildSequence(
 			}
 			const answerIndex = allowMiddleMissing && rng.boolean() ? rng.intBetween(3, 4) : 5;
 
-			return formatResult(values, answerIndex, 20, t('explain.increasing', { step: firstStep }));
+			const explanation =
+				stepIncrease > 1
+					? t('explain.increasingStep', { step: firstStep, increase: stepIncrease })
+					: t('explain.increasing', { step: firstStep });
+
+			return formatResult(values, answerIndex, 20, explanation);
 		}
 	}
 }
