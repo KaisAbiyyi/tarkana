@@ -43,7 +43,8 @@ import {
 import {
 	calculateCategoryMasteryUpdate,
 	isMasteryEligibleChallengeType,
-	MASTERY_RATING_VERSION
+	MASTERY_RATING_VERSION,
+	resolveInitialCategoryMasteryPrior
 } from '$lib/server/scoring/mastery';
 import type { ChallengeType, QuestionType } from '$lib/shared/constants/challenge';
 
@@ -157,6 +158,7 @@ export function isCompetitiveSessionFilter(table = challengeSessions) {
 	return and(
 		eq(table.status, 'completed'),
 		eq(table.isSuspicious, false),
+		isNull(table.claimedAt),
 		notInArray(table.challengeType, ['daily', 'duel'])
 	);
 }
@@ -728,6 +730,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 				if (
 					isMasteryEligibleChallengeType(currentSession.challengeType) &&
 					!input.isSuspicious &&
+					!currentSession.claimedAt &&
 					input.userId
 				) {
 					const sQuestions = await tx
@@ -783,7 +786,7 @@ export function createSessionRepository(database: Database = getDb()): SessionRe
 							.for('update')
 							.limit(1);
 
-						const initialPrior = Math.max(0, currentSession.ratingBefore);
+						const initialPrior = resolveInitialCategoryMasteryPrior(currentSession.ratingBefore);
 						const currentRating = existingMastery?.rating ?? initialPrior;
 						const totalQuestions = existingMastery?.totalQuestions ?? 0;
 						const totalSessions = existingMastery?.totalSessions ?? 0;

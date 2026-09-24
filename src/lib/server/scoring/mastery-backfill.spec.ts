@@ -4,12 +4,14 @@ import {
 	type BackfillDataProvider,
 	type CategoryMasteryState
 } from './mastery-backfill';
+import { MASTERY_RATING_VERSION } from './mastery';
 import type { QuestionType } from '$lib/shared/constants/challenge';
 
 interface MockDatabaseState {
 	eligibleUserIds: string[];
 	processedSessionIds: Map<string, Set<string>>; // userId -> sessionIds
 	userMastery: Map<string, Map<QuestionType, CategoryMasteryState>>; // userId -> type -> state
+	userVersion: Map<string, number>; // userId -> version
 	sessions: Map<
 		string,
 		Array<{
@@ -17,6 +19,7 @@ interface MockDatabaseState {
 			challengeType: string;
 			ratingBefore: number;
 			completedAt: Date | null;
+			claimedAt?: Date | null;
 		}>
 	>;
 	sessionQuestions: Map<
@@ -40,6 +43,8 @@ interface MockDatabaseState {
 		userId: string;
 		questionType: QuestionType;
 		ratingDelta: number;
+		ratingBefore: number;
+		ratingAfter: number;
 	}>;
 }
 
@@ -51,6 +56,7 @@ function createMockBackfillProvider(initialState: Partial<MockDatabaseState> = {
 		eligibleUserIds: initialState.eligibleUserIds ?? ['user-1'],
 		processedSessionIds: initialState.processedSessionIds ?? new Map(),
 		userMastery: initialState.userMastery ?? new Map(),
+		userVersion: initialState.userVersion ?? new Map(),
 		sessions: initialState.sessions ?? new Map(),
 		sessionQuestions: initialState.sessionQuestions ?? new Map(),
 		sessionAnswers: initialState.sessionAnswers ?? new Map(),
@@ -74,7 +80,10 @@ function createMockBackfillProvider(initialState: Partial<MockDatabaseState> = {
 					map.set(k, { ...v });
 				}
 			}
-			return map;
+			return {
+				version: state.userVersion.get(userId) ?? MASTERY_RATING_VERSION,
+				masteries: map
+			};
 		},
 
 		async getEligibleSessions(userId: string) {
@@ -98,7 +107,9 @@ function createMockBackfillProvider(initialState: Partial<MockDatabaseState> = {
 				sessionId: data.change.sessionId,
 				userId: data.change.userId,
 				questionType: data.change.questionType,
-				ratingDelta: data.change.ratingDelta
+				ratingDelta: data.change.ratingDelta,
+				ratingBefore: data.change.ratingBefore,
+				ratingAfter: data.change.ratingAfter
 			});
 
 			let userMap = state.userMastery.get(data.mastery.userId);
@@ -112,6 +123,7 @@ function createMockBackfillProvider(initialState: Partial<MockDatabaseState> = {
 				correctAnswers: data.mastery.correctAnswers,
 				totalSessions: data.mastery.totalSessions
 			});
+			state.userVersion.set(data.mastery.userId, MASTERY_RATING_VERSION);
 
 			let processed = state.processedSessionIds.get(data.change.userId);
 			if (!processed) {
@@ -134,13 +146,15 @@ describe('Category Mastery Backfill Utility', () => {
 				id: 's-1',
 				challengeType: 'quick',
 				ratingBefore: 1200,
-				completedAt: new Date('2026-01-01T10:00:00Z')
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
 			},
 			{
 				id: 's-2',
 				challengeType: 'standard',
 				ratingBefore: 1200,
-				completedAt: new Date('2026-01-02T10:00:00Z')
+				completedAt: new Date('2026-01-02T10:00:00Z'),
+				claimedAt: null
 			}
 		]);
 
@@ -176,6 +190,119 @@ describe('Category Mastery Backfill Utility', () => {
 		expect(state.persistedChanges.length).toBe(2);
 	});
 
+	it('initializes unranked player with calibrated default prior (400)', async () => {
+		const { provider, state } = createMockBackfillProvider();
+
+		state.sessions.set('user-1', [
+			{
+				id: 's-1',
+				challengeType: 'quick',
+				ratingBefore: 0, // Unranked
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
+			}
+		]);
+
+		state.sessionQuestions.set('s-1', [
+			{ id: 'q-1', questionType: 'number_sequence', difficultyScore: 120, orderIndex: 0 }
+		]);
+		state.sessionAnswers.set('s-1', [{ sessionQuestionId: 'q-1', isCorrect: true }]);
+
+		const summary = await executeMasteryReplay(provider);
+		expect(summary.totalSessionsProcessed).toBe(1);
+
+		const numSeq = summary.userResults[0].categoriesUpdated['number_sequence'];
+		expect(numSeq.rating).toBeGreaterThan(400);
+		expect(state.persistedChanges[0].ratingBefore).toBe(400);
+	});
+
+	it('strictly excludes claimed guest history sessions from mastery replay', async () => {
+		const { provider, state } = createMockBackfillProvider();
+
+		state.sessions.set('user-1', [
+			{
+				id: 's-guest-claimed',
+				challengeType: 'quick',
+				ratingBefore: 0,
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: new Date('2026-01-02T10:00:00Z') // Claimed guest session!
+			},
+			{
+				id: 's-user-auth',
+				challengeType: 'quick',
+				ratingBefore: 1200,
+				completedAt: new Date('2026-01-03T10:00:00Z'),
+				claimedAt: null
+			}
+		]);
+
+		state.sessionQuestions.set('s-guest-claimed', [
+			{ id: 'q-g1', questionType: 'number_sequence', difficultyScore: 120, orderIndex: 0 }
+		]);
+		state.sessionAnswers.set('s-guest-claimed', [{ sessionQuestionId: 'q-g1', isCorrect: true }]);
+
+		state.sessionQuestions.set('s-user-auth', [
+			{ id: 'q-u1', questionType: 'number_sequence', difficultyScore: 250, orderIndex: 0 }
+		]);
+		state.sessionAnswers.set('s-user-auth', [{ sessionQuestionId: 'q-u1', isCorrect: true }]);
+
+		const summary = await executeMasteryReplay(provider);
+
+		expect(summary.totalSessionsProcessed).toBe(1);
+		expect(summary.totalSessionsSkipped).toBe(1);
+
+		const numSeq = summary.userResults[0].categoriesUpdated['number_sequence'];
+		expect(numSeq.totalSessions).toBe(1);
+		expect(numSeq.totalQuestions).toBe(1);
+		expect(state.persistedChanges.length).toBe(1);
+		expect(state.persistedChanges[0].sessionId).toBe('s-user-auth');
+	});
+
+	it('rebuilds from scratch when existing stored version is outdated', async () => {
+		const { provider, state } = createMockBackfillProvider();
+
+		state.sessions.set('user-1', [
+			{
+				id: 's-1',
+				challengeType: 'quick',
+				ratingBefore: 0,
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
+			}
+		]);
+		state.sessionQuestions.set('s-1', [
+			{ id: 'q-1', questionType: 'number_sequence', difficultyScore: 120, orderIndex: 0 }
+		]);
+		state.sessionAnswers.set('s-1', [{ sessionQuestionId: 'q-1', isCorrect: true }]);
+
+		// User has version 1 data stored (outdated)
+		state.userVersion.set('user-1', 1);
+		state.userMastery.set(
+			'user-1',
+			new Map([
+				[
+					'number_sequence',
+					{
+						rating: 15,
+						totalQuestions: 1,
+						correctAnswers: 1,
+						totalSessions: 1
+					}
+				]
+			])
+		);
+		state.processedSessionIds.set('user-1', new Set(['s-1']));
+
+		// Incremental replay should detect outdated version and rebuild under version 2
+		const summary = await executeMasteryReplay(provider, { recomputeAll: false });
+
+		expect(summary.totalSessionsProcessed).toBe(1);
+		expect(summary.totalSessionsSkipped).toBe(0);
+
+		const numSeq = summary.userResults[0].categoriesUpdated['number_sequence'];
+		expect(numSeq.rating).toBeGreaterThan(400); // Recomputed with calibrated prior 400!
+	});
+
 	it('skips already processed sessions on incremental run', async () => {
 		const { provider, state } = createMockBackfillProvider();
 
@@ -184,17 +311,18 @@ describe('Category Mastery Backfill Utility', () => {
 				id: 's-1',
 				challengeType: 'quick',
 				ratingBefore: 1200,
-				completedAt: new Date('2026-01-01T10:00:00Z')
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
 			},
 			{
 				id: 's-2',
 				challengeType: 'quick',
 				ratingBefore: 1210,
-				completedAt: new Date('2026-01-02T10:00:00Z')
+				completedAt: new Date('2026-01-02T10:00:00Z'),
+				claimedAt: null
 			}
 		]);
 
-		// Pre-mark s-1 as already processed
 		state.processedSessionIds.set('user-1', new Set(['s-1']));
 		state.userMastery.set(
 			'user-1',
@@ -210,6 +338,7 @@ describe('Category Mastery Backfill Utility', () => {
 				]
 			])
 		);
+		state.userVersion.set('user-1', MASTERY_RATING_VERSION);
 
 		state.sessionQuestions.set('s-2', [
 			{ id: 'q-3', questionType: 'number_sequence', difficultyScore: 300, orderIndex: 0 }
@@ -234,7 +363,8 @@ describe('Category Mastery Backfill Utility', () => {
 				id: 's-1',
 				challengeType: 'quick',
 				ratingBefore: 1200,
-				completedAt: new Date('2026-01-01T10:00:00Z')
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
 			}
 		]);
 		state.sessionQuestions.set('s-1', [
@@ -242,7 +372,6 @@ describe('Category Mastery Backfill Utility', () => {
 		]);
 		state.sessionAnswers.set('s-1', [{ sessionQuestionId: 'q-1', isCorrect: true }]);
 
-		// Pre-existing dirty state
 		state.processedSessionIds.set('user-1', new Set(['s-1']));
 		state.userMastery.set(
 			'user-1',
@@ -253,6 +382,7 @@ describe('Category Mastery Backfill Utility', () => {
 				]
 			])
 		);
+		state.userVersion.set('user-1', MASTERY_RATING_VERSION);
 
 		const summary = await executeMasteryReplay(provider, { recomputeAll: true });
 
@@ -273,7 +403,8 @@ describe('Category Mastery Backfill Utility', () => {
 				id: 's-1',
 				challengeType: 'quick',
 				ratingBefore: 1200,
-				completedAt: new Date('2026-01-01T10:00:00Z')
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
 			}
 		]);
 		state.sessionQuestions.set('s-1', [
@@ -297,13 +428,15 @@ describe('Category Mastery Backfill Utility', () => {
 				id: 's-daily',
 				challengeType: 'daily',
 				ratingBefore: 1200,
-				completedAt: new Date('2026-01-01T10:00:00Z')
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
 			},
 			{
 				id: 's-duel',
 				challengeType: 'duel',
 				ratingBefore: 1200,
-				completedAt: new Date('2026-01-02T10:00:00Z')
+				completedAt: new Date('2026-01-02T10:00:00Z'),
+				claimedAt: null
 			}
 		]);
 
@@ -322,7 +455,8 @@ describe('Category Mastery Backfill Utility', () => {
 				id: 's-mixed',
 				challengeType: 'standard',
 				ratingBefore: 1000,
-				completedAt: new Date('2026-01-01T10:00:00Z')
+				completedAt: new Date('2026-01-01T10:00:00Z'),
+				claimedAt: null
 			}
 		]);
 
