@@ -1,3 +1,7 @@
+import type { QuestionType } from '$lib/shared/constants/challenge';
+
+export type LeaderboardTab = 'daily' | 'global' | 'tier' | 'category';
+
 export type LeaderboardEntryDto = {
 	userId: string;
 	position: number;
@@ -7,6 +11,17 @@ export type LeaderboardEntryDto = {
 	logicRating: number;
 	averageAccuracy: number;
 	totalCompleted: number;
+};
+
+export type CategoryLeaderboardEntryDto = {
+	userId: string;
+	position: number;
+	displayName: string;
+	questionType: QuestionType;
+	masteryRating: number;
+	accuracy: number;
+	totalQuestions: number;
+	totalSessions: number;
 };
 
 export type DailyLeaderboardEntryDto = {

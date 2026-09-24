@@ -1,0 +1,1 @@
+CREATE INDEX "users_profile_rank_rating_idx" ON "users_profile" USING btree ("rank","rating" DESC NULLS LAST);

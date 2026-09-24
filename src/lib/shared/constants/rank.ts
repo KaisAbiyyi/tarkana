@@ -12,6 +12,15 @@ export type RankName = (typeof RANK_NAMES)[number];
 
 export type RankedTier = Exclude<RankName, 'Unranked'>;
 
+export const RANKED_TIERS = [
+	'Bronze Mind',
+	'Silver Solver',
+	'Gold Analyst',
+	'Platinum Strategist',
+	'Diamond Reasoner',
+	'Mastermind'
+] as const satisfies readonly RankedTier[];
+
 export type RankDefinition = {
 	name: RankedTier;
 	minRating: number;

@@ -5,9 +5,17 @@
 	import Card from '$lib/components/primitives/Card.svelte';
 	import LeaderboardTable from '$lib/components/leaderboard/LeaderboardTable.svelte';
 	import DailyLeaderboardTable from '$lib/components/leaderboard/DailyLeaderboardTable.svelte';
+	import CategoryLeaderboardTable from '$lib/components/leaderboard/CategoryLeaderboardTable.svelte';
 	import Button from '$lib/components/primitives/Button.svelte';
 	import Badge from '$lib/components/primitives/Badge.svelte';
-	import type { LeaderboardEntryDto } from '$lib/shared/types/leaderboard';
+	import type {
+		CategoryLeaderboardEntryDto,
+		LeaderboardEntryDto,
+		LeaderboardTab
+	} from '$lib/shared/types/leaderboard';
+	import { QUESTION_TYPES, type QuestionType } from '$lib/shared/constants/challenge';
+	import { RANKED_TIERS, type RankedTier } from '$lib/shared/constants/rank';
+	import { labelQuestionType, labelRank } from '$lib/shared/presentation/format';
 	import { getI18nContext } from '$lib/i18n/context';
 
 	type Props = {
@@ -15,16 +23,30 @@
 	};
 
 	let { data }: Props = $props();
-	const { t } = getI18nContext();
+	const { locale, t } = getI18nContext();
 
-	let activeTab = $derived(data.tab as 'daily' | 'global');
+	let activeTab = $derived(data.tab as LeaderboardTab);
 	let selectedDate = $derived(data.date);
+	let selectedTier = $derived(data.selectedTier as RankedTier);
+	let selectedCategory = $derived(data.selectedCategory as QuestionType);
 
 	// Global leaderboard state
 	let globalEntries = $state<LeaderboardEntryDto[]>([]);
 	let isLoadingGlobal = $state(false);
 	let globalError = $state<string | null>(null);
 	let hasMoreGlobal = $state(false);
+
+	// Tier leaderboard state
+	let tierEntries = $state<LeaderboardEntryDto[]>([]);
+	let isLoadingTier = $state(false);
+	let tierError = $state<string | null>(null);
+	let hasMoreTier = $state(false);
+
+	// Category leaderboard state
+	let categoryEntries = $state<CategoryLeaderboardEntryDto[]>([]);
+	let isLoadingCategory = $state(false);
+	let categoryError = $state<string | null>(null);
+	let hasMoreCategory = $state(false);
 
 	// Countdown timer for daily reset
 	let elapsedSeconds = $state(0);
@@ -60,9 +82,43 @@
 		}
 	});
 
-	function handleTabChange(tab: 'daily' | 'global') {
+	$effect(() => {
+		if (data.tierLeaderboard) {
+			tierEntries = data.tierLeaderboard.items;
+			hasMoreTier = data.tierLeaderboard.items.length === 50;
+		}
+	});
+
+	$effect(() => {
+		if (data.categoryLeaderboard) {
+			categoryEntries = data.categoryLeaderboard.items;
+			hasMoreCategory = data.categoryLeaderboard.items.length === 50;
+		}
+	});
+
+	function handleTabChange(tab: LeaderboardTab) {
 		const url = new URL(window.location.href);
 		url.searchParams.set('tab', tab);
+		if (tab === 'tier' && !url.searchParams.has('tier')) {
+			url.searchParams.set('tier', selectedTier);
+		}
+		if (tab === 'category' && !url.searchParams.has('category')) {
+			url.searchParams.set('category', selectedCategory);
+		}
+		goto(url.toString(), { keepFocus: true, noScroll: true });
+	}
+
+	function handleTierChange(tier: RankedTier) {
+		const url = new URL(window.location.href);
+		url.searchParams.set('tab', 'tier');
+		url.searchParams.set('tier', tier);
+		goto(url.toString(), { keepFocus: true, noScroll: true });
+	}
+
+	function handleCategoryChange(cat: QuestionType) {
+		const url = new URL(window.location.href);
+		url.searchParams.set('tab', 'category');
+		url.searchParams.set('category', cat);
 		goto(url.toString(), { keepFocus: true, noScroll: true });
 	}
 
@@ -94,6 +150,50 @@
 			isLoadingGlobal = false;
 		}
 	}
+
+	async function loadMoreTier() {
+		if (isLoadingTier) return;
+		isLoadingTier = true;
+		tierError = null;
+		try {
+			const res = await fetch(
+				`/api/leaderboard?scope=tier&rank=${encodeURIComponent(selectedTier)}&limit=50&offset=${tierEntries.length}`
+			);
+			if (!res.ok) throw new Error(t('leaderboard.loadFailed'));
+			const json = await res.json();
+			const newEntries = json.items as LeaderboardEntryDto[];
+			if (newEntries.length < 50) {
+				hasMoreTier = false;
+			}
+			tierEntries = [...tierEntries, ...newEntries];
+		} catch (e: unknown) {
+			tierError = e instanceof Error ? e.message : t('leaderboard.loadFailed');
+		} finally {
+			isLoadingTier = false;
+		}
+	}
+
+	async function loadMoreCategory() {
+		if (isLoadingCategory) return;
+		isLoadingCategory = true;
+		categoryError = null;
+		try {
+			const res = await fetch(
+				`/api/leaderboard?scope=category&category=${encodeURIComponent(selectedCategory)}&limit=50&offset=${categoryEntries.length}`
+			);
+			if (!res.ok) throw new Error(t('leaderboard.loadFailed'));
+			const json = await res.json();
+			const newEntries = json.items as CategoryLeaderboardEntryDto[];
+			if (newEntries.length < 50) {
+				hasMoreCategory = false;
+			}
+			categoryEntries = [...categoryEntries, ...newEntries];
+		} catch (e: unknown) {
+			categoryError = e instanceof Error ? e.message : t('leaderboard.loadFailed');
+		} finally {
+			isLoadingCategory = false;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -103,10 +203,13 @@
 
 <section class="grid gap-8">
 	<!-- Tab Navigation -->
-	<nav aria-label="Leaderboard views" class="flex border-b-[3px] border-[var(--color-border)]">
+	<nav
+		aria-label="Leaderboard views"
+		class="flex flex-wrap border-b-[3px] border-[var(--color-border)]"
+	>
 		<button
 			type="button"
-			class="px-6 py-3 text-base font-black uppercase transition-colors
+			class="px-5 py-3 text-sm font-black uppercase transition-colors sm:text-base
 			{activeTab === 'daily'
 				? 'border-b-4 border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-text)]'
 				: 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}"
@@ -116,13 +219,33 @@
 		</button>
 		<button
 			type="button"
-			class="px-6 py-3 text-base font-black uppercase transition-colors
+			class="px-5 py-3 text-sm font-black uppercase transition-colors sm:text-base
 			{activeTab === 'global'
 				? 'border-b-4 border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-text)]'
 				: 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}"
 			onclick={() => handleTabChange('global')}
 		>
 			{t('leaderboard.tabGlobal')}
+		</button>
+		<button
+			type="button"
+			class="px-5 py-3 text-sm font-black uppercase transition-colors sm:text-base
+			{activeTab === 'tier'
+				? 'border-b-4 border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-text)]'
+				: 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}"
+			onclick={() => handleTabChange('tier')}
+		>
+			{t('leaderboard.tabTier')}
+		</button>
+		<button
+			type="button"
+			class="px-5 py-3 text-sm font-black uppercase transition-colors sm:text-base
+			{activeTab === 'category'
+				? 'border-b-4 border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-text)]'
+				: 'text-[var(--color-muted)] hover:text-[var(--color-text)]'}"
+			onclick={() => handleTabChange('category')}
+		>
+			{t('leaderboard.tabCategory')}
 		</button>
 	</nav>
 
@@ -185,7 +308,7 @@
 				guestHypotheticalEntry={data.dailyLeaderboard.guestHypotheticalEntry}
 			/>
 		</Card>
-	{:else}
+	{:else if activeTab === 'global'}
 		<!-- Global All-Time Leaderboard View -->
 		{#if data.isGuest}
 			<div
@@ -230,6 +353,146 @@
 					</div>
 				{/if}
 			</Card>
+		{/if}
+	{:else if activeTab === 'tier'}
+		<!-- Logic Rank Tier Leaderboard View -->
+		{#if data.isGuest}
+			<div
+				class="border-[3px] border-[var(--color-border)] bg-amber-50 p-8 text-center shadow-[var(--shadow-hard-sm)]"
+			>
+				<h2 class="text-2xl font-black text-amber-950">Logic Rank Tier Leaderboard</h2>
+				<p class="mt-2 text-sm font-bold text-amber-800">
+					Tier rankings require an authenticated account.
+				</p>
+				<Button href="/auth/login" variant="primary" class="mt-4">
+					{t('nav.login')}
+				</Button>
+			</div>
+		{:else}
+			<header>
+				<p class="page-kicker">{t('leaderboard.tabTier')}</p>
+				<h1 class="page-title">{labelRank(selectedTier, locale)}</h1>
+				<p class="mt-3 max-w-2xl text-base font-semibold text-[var(--color-muted)] sm:text-lg">
+					{t('leaderboard.tierIntro')}
+				</p>
+			</header>
+
+			<!-- Tier Selector Pills -->
+			<nav aria-label={t('leaderboard.selectTier')} class="flex flex-wrap gap-2">
+				{#each RANKED_TIERS as tier (tier)}
+					<button
+						type="button"
+						class="border-2 border-[var(--color-border)] px-4 py-2 text-xs font-black uppercase shadow-[var(--shadow-hard-sm)] transition-all
+						{selectedTier === tier
+							? 'bg-[var(--color-primary)] text-black'
+							: 'bg-white text-[var(--color-text)] hover:bg-gray-100'}"
+						onclick={() => handleTierChange(tier)}
+					>
+						{labelRank(tier, locale)}
+					</button>
+				{/each}
+			</nav>
+
+			{#if data.currentUserRank === 'Unranked'}
+				<div
+					class="border-2 border-dashed border-amber-500 bg-amber-50 p-4 text-xs font-bold text-amber-900 sm:text-sm"
+				>
+					⚠️ {t('leaderboard.unrankedNotice')}
+				</div>
+			{/if}
+
+			{#if data.tierLeaderboard}
+				<Card title="{labelRank(selectedTier, locale)} — {t('leaderboard.topReasoners')}">
+					<LeaderboardTable
+						entries={tierEntries}
+						currentUserEntry={data.tierCurrentUserEntry}
+						currentUserId={data.currentUserId ?? undefined}
+					/>
+
+					{#if hasMoreTier}
+						<div class="mt-6 flex flex-col items-center gap-2">
+							{#if tierError}
+								<p class="text-sm font-bold text-red-600">{tierError}</p>
+								<Button variant="secondary" onclick={loadMoreTier} disabled={isLoadingTier}>
+									{isLoadingTier ? t('prep.loading') : t('common.tryAgain')}
+								</Button>
+							{:else}
+								<Button variant="secondary" onclick={loadMoreTier} disabled={isLoadingTier}>
+									{isLoadingTier ? t('prep.loading') : t('history.loadMore')}
+								</Button>
+							{/if}
+						</div>
+					{/if}
+				</Card>
+			{/if}
+		{/if}
+	{:else if activeTab === 'category'}
+		<!-- Category Mastery Leaderboard View -->
+		{#if data.isGuest}
+			<div
+				class="border-[3px] border-[var(--color-border)] bg-amber-50 p-8 text-center shadow-[var(--shadow-hard-sm)]"
+			>
+				<h2 class="text-2xl font-black text-amber-950">Category Mastery Leaderboard</h2>
+				<p class="mt-2 text-sm font-bold text-amber-800">
+					Category mastery rankings require an authenticated account.
+				</p>
+				<Button href="/auth/login" variant="primary" class="mt-4">
+					{t('nav.login')}
+				</Button>
+			</div>
+		{:else}
+			<header>
+				<p class="page-kicker">{t('leaderboard.tabCategory')}</p>
+				<h1 class="page-title">{labelQuestionType(selectedCategory, locale)}</h1>
+				<p class="mt-3 max-w-2xl text-base font-semibold text-[var(--color-muted)] sm:text-lg">
+					{t('leaderboard.categoryIntro')}
+				</p>
+			</header>
+
+			<!-- Category Selector Pills -->
+			<nav aria-label={t('leaderboard.selectCategory')} class="flex flex-wrap gap-2">
+				{#each QUESTION_TYPES as cat (cat)}
+					<button
+						type="button"
+						class="border-2 border-[var(--color-border)] px-4 py-2 text-xs font-black uppercase shadow-[var(--shadow-hard-sm)] transition-all
+						{selectedCategory === cat
+							? 'bg-[var(--color-primary)] text-black'
+							: 'bg-white text-[var(--color-text)] hover:bg-gray-100'}"
+						onclick={() => handleCategoryChange(cat)}
+					>
+						{labelQuestionType(cat, locale)}
+					</button>
+				{/each}
+			</nav>
+
+			{#if data.categoryLeaderboard}
+				<Card
+					title="{labelQuestionType(selectedCategory, locale)} — {t('leaderboard.topReasoners')}"
+				>
+					<CategoryLeaderboardTable
+						entries={categoryEntries}
+						currentUserEntry={data.categoryCurrentUserEntry?.entry}
+						currentUserId={data.currentUserId ?? undefined}
+						provisionalProgress={data.categoryCurrentUserEntry?.provisionalProgress}
+						isQualified={data.categoryCurrentUserEntry?.isQualified ?? false}
+					/>
+
+					{#if hasMoreCategory}
+						<div class="mt-6 flex flex-col items-center gap-2">
+							{#if categoryError}
+								<p class="text-sm font-bold text-red-600">{categoryError}</p>
+								<Button variant="secondary" onclick={loadMoreCategory} disabled={isLoadingCategory}>
+									{isLoadingCategory ? t('prep.loading') : t('common.tryAgain')}
+								</Button>
+							{:else}
+								<Button variant="secondary" onclick={loadMoreCategory} disabled={isLoadingCategory}>
+									{isLoadingCategory ? t('prep.loading') : t('history.loadMore')}
+								</Button>
+							{/if}
+						</div>
+					{/if}
+				</Card>
+			{/if}
 		{/if}
 	{/if}
 </section>
