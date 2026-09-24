@@ -71,7 +71,11 @@
 		<td class="p-4 font-bold">
 			<RankBadge rank={entry.rank} />
 		</td>
-		<td class="p-4 text-lg font-black">{entry.weeklyScore}</td>
+		<td class="p-4 text-lg font-black">{entry.averageScorePerAnswer.toFixed(1)}</td>
+		<td class="p-4 font-bold">{formatPercent(entry.averageAccuracy, locale)}</td>
+		<td class="p-4 font-bold">{(entry.responseTimeRatio * 100).toFixed(0)}%</td>
+		<td class="p-4 font-bold">{entry.totalQuestions}</td>
+		<td class="p-4 font-bold">{entry.totalSessions}</td>
 		<td class="p-4 font-black">
 			<span
 				class="inline-block px-1.5 py-0.5 text-xs font-black {entry.weeklyRatingDelta > 0
@@ -83,9 +87,6 @@
 				{formatDelta(entry.weeklyRatingDelta)}
 			</span>
 		</td>
-		<td class="p-4 font-bold">{formatPercent(entry.averageAccuracy, locale)}</td>
-		<td class="p-4 font-bold">{entry.totalQuestions}</td>
-		<td class="p-4 font-bold">{entry.totalSessions}</td>
 	</tr>
 {/snippet}
 
@@ -121,9 +122,9 @@
 			</div>
 			<div class="text-right">
 				<div class="text-[10px] font-black text-[var(--color-muted)] uppercase">
-					{t('leaderboard.weeklyScore')}
+					{t('leaderboard.avgScorePerAnswer')}
 				</div>
-				<div class="text-xl font-black">{entry.weeklyScore}</div>
+				<div class="text-xl font-black">{entry.averageScorePerAnswer.toFixed(1)}</div>
 				<div class="text-xs font-black">
 					<span
 						class={entry.weeklyRatingDelta > 0
@@ -138,13 +139,19 @@
 			</div>
 		</div>
 		<dl
-			class="mt-3 flex items-center gap-4 border-t-2 border-dashed border-[var(--color-border)] pt-3 text-xs"
+			class="mt-3 flex flex-wrap items-center gap-4 border-t-2 border-dashed border-[var(--color-border)] pt-3 text-xs"
 		>
 			<div>
 				<dt class="inline font-black text-[var(--color-muted)] uppercase">
 					{t('leaderboard.accuracy')}:
 				</dt>
 				<dd class="ml-1 inline font-black">{formatPercent(entry.averageAccuracy, locale)}</dd>
+			</div>
+			<div>
+				<dt class="inline font-black text-[var(--color-muted)] uppercase">
+					{t('leaderboard.timeRatio')}:
+				</dt>
+				<dd class="ml-1 inline font-black">{(entry.responseTimeRatio * 100).toFixed(0)}%</dd>
 			</div>
 			<div>
 				<dt class="inline font-black text-[var(--color-muted)] uppercase">
@@ -172,14 +179,15 @@
 					{t('leaderboard.yourPosition')}: #{currentUserEntry.position}
 				</div>
 				<div class="font-bold">
-					{t('leaderboard.weeklyScore')}: {currentUserEntry.weeklyScore}
+					{t('leaderboard.avgScorePerAnswer')}: {currentUserEntry.averageScorePerAnswer.toFixed(1)}
 				</div>
 				<div class="font-bold">
 					{t('leaderboard.ratingGain')}: {formatDelta(currentUserEntry.weeklyRatingDelta)}
 				</div>
 				<div class="text-sm font-semibold text-[var(--color-muted)]">
 					{formatPercent(currentUserEntry.averageAccuracy, locale)}
-					{t('leaderboard.accuracy')} · {currentUserEntry.totalQuestions}
+					{t('leaderboard.accuracy')} · {(currentUserEntry.responseTimeRatio * 100).toFixed(0)}%
+					{t('leaderboard.timeRatio')} · {currentUserEntry.totalQuestions}
 					{t('leaderboard.questionsSolved')}
 				</div>
 			</div>
@@ -195,9 +203,9 @@
 					{t('leaderboard.provisionalTitle')}
 				</span>
 				<span class="text-sm font-black text-amber-900">
-					{t('leaderboard.weeklyScore')}: {currentUserProgress.weeklyScore} · {formatDelta(
-						currentUserProgress.weeklyRatingDelta
-					)}
+					{t('leaderboard.avgScorePerAnswer')}: {currentUserProgress.averageScorePerAnswer.toFixed(
+						1
+					)} · {formatDelta(currentUserProgress.weeklyRatingDelta)}
 				</span>
 			</div>
 			<p class="mt-2 text-xs font-bold text-amber-800">
@@ -254,19 +262,22 @@
 							{t('leaderboard.rank')}
 						</th>
 						<th scope="col" class="border-b-[3px] border-[var(--color-border)] p-4 font-black">
-							{t('leaderboard.weeklyScore')}
-						</th>
-						<th scope="col" class="border-b-[3px] border-[var(--color-border)] p-4 font-black">
-							{t('leaderboard.ratingGain')}
+							{t('leaderboard.avgScorePerAnswer')}
 						</th>
 						<th scope="col" class="border-b-[3px] border-[var(--color-border)] p-4 font-black">
 							{t('leaderboard.accuracy')}
+						</th>
+						<th scope="col" class="border-b-[3px] border-[var(--color-border)] p-4 font-black">
+							{t('leaderboard.timeRatio')}
 						</th>
 						<th scope="col" class="border-b-[3px] border-[var(--color-border)] p-4 font-black">
 							{t('leaderboard.questionsSolved')}
 						</th>
 						<th scope="col" class="border-b-[3px] border-[var(--color-border)] p-4 font-black">
 							{t('leaderboard.sessionsPlayed')}
+						</th>
+						<th scope="col" class="border-b-[3px] border-[var(--color-border)] p-4 font-black">
+							{t('leaderboard.ratingGain')}
 						</th>
 					</tr>
 				</thead>
@@ -275,7 +286,7 @@
 						{@render entryRow(pinnedEntry)}
 						<tr class="border-b-[3px] border-[var(--color-border)] bg-gray-100">
 							<td
-								colspan="8"
+								colspan="9"
 								class="p-2 text-center text-xs font-black text-[var(--color-muted)] uppercase"
 							>
 								•••

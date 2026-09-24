@@ -6709,6 +6709,34 @@ export const messages = {
 		'साप्ताहिक स्कोर',
 		'Недельные очки'
 	],
+	'leaderboard.avgScorePerAnswer': [
+		'Avg Score/Ans',
+		'Rata-rata Skor/Jawaban',
+		'Puntuación Prom/Resp',
+		'Score Moy/Rép',
+		'Ø Punkte/Antwort',
+		'Pontuação Méd/Resp',
+		'均分/题',
+		'平均スコア/問',
+		'문제당 평균 점수',
+		'متوسط النقاط/إجابة',
+		'औसत स्कोर/उत्तर',
+		'Ср. балл/ответ'
+	],
+	'leaderboard.timeRatio': [
+		'Time Ratio',
+		'Rasio Waktu',
+		'Ratio de Tiempo',
+		'Ratio de Temps',
+		'Zeitverhältnis',
+		'Razão de Tempo',
+		'耗时比',
+		'時間比率',
+		'시간 비율',
+		'نسبة الوقت',
+		'समय अनुपात',
+		'Доля времени'
+	],
 	'leaderboard.ratingGain': [
 		'Rating Gain',
 		'Perolehan Rating',

@@ -87,9 +87,10 @@ If two PRs depend on each other:
 
 Do not resolve semantic conflicts by mechanically accepting "ours" or "theirs".
 
-## Suggested Owner Board
+## Milestone Board & P1 Competitive Freeze
 
-Copy and maintain:
+> **Canonical Roadmap Reference**: `docs/productization/MASTER-ROADMAP.md` is the canonical source of milestone numbering and roadmap status.
+> **P1 Competitive Freeze**: P1 competitive product development is now officially **complete and frozen**. Do not create P1.11 or P1.12 milestones automatically. Subsequent work enters the P2 AI Engineering tracks (`P2A`, `P2B`, `P2C`) or Android store tracks as defined in the master roadmap.
 
 | Area | Agent | Issue | Branch | State |
 |---|---|---|---|---|
@@ -97,10 +98,18 @@ Copy and maintain:
 | Android CI | Antigravity | #20 | chore/phase-0-launch-readiness | MERGED |
 | Security/RLS | Antigravity | #21 | fix/security-and-rls-hardening | MERGED |
 | Observability | Antigravity | #22 | feat/phase-0-observability | MERGED |
-| Guest mode | Antigravity | #27 | feat/p1.1-guest-challenge-mode | MERGED |
-| Daily Challenge | Antigravity | #30 | feat/p1.3-daily-challenge | MERGED |
-| Share/referral | Antigravity | #33 | feat/p1.4-social-share-results | MERGED |
-| Analytics | Antigravity | #36 | feat/p1.5-product-analytics | MERGED |
+| Guest mode (P1.1) | Antigravity | #27 | feat/p1.1-guest-challenge-mode | MERGED |
+| Daily Challenge (P1.3) | Antigravity | #30 | feat/p1.3-daily-challenge | MERGED |
+| Share/referral (P1.4) | Antigravity | #33 | feat/p1.4-social-share-results | MERGED |
+| Analytics (P1.5) | Antigravity | #36 | feat/p1.5-product-analytics | MERGED |
 | Blind Duel (P1.6/P1.6.1) | Antigravity | #38 | feat/p1.6.1-blind-duel-hardening | MERGED |
 | Android release (P1.7/P1.7.1) | Antigravity | #39 | feat/p1.7.1-release-hardening | MERGED |
-| Generator benchmark (P1.8) | Antigravity | #41 | feat/p1.8-generator-benchmarks-and-diagnostics | PR_OPEN |
+| Generator benchmark (P1.8/P1.8.1) | Antigravity | #41 | feat/p1.8-generator-benchmarks-and-diagnostics | MERGED |
+| Post-round review & explanations (P1.9/P1.9.1) | Antigravity | #45 | feat/p1.9-post-round-review | MERGED |
+| Category Mastery Foundation (P1.10A) | Antigravity | #49 | feat/p1.10a-category-mastery-and-elo | MERGED |
+| Scale Calibration & Claimed-Guest (P1.10A.1) | Antigravity | #51 | feat/p1.10a.1-scale-calibration-and-claimed-guest-integrity | MERGED |
+| Category-Adaptive Difficulty (P1.10B) | Antigravity | #53 | feat/p1.10b-category-adaptive-difficulty | MERGED |
+| Category & Tier Leaderboards (P1.10C) | Antigravity | #55 | feat/p1.10c-category-and-tier-leaderboards | MERGED |
+| Weekly Leaderboard & Profile (P1.10D) | Antigravity | #57 | feat/p1.10d-weekly-leaderboard-and-profile-depth | MERGED |
+| Weekly Competitive Fairness (P1.10D.1) | Antigravity | #59 | feat/p1.10d.1-weekly-fairness-and-roadmap-reconciliation | IN_PROGRESS |
+

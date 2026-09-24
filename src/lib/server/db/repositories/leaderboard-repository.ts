@@ -40,11 +40,13 @@ export type WeeklyLeaderboardRow = {
 	displayName: string;
 	rank: string;
 	rating: number;
-	weeklyScore: number;
-	weeklyRatingDelta: number;
+	averageScorePerAnswer: number;
 	averageAccuracy: number;
+	responseTimeRatio: number;
 	totalQuestions: number;
 	totalSessions: number;
+	weeklyScore: number;
+	weeklyRatingDelta: number;
 	position: number;
 };
 
@@ -53,11 +55,13 @@ export type UserWeeklyProgress = {
 	displayName: string;
 	rank: string;
 	rating: number;
-	weeklyScore: number;
-	weeklyRatingDelta: number;
+	averageScorePerAnswer: number;
 	averageAccuracy: number;
+	responseTimeRatio: number;
 	totalQuestions: number;
 	totalSessions: number;
+	weeklyScore: number;
+	weeklyRatingDelta: number;
 	isQualified: boolean;
 	questionsNeeded: number;
 };
@@ -148,11 +152,13 @@ function parseWeeklyLeaderboardRow(row: Record<string, unknown>): WeeklyLeaderbo
 		displayName: String(row.displayName),
 		rank: String(row.rank),
 		rating: Number(row.rating),
-		weeklyScore: Number(row.weeklyScore),
-		weeklyRatingDelta: Number(row.weeklyRatingDelta),
-		averageAccuracy: Number(row.averageAccuracy),
-		totalQuestions: Number(row.totalQuestions),
-		totalSessions: Number(row.totalSessions),
+		averageScorePerAnswer: Number(row.averageScorePerAnswer ?? 0),
+		averageAccuracy: Number(row.averageAccuracy ?? 0),
+		responseTimeRatio: Number(row.responseTimeRatio ?? 0),
+		totalQuestions: Number(row.totalQuestions ?? 0),
+		totalSessions: Number(row.totalSessions ?? 0),
+		weeklyScore: Number(row.weeklyScore ?? 0),
+		weeklyRatingDelta: Number(row.weeklyRatingDelta ?? 0),
 		position: Number(row.position)
 	};
 }
@@ -350,34 +356,66 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 			const startIso = startOfWeek.toISOString();
 			const endIso = endOfWeek.toISOString();
 			const result = await database.execute(sql`
-				WITH ranked_weekly AS (
+				WITH eligible_sessions AS (
+					SELECT
+						cs.id,
+						cs.user_id,
+						cs.total_score,
+						cs.rating_delta
+					FROM challenge_sessions cs
+					WHERE cs.status = 'completed'
+						AND cs.is_suspicious = false
+						AND cs.claimed_at IS NULL
+						AND cs.challenge_type IN ('quick', 'standard', 'long', 'mode')
+						AND cs.completed_at >= ${startIso}
+						AND cs.completed_at < ${endIso}
+				),
+				user_answer_stats AS (
+					SELECT
+						es.user_id,
+						count(sa.id)::integer as rated_answers,
+						count(distinct es.id)::integer as eligible_sessions,
+						avg(sa.score_earned)::float as avg_score_per_answer,
+						(avg(case when sa.is_correct then 1.0 else 0.0 end) * 100)::float as answer_accuracy,
+						avg(sa.time_spent_seconds::float / nullif(sq.time_limit_seconds::float, 0))::float as response_time_ratio
+					FROM eligible_sessions es
+					JOIN session_questions sq ON sq.session_id = es.id
+					JOIN session_answers sa ON sa.session_question_id = sq.id
+					GROUP BY es.user_id
+					HAVING count(sa.id) >= ${WEEKLY_LEADERBOARD_MIN_QUESTIONS}
+				),
+				user_session_stats AS (
+					SELECT
+						es.user_id,
+						coalesce(sum(es.total_score), 0)::integer as weekly_score,
+						coalesce(sum(es.rating_delta), 0)::integer as weekly_rating_delta
+					FROM eligible_sessions es
+					GROUP BY es.user_id
+				),
+				ranked_weekly AS (
 					SELECT
 						u.id as "userId",
 						u.display_name as "displayName",
 						u.rank,
 						u.rating,
-						coalesce(sum(cs.total_score), 0) as "weeklyScore",
-						coalesce(sum(cs.rating_delta), 0) as "weeklyRatingDelta",
-						coalesce(avg(cs.accuracy), 0) as "averageAccuracy",
-						coalesce(sum(cs.total_questions), 0) as "totalQuestions",
-						count(cs.id) as "totalSessions",
+						coalesce(uas.avg_score_per_answer, 0) as "averageScorePerAnswer",
+						coalesce(uas.answer_accuracy, 0) as "averageAccuracy",
+						coalesce(uas.response_time_ratio, 0) as "responseTimeRatio",
+						coalesce(uas.rated_answers, 0) as "totalQuestions",
+						coalesce(uas.eligible_sessions, 0) as "totalSessions",
+						coalesce(uss.weekly_score, 0) as "weeklyScore",
+						coalesce(uss.weekly_rating_delta, 0) as "weeklyRatingDelta",
 						row_number() OVER (
 							ORDER BY
-								coalesce(sum(cs.total_score), 0) DESC,
-								coalesce(sum(cs.rating_delta), 0) DESC,
-								coalesce(avg(cs.accuracy), 0) DESC,
+								uas.avg_score_per_answer DESC,
+								uas.answer_accuracy DESC,
+								uas.response_time_ratio ASC,
+								uas.rated_answers DESC,
 								u.id ASC
 						) as position
-					FROM users_profile u
-					JOIN challenge_sessions cs ON cs.user_id = u.id
-						AND cs.status = 'completed'
-						AND cs.is_suspicious = false
-						AND cs.claimed_at IS NULL
-						AND cs.challenge_type NOT IN ('daily', 'duel')
-						AND cs.completed_at >= ${startIso}
-						AND cs.completed_at < ${endIso}
-					GROUP BY u.id, u.display_name, u.rank, u.rating
-					HAVING coalesce(sum(cs.total_questions), 0) >= ${WEEKLY_LEADERBOARD_MIN_QUESTIONS}
+					FROM user_answer_stats uas
+					JOIN users_profile u ON u.id = uas.user_id
+					LEFT JOIN user_session_stats uss ON uss.user_id = u.id
 				)
 				SELECT * FROM ranked_weekly
 				ORDER BY position ASC
@@ -390,34 +428,66 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 			const startIso = startOfWeek.toISOString();
 			const endIso = endOfWeek.toISOString();
 			const result = await database.execute(sql`
-				WITH ranked_weekly AS (
+				WITH eligible_sessions AS (
+					SELECT
+						cs.id,
+						cs.user_id,
+						cs.total_score,
+						cs.rating_delta
+					FROM challenge_sessions cs
+					WHERE cs.status = 'completed'
+						AND cs.is_suspicious = false
+						AND cs.claimed_at IS NULL
+						AND cs.challenge_type IN ('quick', 'standard', 'long', 'mode')
+						AND cs.completed_at >= ${startIso}
+						AND cs.completed_at < ${endIso}
+				),
+				user_answer_stats AS (
+					SELECT
+						es.user_id,
+						count(sa.id)::integer as rated_answers,
+						count(distinct es.id)::integer as eligible_sessions,
+						avg(sa.score_earned)::float as avg_score_per_answer,
+						(avg(case when sa.is_correct then 1.0 else 0.0 end) * 100)::float as answer_accuracy,
+						avg(sa.time_spent_seconds::float / nullif(sq.time_limit_seconds::float, 0))::float as response_time_ratio
+					FROM eligible_sessions es
+					JOIN session_questions sq ON sq.session_id = es.id
+					JOIN session_answers sa ON sa.session_question_id = sq.id
+					GROUP BY es.user_id
+					HAVING count(sa.id) >= ${WEEKLY_LEADERBOARD_MIN_QUESTIONS}
+				),
+				user_session_stats AS (
+					SELECT
+						es.user_id,
+						coalesce(sum(es.total_score), 0)::integer as weekly_score,
+						coalesce(sum(es.rating_delta), 0)::integer as weekly_rating_delta
+					FROM eligible_sessions es
+					GROUP BY es.user_id
+				),
+				ranked_weekly AS (
 					SELECT
 						u.id as "userId",
 						u.display_name as "displayName",
 						u.rank,
 						u.rating,
-						coalesce(sum(cs.total_score), 0) as "weeklyScore",
-						coalesce(sum(cs.rating_delta), 0) as "weeklyRatingDelta",
-						coalesce(avg(cs.accuracy), 0) as "averageAccuracy",
-						coalesce(sum(cs.total_questions), 0) as "totalQuestions",
-						count(cs.id) as "totalSessions",
+						coalesce(uas.avg_score_per_answer, 0) as "averageScorePerAnswer",
+						coalesce(uas.answer_accuracy, 0) as "averageAccuracy",
+						coalesce(uas.response_time_ratio, 0) as "responseTimeRatio",
+						coalesce(uas.rated_answers, 0) as "totalQuestions",
+						coalesce(uas.eligible_sessions, 0) as "totalSessions",
+						coalesce(uss.weekly_score, 0) as "weeklyScore",
+						coalesce(uss.weekly_rating_delta, 0) as "weeklyRatingDelta",
 						row_number() OVER (
 							ORDER BY
-								coalesce(sum(cs.total_score), 0) DESC,
-								coalesce(sum(cs.rating_delta), 0) DESC,
-								coalesce(avg(cs.accuracy), 0) DESC,
+								uas.avg_score_per_answer DESC,
+								uas.answer_accuracy DESC,
+								uas.response_time_ratio ASC,
+								uas.rated_answers DESC,
 								u.id ASC
 						) as position
-					FROM users_profile u
-					JOIN challenge_sessions cs ON cs.user_id = u.id
-						AND cs.status = 'completed'
-						AND cs.is_suspicious = false
-						AND cs.claimed_at IS NULL
-						AND cs.challenge_type NOT IN ('daily', 'duel')
-						AND cs.completed_at >= ${startIso}
-						AND cs.completed_at < ${endIso}
-					GROUP BY u.id, u.display_name, u.rank, u.rating
-					HAVING coalesce(sum(cs.total_questions), 0) >= ${WEEKLY_LEADERBOARD_MIN_QUESTIONS}
+					FROM user_answer_stats uas
+					JOIN users_profile u ON u.id = uas.user_id
+					LEFT JOIN user_session_stats uss ON uss.user_id = u.id
 				)
 				SELECT * FROM ranked_weekly WHERE "userId" = ${userId}
 			`);
@@ -429,26 +499,54 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 			const startIso = startOfWeek.toISOString();
 			const endIso = endOfWeek.toISOString();
 			const result = await database.execute(sql`
+				WITH eligible_sessions AS (
+					SELECT
+						cs.id,
+						cs.user_id,
+						cs.total_score,
+						cs.rating_delta
+					FROM challenge_sessions cs
+					WHERE cs.user_id = ${userId}
+						AND cs.status = 'completed'
+						AND cs.is_suspicious = false
+						AND cs.claimed_at IS NULL
+						AND cs.challenge_type IN ('quick', 'standard', 'long', 'mode')
+						AND cs.completed_at >= ${startIso}
+						AND cs.completed_at < ${endIso}
+				),
+				user_answer_stats AS (
+					SELECT
+						count(sa.id)::integer as rated_answers,
+						count(distinct es.id)::integer as eligible_sessions,
+						coalesce(avg(sa.score_earned), 0)::float as avg_score_per_answer,
+						coalesce(avg(case when sa.is_correct then 1.0 else 0.0 end) * 100, 0)::float as answer_accuracy,
+						coalesce(avg(sa.time_spent_seconds::float / nullif(sq.time_limit_seconds::float, 0)), 0)::float as response_time_ratio
+					FROM eligible_sessions es
+					JOIN session_questions sq ON sq.session_id = es.id
+					JOIN session_answers sa ON sa.session_question_id = sq.id
+				),
+				user_session_stats AS (
+					SELECT
+						coalesce(sum(es.total_score), 0)::integer as weekly_score,
+						coalesce(sum(es.rating_delta), 0)::integer as weekly_rating_delta
+					FROM eligible_sessions es
+				)
 				SELECT
 					u.id as "userId",
 					u.display_name as "displayName",
 					u.rank,
 					u.rating,
-					coalesce(sum(cs.total_score), 0) as "weeklyScore",
-					coalesce(sum(cs.rating_delta), 0) as "weeklyRatingDelta",
-					coalesce(avg(cs.accuracy), 0) as "averageAccuracy",
-					coalesce(sum(cs.total_questions), 0) as "totalQuestions",
-					count(cs.id) as "totalSessions"
+					coalesce(uas.avg_score_per_answer, 0) as "averageScorePerAnswer",
+					coalesce(uas.answer_accuracy, 0) as "averageAccuracy",
+					coalesce(uas.response_time_ratio, 0) as "responseTimeRatio",
+					coalesce(uas.rated_answers, 0) as "totalQuestions",
+					coalesce(uas.eligible_sessions, 0) as "totalSessions",
+					coalesce(uss.weekly_score, 0) as "weeklyScore",
+					coalesce(uss.weekly_rating_delta, 0) as "weeklyRatingDelta"
 				FROM users_profile u
-				LEFT JOIN challenge_sessions cs ON cs.user_id = u.id
-					AND cs.status = 'completed'
-					AND cs.is_suspicious = false
-					AND cs.claimed_at IS NULL
-					AND cs.challenge_type NOT IN ('daily', 'duel')
-					AND cs.completed_at >= ${startIso}
-					AND cs.completed_at < ${endIso}
+				CROSS JOIN user_answer_stats uas
+				CROSS JOIN user_session_stats uss
 				WHERE u.id = ${userId}
-				GROUP BY u.id, u.display_name, u.rank, u.rating
 			`);
 			const rows = parseRows(result, (r) => {
 				const totalQuestions = Number(r.totalQuestions);
@@ -458,11 +556,13 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 					displayName: String(r.displayName),
 					rank: String(r.rank),
 					rating: Number(r.rating),
-					weeklyScore: Number(r.weeklyScore),
-					weeklyRatingDelta: Number(r.weeklyRatingDelta),
+					averageScorePerAnswer: Number(r.averageScorePerAnswer),
 					averageAccuracy: Number(r.averageAccuracy),
+					responseTimeRatio: Number(r.responseTimeRatio),
 					totalQuestions,
 					totalSessions: Number(r.totalSessions),
+					weeklyScore: Number(r.weeklyScore),
+					weeklyRatingDelta: Number(r.weeklyRatingDelta),
 					isQualified,
 					questionsNeeded: isQualified
 						? 0
@@ -476,19 +576,28 @@ export function createLeaderboardRepository(database: Database = getDb()): Leade
 			const startIso = startOfWeek.toISOString();
 			const endIso = endOfWeek.toISOString();
 			const result = await database.execute(sql`
-				WITH qualified_weekly AS (
-					SELECT cs.user_id
+				WITH eligible_sessions AS (
+					SELECT
+						cs.id,
+						cs.user_id
 					FROM challenge_sessions cs
 					WHERE cs.status = 'completed'
 						AND cs.is_suspicious = false
 						AND cs.claimed_at IS NULL
-						AND cs.challenge_type NOT IN ('daily', 'duel')
+						AND cs.challenge_type IN ('quick', 'standard', 'long', 'mode')
 						AND cs.completed_at >= ${startIso}
 						AND cs.completed_at < ${endIso}
-					GROUP BY cs.user_id
-					HAVING coalesce(sum(cs.total_questions), 0) >= ${WEEKLY_LEADERBOARD_MIN_QUESTIONS}
+				),
+				user_answer_stats AS (
+					SELECT
+						es.user_id
+					FROM eligible_sessions es
+					JOIN session_questions sq ON sq.session_id = es.id
+					JOIN session_answers sa ON sa.session_question_id = sq.id
+					GROUP BY es.user_id
+					HAVING count(sa.id) >= ${WEEKLY_LEADERBOARD_MIN_QUESTIONS}
 				)
-				SELECT count(*)::integer as count FROM qualified_weekly
+				SELECT count(*)::integer as count FROM user_answer_stats
 			`);
 			const rows = parseRows(result, (r) => Number(r.count));
 			return rows.length > 0 ? rows[0] : 0;

@@ -125,3 +125,60 @@ Applying the coarse session-level rating delta to category mastery would suffer 
 - True cognitive depth: players receive personalized feedback and progression across each distinct reasoning discipline.
 - Prevents leaderboard abuse and farming.
 - Provides a rock-solid foundation for Category-Adaptive Difficulty (P1.10B) and Category Leaderboards (P1.10C).
+
+---
+
+## ADR-0004: Category-Adaptive Difficulty Pre-Generation Plan & Weekly Competitive Fairness
+
+### Status
+Accepted (Milestones P1.10B & P1.10D.1)
+
+### Context
+1. **Adaptive Difficulty (P1.10B)**:
+   Personalized progression requires questions in competitive challenge sessions to scale dynamically with the player's demonstrated category mastery rather than using static difficulty distributions.
+   However, competitive challenges must be completely deterministic, reproducible from seeds, and immune to intra-round tampering.
+   Earlier speculative designs considered intra-round dynamic difficulty adjustment based on answer streaks. This was rejected because:
+   - Intra-round adaptation breaks seed replayability: reproducing the session would require knowing the exact answer sequence rather than just the session seed.
+   - It introduces cheating/exploiting surfaces where intentionally failing an early question lowers the difficulty of later high-value questions.
+   - It complicates offline question generation and mobile synchronization.
+
+2. **Weekly Performance Leaderboard Fairness (P1.10D.1)**:
+   Ranking weekly performance by cumulative score (`SUM(total_score)`) rewarded play volume and grind over skill, rendering Quick (5 questions), Standard (10 questions), Long (15 questions), and Mode (10 questions) incomparable.
+   Furthermore, an explicit allowlist was needed to strictly exclude Daily, Duel, Custom, claimed guest sessions, and suspicious sessions.
+
+### Decision
+
+1. **Pre-Round Category-Adaptive Difficulty Plan**:
+   - Mastery/category ratings are read *before* the challenge round begins in `startChallengeSessionAtomic` / `buildChallengeQuestions`.
+   - The effective skill rating for each category is resolved from qualified/provisional category mastery (or Logic Rating prior fallback).
+   - The deterministic per-category difficulty distribution is computed and frozen into the question plan for the entire round.
+   - **Contract Clarification**: Adaptive difficulty is snapshotted before question generation and remains strictly fixed for that session. **There is NO dynamic intra-round adaptation or streak-based question mutation during an active round.**
+
+2. **Weekly Leaderboard Answer-Level Normalized Performance**:
+   - Replaced raw cumulative score with answer-level normalized performance.
+   - Eligible sessions use an explicit allowlist:
+     - `quick`
+     - `standard`
+     - `long`
+     - `mode`
+   - Strictly excluded:
+     - `daily`
+     - `duel`
+     - `custom`
+     - claimed guest history (`claimed_at IS NOT NULL`)
+     - suspicious sessions (`is_suspicious = true`)
+     - non-completed sessions (`status != 'completed'`)
+   - Exact qualification threshold: minimum 20 rated answers within the UTC ISO week window (Monday 00:00:00 UTC to next Monday 00:00:00 UTC).
+   - Canonical 5-tier ranking order:
+     1. `averageScorePerAnswer DESC = AVG(session_answers.score_earned)`
+     2. `averageAccuracy DESC = AVG(is_correct)`
+     3. `responseTimeRatio ASC = AVG(time_spent_seconds / time_limit_seconds)`
+     4. `totalQuestions DESC = COUNT(session_answers.id)`
+     5. `userId ASC`
+   - Unified CTE window ordering: `row_number() OVER (...) as position` ensures paginated list positions and pinned-user positions are identical.
+
+### Consequences
+- Uncompromising competitive fairness: playing additional mediocre rounds cannot outrank a player with superior normalized cognitive performance.
+- Full cross-format comparability: Quick, Standard, Long, and Mode are evaluated uniformly at the answer level.
+- Clean architectural determinism: sessions remain 100% replayable from seed and challenge config.
+
