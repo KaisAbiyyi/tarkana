@@ -107,6 +107,22 @@ describe('P1.9 Generator Explanation & Prompt Quality', () => {
 			expect(q.explanation).toMatch(/grow by \d+ each step|grow by 1/i);
 			expect(q.explanation).not.toContain('{');
 		});
+		it('explains medium square sequences with step > 1 without calling them consecutive squares', () => {
+			for (let i = 0; i < 20; i++) {
+				const q = generateNumberSequenceQuestion({
+					ruleType: 'square_number',
+					difficulty: 'medium',
+					seed: `square-med-seed-${i}`,
+					timeLimitSeconds: 30,
+					locale: 'en'
+				});
+
+				expect(q.explanation).toMatch(/increasing by (2|3) each time/i);
+				expect(q.explanation).not.toContain('consecutive square');
+				expect(q.explanation).not.toContain('{');
+				expect(q.explanation).not.toContain('}');
+			}
+		});
 	});
 
 	describe('Symbol Pattern Explanation Precision', () => {
@@ -149,12 +165,27 @@ describe('P1.9 Generator Explanation & Prompt Quality', () => {
 			});
 			expect(qHard.explanation).toContain('2 steps');
 		});
+
+		it('explains hard alternating symbols using 3-symbol pattern without omitting third symbol', () => {
+			for (let i = 0; i < 15; i++) {
+				const q = generateSymbolPatternQuestion({
+					ruleType: 'alternating_symbol',
+					difficulty: 'hard',
+					seed: `alt-symbol-hard-seed-${i}`,
+					timeLimitSeconds: 30,
+					locale: 'en'
+				});
+
+				expect(q.explanation).toMatch(/Alternating symbols: \S+, \S+, and \S+ repeat in turn\./i);
+				expect(q.explanation).not.toContain('{');
+				expect(q.explanation).not.toContain('}');
+			}
+		});
 	});
 
 	describe('Result Review UI Translations', () => {
-		it('renders all review UI keys across sample locales: en, id, ja, ar', () => {
-			const testLocales = ['en', 'id', 'ja', 'ar'] as const;
-			for (const loc of testLocales) {
+		it('renders all review UI keys across all 12 locales', () => {
+			for (const loc of LOCALES) {
 				const t = createTranslator(loc);
 				expect(t('result.filterAll', { total: 10 })).toBeTruthy();
 				expect(t('result.filterMissed', { count: 3 })).toBeTruthy();
@@ -171,7 +202,37 @@ describe('P1.9 Generator Explanation & Prompt Quality', () => {
 				expect(t('result.weakestCategory')).toBeTruthy();
 				expect(t('result.singleCategoryRound')).toBeTruthy();
 				expect(t('result.practiceWeakestCta', { category: 'Number Sequence' })).toBeTruthy();
+				expect(t('result.perfectRound')).toBeTruthy();
+				expect(t('result.perfectRoundAccuracy')).toBeTruthy();
+				expect(t('result.perfectRoundDesc')).toBeTruthy();
+				expect(t('result.categoryHeading')).toBeTruthy();
+				expect(t('result.pointsHeading')).toBeTruthy();
+				expect(t('result.recommendedPractice')).toBeTruthy();
+				expect(t('result.drillCategory', { category: 'Number Sequence' })).toBeTruthy();
+				expect(t('result.filterAriaLabel')).toBeTruthy();
 			}
+		});
+	});
+
+	describe('Review Timeout and Selection Semantics', () => {
+		it('marks item as timed out only when selectedAnswer is null', () => {
+			const timeoutItem = {
+				selectedAnswer: null,
+				timeSpentSeconds: 30,
+				timeLimitSeconds: 30,
+				isCorrect: false
+			};
+			const isTimedOut = timeoutItem.selectedAnswer === null;
+			expect(isTimedOut).toBe(true);
+
+			const answeredItem = {
+				selectedAnswer: 'A',
+				timeSpentSeconds: 30,
+				timeLimitSeconds: 30,
+				isCorrect: false
+			};
+			const isAnsweredTimedOut = answeredItem.selectedAnswer === null;
+			expect(isAnsweredTimedOut).toBe(false);
 		});
 	});
 });

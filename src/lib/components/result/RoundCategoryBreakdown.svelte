@@ -7,11 +7,16 @@
 		calculateRoundCategoryBreakdown,
 		type RoundCategorySummary
 	} from '$lib/shared/scoring/category-breakdown';
+	import type { QuestionType } from '$lib/shared/constants/challenge';
 	import type { ResultQuestionReviewDto } from '$lib/server/challenge/types';
 
 	type Props = {
 		review: ResultQuestionReviewDto[];
-		onPracticeClick?: (category: string, roundAccuracy: number, isSingleCategory: boolean) => void;
+		onPracticeClick?: (
+			category: QuestionType,
+			roundAccuracy: number,
+			isSingleCategory: boolean
+		) => void;
 	};
 
 	let { review, onPracticeClick }: Props = $props();
@@ -126,11 +131,13 @@
 					class="border-[3px] border-emerald-600 bg-emerald-50/50 p-4 shadow-[var(--shadow-hard-sm)]"
 				>
 					<span class="text-xs font-black tracking-wider text-emerald-800 uppercase">
-						🎉 Perfect Round
+						🎉 {t('result.perfectRound')}
 					</span>
-					<h3 class="mt-2 text-lg font-black text-emerald-950">100% Accuracy</h3>
+					<h3 class="mt-2 text-lg font-black text-emerald-950">
+						{t('result.perfectRoundAccuracy')}
+					</h3>
 					<p class="mt-1 text-xs font-bold text-emerald-800">
-						Flawless performance across all categories in this round!
+						{t('result.perfectRoundDesc')}
 					</p>
 				</div>
 			{/if}
@@ -144,10 +151,10 @@
 				<tr
 					class="border-b-2 border-zinc-200 text-xs font-black text-[var(--color-muted)] uppercase"
 				>
-					<th class="py-2 pr-4">Category</th>
+					<th class="py-2 pr-4">{t('result.categoryHeading')}</th>
 					<th class="px-4 py-2 text-center">{t('result.accuracyLabel')}</th>
 					<th class="px-4 py-2 text-center">{t('result.avgTime')}</th>
-					<th class="py-2 pl-4 text-right">Points</th>
+					<th class="py-2 pl-4 text-right">{t('result.pointsHeading')}</th>
 				</tr>
 			</thead>
 			<tbody class="divide-y divide-zinc-100">
@@ -188,9 +195,13 @@
 			class="mt-6 flex flex-col items-start justify-between gap-4 border-[3px] border-[var(--color-border)] bg-[var(--color-paper)] p-4 shadow-[var(--shadow-hard-xs)] sm:flex-row sm:items-center"
 		>
 			<div>
-				<p class="text-xs font-black text-[var(--color-muted)] uppercase">Recommended Practice</p>
+				<p class="text-xs font-black text-[var(--color-muted)] uppercase">
+					{t('result.recommendedPractice')}
+				</p>
 				<h4 class="text-base font-black text-[var(--color-ink)]">
-					Drill {labelQuestionType(summary.practiceCategory, locale)} to sharpen your logic
+					{t('result.drillCategory', {
+						category: labelQuestionType(summary.practiceCategory, locale)
+					})}
 				</h4>
 			</div>
 			<Button

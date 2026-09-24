@@ -54,7 +54,7 @@
 	<div
 		class="flex flex-wrap items-center gap-2 border-[3px] border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-[var(--shadow-hard-sm)]"
 		role="tablist"
-		aria-label="Filter questions"
+		aria-label={t('result.filterAriaLabel')}
 	>
 		<button
 			type="button"
@@ -107,9 +107,7 @@
 
 	<!-- Question Cards -->
 	{#each filteredReview as item (item.sessionQuestionId)}
-		{@const isTimedOut =
-			item.selectedAnswer === null ||
-			(item.timeSpentSeconds >= item.timeLimitSeconds && !item.isCorrect)}
+		{@const isTimedOut = item.selectedAnswer === null}
 		<article
 			data-testid={`review-question-${item.orderIndex}`}
 			class="border-[3px] border-[var(--color-border)] bg-white p-5 shadow-[var(--shadow-hard-sm)] transition-shadow hover:shadow-[var(--shadow-hard)] md:p-6"
@@ -149,7 +147,12 @@
 					>{t('result.scoreEarned', { score: item.scoreEarned })}</span
 				>
 				<span>•</span>
-				<span>{formatSeconds(item.timeSpentSeconds, locale)} / {item.timeLimitSeconds}s</span>
+				<span
+					>{formatSeconds(item.timeSpentSeconds, locale)} / {formatSeconds(
+						item.timeLimitSeconds,
+						locale
+					)}</span
+				>
 			</div>
 
 			<!-- Dynamic Choices List -->

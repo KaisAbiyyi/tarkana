@@ -48,10 +48,24 @@ export function calculateRoundCategoryBreakdown(
 	const grouped = new Map<QuestionType, QuestionReviewItemInput[]>();
 
 	for (const item of reviewItems) {
-		const type = isKnownQuestionType(item.questionType) ? item.questionType : 'number_sequence';
+		if (!isKnownQuestionType(item.questionType)) {
+			continue;
+		}
+		const type = item.questionType;
 		const list = grouped.get(type) ?? [];
 		list.push(item);
 		grouped.set(type, list);
+	}
+
+	if (grouped.size === 0) {
+		return {
+			categories: [],
+			isSingleCategory: false,
+			strongestCategory: null,
+			weakestCategory: null,
+			canPracticeWeakest: false,
+			practiceCategory: null
+		};
 	}
 
 	const performances: CategoryPerformance[] = [];

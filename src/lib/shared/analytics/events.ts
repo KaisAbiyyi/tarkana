@@ -2,6 +2,8 @@
  * Tarkana Canonical Analytics Event Definitions & Zero-PII Sanitizer
  */
 
+import type { QuestionType } from '$lib/shared/constants/challenge';
+
 export const CANONICAL_EVENTS = [
 	'landing_view',
 	'challenge_started',
@@ -161,12 +163,12 @@ export interface ReturnVisitProperties {
 
 export interface ReviewFilterAppliedProperties {
 	session_id: string;
-	filter: 'all' | 'missed' | 'correct' | string;
+	filter: 'all' | 'missed' | 'correct';
 }
 
 export interface PracticeWeakestCategoryClickedProperties {
 	session_id: string;
-	category: string;
+	category: QuestionType;
 	round_accuracy: number;
 	is_single_category?: boolean;
 }
