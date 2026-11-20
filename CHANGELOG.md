@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- P1: Daily streak backend (ADR-0005). `GET /api/challenge/daily/status` now returns a server-derived `streak` (current/longest, auto-applied freezes earned every 7 days up to 2, UTC day boundary). Server-only `daily_streak_updated` analytics event on daily completion.
 - P0: Web CI and Android CI workflows with automated linting, tests, and build gates.
 - P0: Automated GitHub CodeQL static analysis scanning.
 - P0: Automated Dependabot configuration for npm and GitHub Actions.

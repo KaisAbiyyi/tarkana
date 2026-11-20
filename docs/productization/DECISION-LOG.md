@@ -182,3 +182,27 @@ Accepted (Milestones P1.10B & P1.10D.1)
 - Full cross-format comparability: Quick, Standard, Long, and Mode are evaluated uniformly at the answer level.
 - Clean architectural determinism: sessions remain 100% replayable from seed and challenge config.
 
+---
+
+## ADR-0005: Daily Streak Rules & Derived-State Architecture
+
+### Status
+Accepted (Phase P1 Retention, backend contract)
+
+### Context
+The P1 retention roadmap lists a daily streak, but no persistent streak existed: the only "streak" in code was the in-round correct-answer counter used for the session streak bonus. A daily streak is a player-facing policy (what counts as a day, how forgiving it is), so its rules must be explicit, server-authoritative and stable across web and Android.
+
+### Decision
+1. **Derived, not stored**: The streak is a deterministic fold over the UTC `challenge_date` values of the identity's daily attempts that are `completed`, `is_official = true`, and whose session is not suspicious (`DailyRepository.listCompletedDailyDates`). No streak table or migration is added. Backfill, guest claims (which move attempts to the user) and future rule changes are recomputed automatically.
+2. **Day boundary**: UTC calendar days, matching ADR-0002. Clients show the reset in local time.
+3. **What counts**: Completing the official daily, at any accuracy. Abandoned, in-progress, unofficial (demoted duplicate) and suspicious attempts do not count.
+4. **Freezes**: One freeze is earned each time the streak reaches a multiple of 7 days, holding at most 2. Missed days are covered automatically by held freezes; covered days keep the streak alive but do not add length. If more days are missed than freezes held, the next completion restarts the streak at 1 and held freezes are kept. Freezes cannot be bought.
+5. **Isolation**: Streaks never change Logic Rating, rank, category mastery or leaderboard ordering.
+6. **Versioning**: `DAILY_STREAK_RULES_VERSION = 1`, returned in the API and analytics. Changing any rule above requires bumping it and a new ADR, because historical streaks are re-derived under the new rules.
+7. **Contract**: `GET /api/challenge/daily/status` adds an additive `streak` object (`DailyStreakDto`: `currentStreak`, `longestStreak`, `freezesAvailable`, `freezesPendingUse`, `completedToday`, `lastCompletedDate`, `state` in `none | safe | at_risk | broken`, `nextMilestone`, `rulesVersion`). Older Android clients ignore it.
+8. **Analytics**: `daily_streak_updated` (`outcome` started/extended/restarted, lengths, freezes used/earned, milestone) is emitted server-side on a fresh daily completion and is rejected by the public ingestion endpoint (`SERVER_ONLY_EVENTS`).
+
+### Consequences
+- No new mutable state to drift or to secure; the streak cannot be tampered with independently of attempts.
+- Each status read runs one indexed query over the identity's attempts. If a public streak leaderboard is ever needed, a cache table derived from this fold can be added without changing semantics.
+- Rule changes are retroactive by design; this is why the rules version is part of the contract.

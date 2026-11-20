@@ -3,7 +3,9 @@ import {
 	CANONICAL_EVENTS,
 	isCanonicalEvent,
 	sanitizeEventProperties,
-	EVENT_PROPERTY_ALLOWLIST
+	EVENT_PROPERTY_ALLOWLIST,
+	isServerOnlyEvent,
+	SERVER_ONLY_EVENTS
 } from './events';
 
 describe('Analytics Events & Zero-PII Sanitizer', () => {
@@ -30,6 +32,21 @@ describe('Analytics Events & Zero-PII Sanitizer', () => {
 		}
 
 		expect(isCanonicalEvent('unregistered_custom_event')).toBe(false);
+	});
+
+	it('marks server-derived streak events as server-only and canonical', () => {
+		expect(SERVER_ONLY_EVENTS).toContain('daily_streak_updated');
+		expect(isCanonicalEvent('daily_streak_updated')).toBe(true);
+		expect(isServerOnlyEvent('daily_streak_updated')).toBe(true);
+		expect(isServerOnlyEvent('challenge_completed')).toBe(false);
+		expect(
+			sanitizeEventProperties('daily_streak_updated', {
+				outcome: 'extended',
+				streak_length: 7,
+				milestone_reached: 7,
+				guest_token: 'should-be-dropped'
+			})
+		).toEqual({ outcome: 'extended', streak_length: 7, milestone_reached: 7 });
 	});
 
 	it('strictly rejects non-canonical events', () => {

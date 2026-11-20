@@ -360,6 +360,19 @@ function createDailyRepositoryFake(
 
 		async getGuestHypotheticalPosition() {
 			return null;
+		},
+
+		async listCompletedDailyDates(identity) {
+			const dates = attempts
+				.filter((a) =>
+					'userId' in identity
+						? a.userId === identity.userId
+						: a.guestTokenHash === identity.guestTokenHash && !a.userId
+				)
+				.filter((a) => a.status === 'completed' && a.isOfficial)
+				.map((a) => challenges.find((c) => c.id === a.dailyChallengeId)?.challengeDate)
+				.filter((d): d is string => typeof d === 'string');
+			return [...new Set(dates)].sort();
 		}
 	};
 }
@@ -687,6 +700,78 @@ describe('P1.3 Daily Challenge Core Architecture', () => {
 			});
 
 			await expect(service.start(event, '2026-09-22')).rejects.toThrow(/already been completed/i);
+		});
+
+		it('getStatus reports a server-computed streak across consecutive completed dailies', async () => {
+			const { service, dailyRepo } = setupService();
+			const event = createMockEvent({ user: { id: 'user-alice' }, distinctId: 'dist-1' });
+
+			for (const date of ['2026-09-20', '2026-09-21', '2026-09-22']) {
+				const startRes = await service.start(event, date);
+				const att = await dailyRepo.findAttemptBySessionId(startRes.sessionId);
+				// Accuracy is irrelevant: completing the daily keeps the day.
+				await dailyRepo.completeAttempt({
+					attemptId: att!.id,
+					score: 20,
+					accuracy: 0.1,
+					totalTimeSeconds: 90
+				});
+			}
+
+			const today = await service.getStatus(event, '2026-09-22');
+			expect(today.streak).toMatchObject({
+				state: 'safe',
+				currentStreak: 3,
+				longestStreak: 3,
+				completedToday: true,
+				nextMilestone: 7
+			});
+
+			const tomorrow = await service.getStatus(event, '2026-09-23');
+			expect(tomorrow.attemptStatus).toBe('not_started');
+			expect(tomorrow.streak).toMatchObject({
+				state: 'at_risk',
+				currentStreak: 3,
+				completedToday: false
+			});
+
+			const twoDaysLater = await service.getStatus(event, '2026-09-24');
+			expect(twoDaysLater.streak).toMatchObject({ state: 'broken', currentStreak: 0 });
+		});
+
+		it('getStatus does not count abandoned dailies toward the streak', async () => {
+			const { service, dailyRepo } = setupService();
+			const event = createMockEvent({ user: { id: 'user-alice' }, distinctId: 'dist-1' });
+
+			const startRes = await service.start(event, '2026-09-22');
+			const att = await dailyRepo.findAttemptBySessionId(startRes.sessionId);
+			await dailyRepo.abandonAttempt(att!.id);
+
+			const status = await service.getStatus(event, '2026-09-22');
+			expect(status.streak).toMatchObject({ state: 'none', currentStreak: 0 });
+		});
+
+		it('getStatus tracks a guest streak by guest token and returns none without identity', async () => {
+			const { service, dailyRepo } = setupService();
+			const guestEvent = createMockEvent({ distinctId: 'guest-distinct-streak' });
+
+			const startRes = await service.start(guestEvent, '2026-09-22');
+			const att = await dailyRepo.findAttemptBySessionId(startRes.sessionId);
+			await dailyRepo.completeAttempt({
+				attemptId: att!.id,
+				score: 80,
+				accuracy: 0.8,
+				totalTimeSeconds: 70
+			});
+
+			const guestStatus = await service.getStatus(guestEvent, '2026-09-22');
+			expect(guestStatus.streak).toMatchObject({ state: 'safe', currentStreak: 1 });
+
+			const anonymousStatus = await service.getStatus(
+				createMockEvent({ distinctId: 'anon' }),
+				'2026-09-22'
+			);
+			expect(anonymousStatus.streak).toMatchObject({ state: 'none', currentStreak: 0 });
 		});
 
 		it('rejects restarting after attempt is abandoned (attempt consumed and forfeited)', async () => {

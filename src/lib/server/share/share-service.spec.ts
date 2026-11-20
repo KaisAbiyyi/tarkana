@@ -111,7 +111,8 @@ describe('ShareService', () => {
 			getDailyLeaderboard: async () => ({ date: '2026-09-23', totalParticipants: 0, items: [] }),
 			getUserDailyPosition: async () => null,
 			getAroundMeDailyLeaderboard: async () => [],
-			getGuestHypotheticalPosition: async () => null
+			getGuestHypotheticalPosition: async () => null,
+			listCompletedDailyDates: async () => []
 		};
 
 		const service = createShareService(shareRepo, sessionRepo, profileRepo, dailyRepo);

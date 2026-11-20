@@ -29,6 +29,8 @@ import {
 import type { DailyChallenge } from '$lib/server/db/schema';
 import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
 import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
+import { createDailyStreakService } from '$lib/server/streak/daily-streak-service';
+import type { DailyStreakDto } from '$lib/shared/types/streak';
 
 export interface DailyStatusResult {
 	date: string;
@@ -43,6 +45,8 @@ export interface DailyStatusResult {
 		totalTimeSeconds: number;
 		completedAt: Date | null;
 	} | null;
+	/** Server-computed daily streak for the current user or guest. Display-only. */
+	streak: DailyStreakDto;
 }
 
 export interface StartDailyChallengeResult {
@@ -64,6 +68,8 @@ export function createDailyChallengeService(
 	sessionRepository: SessionRepository = createSessionRepository(),
 	profileRepository: ProfileRepository = createProfileRepository()
 ): DailyChallengeService {
+	const streakService = createDailyStreakService(dailyRepository);
+
 	return {
 		async getOrCreateDailyChallenge(dateString = getUtcDateString()) {
 			const existing = await dailyRepository.findDailyChallengeByDate(dateString);
@@ -97,12 +103,20 @@ export function createDailyChallengeService(
 			const guestToken = getGuestToken(event);
 			const guestTokenHash = guestToken ? hashGuestToken(guestToken) : null;
 
-			let attempt = null;
-			if (profile) {
-				attempt = await dailyRepository.findAttemptForUser(daily.id, profile.id);
-			} else if (guestTokenHash) {
-				attempt = await dailyRepository.findAttemptForGuest(daily.id, guestTokenHash);
-			}
+			const streakIdentity = profile
+				? { userId: profile.id }
+				: guestTokenHash
+					? { guestTokenHash }
+					: null;
+
+			const [attempt, streak] = await Promise.all([
+				profile
+					? dailyRepository.findAttemptForUser(daily.id, profile.id)
+					: guestTokenHash
+						? dailyRepository.findAttemptForGuest(daily.id, guestTokenHash)
+						: Promise.resolve(null),
+				streakService.getStreak(streakIdentity, daily.challengeDate)
+			]);
 
 			const secondsUntilReset = getSecondsUntilNextUtcMidnight();
 
@@ -114,7 +128,8 @@ export function createDailyChallengeService(
 					attemptStatus: 'not_started',
 					activeSessionId: null,
 					isOfficial: true,
-					completedAttempt: null
+					completedAttempt: null,
+					streak
 				};
 			}
 
@@ -136,7 +151,8 @@ export function createDailyChallengeService(
 								totalTimeSeconds: attempt.totalTimeSeconds,
 								completedAt: attempt.completedAt
 							}
-						: null
+						: null,
+				streak
 			};
 		},
 

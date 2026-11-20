@@ -28,13 +28,24 @@ export const CANONICAL_EVENTS = [
 	'review_filter_applied',
 	'practice_weakest_category_clicked',
 	'leaderboard_tab_switched',
-	'category_mastery_viewed'
+	'category_mastery_viewed',
+	'daily_streak_updated'
 ] as const;
 
 export type CanonicalEventName = (typeof CANONICAL_EVENTS)[number];
 
 export function isCanonicalEvent(name: string): name is CanonicalEventName {
 	return CANONICAL_EVENTS.includes(name as CanonicalEventName);
+}
+
+/**
+ * Events derived from authoritative server state. The public analytics ingestion
+ * endpoint must reject them so clients cannot forge them.
+ */
+export const SERVER_ONLY_EVENTS: readonly CanonicalEventName[] = ['daily_streak_updated'];
+
+export function isServerOnlyEvent(name: CanonicalEventName): boolean {
+	return SERVER_ONLY_EVENTS.includes(name);
 }
 
 export interface LandingViewProperties {
@@ -186,6 +197,17 @@ export interface CategoryMasteryViewedProperties {
 	question_type?: string;
 }
 
+export interface DailyStreakUpdatedProperties {
+	outcome: 'started' | 'extended' | 'restarted';
+	streak_length: number;
+	previous_streak_length: number;
+	freezes_used: number;
+	freeze_earned: boolean;
+	milestone_reached: number | null;
+	is_guest: boolean;
+	rules_version: number;
+}
+
 export type EventPropertyMap = {
 	landing_view: LandingViewProperties;
 	challenge_started: ChallengeStartedProperties;
@@ -211,6 +233,7 @@ export type EventPropertyMap = {
 	practice_weakest_category_clicked: PracticeWeakestCategoryClickedProperties;
 	leaderboard_tab_switched: LeaderboardTabSwitchedProperties;
 	category_mastery_viewed: CategoryMasteryViewedProperties;
+	daily_streak_updated: DailyStreakUpdatedProperties;
 };
 
 /**
@@ -265,7 +288,17 @@ export const EVENT_PROPERTY_ALLOWLIST: Record<CanonicalEventName, readonly strin
 		'is_single_category'
 	],
 	leaderboard_tab_switched: ['from_tab', 'to_tab', 'selected_filter'],
-	category_mastery_viewed: ['source', 'question_type']
+	category_mastery_viewed: ['source', 'question_type'],
+	daily_streak_updated: [
+		'outcome',
+		'streak_length',
+		'previous_streak_length',
+		'freezes_used',
+		'freeze_earned',
+		'milestone_reached',
+		'is_guest',
+		'rules_version'
+	]
 };
 
 /**
