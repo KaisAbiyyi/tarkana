@@ -41,6 +41,7 @@ describe('daily leaderboard service', () => {
 			getGuestHypotheticalPosition: vi.fn(
 				async (): Promise<GuestHypotheticalPositionOutput | null> => null
 			),
+			listCompletedDailyDates: vi.fn(async (): Promise<string[]> => []),
 			...overrides
 		};
 	}

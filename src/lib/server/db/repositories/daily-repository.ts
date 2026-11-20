@@ -136,7 +136,14 @@ export interface DailyRepository {
 	getGuestHypotheticalPosition(
 		input: GetGuestHypotheticalPositionInput
 	): Promise<GuestHypotheticalPositionOutput | null>;
+	/**
+	 * UTC challenge dates (ascending, distinct) of the identity's completed,
+	 * official, non-suspicious daily attempts. Source of truth for streaks.
+	 */
+	listCompletedDailyDates(identity: DailyStreakIdentity): Promise<string[]>;
 }
+
+export type DailyStreakIdentity = { userId: string } | { guestTokenHash: string };
 
 export function createDailyRepository(database: Database = getDb()): DailyRepository {
 	return {
@@ -231,6 +238,33 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 				throw new Error('Failed to create daily challenge attempt');
 			}
 			return created;
+		},
+
+		async listCompletedDailyDates(identity) {
+			const ownerFilter =
+				'userId' in identity
+					? eq(dailyChallengeAttempts.userId, identity.userId)
+					: and(
+							eq(dailyChallengeAttempts.guestTokenHash, identity.guestTokenHash),
+							isNull(dailyChallengeAttempts.userId)
+						);
+
+			const rows = await database
+				.selectDistinct({ challengeDate: dailyChallenges.challengeDate })
+				.from(dailyChallengeAttempts)
+				.innerJoin(dailyChallenges, eq(dailyChallenges.id, dailyChallengeAttempts.dailyChallengeId))
+				.leftJoin(challengeSessions, eq(challengeSessions.id, dailyChallengeAttempts.sessionId))
+				.where(
+					and(
+						ownerFilter,
+						eq(dailyChallengeAttempts.status, 'completed'),
+						eq(dailyChallengeAttempts.isOfficial, true),
+						sql`coalesce(${challengeSessions.isSuspicious}, false) = false`
+					)
+				)
+				.orderBy(asc(dailyChallenges.challengeDate));
+
+			return rows.map((row) => row.challengeDate);
 		},
 
 		async findAttemptBySessionId(sessionId) {

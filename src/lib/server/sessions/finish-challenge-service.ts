@@ -29,6 +29,8 @@ import { detectSuspiciousSession } from '$lib/server/scoring/suspicious-session'
 import { toResultQuestionReviewDto } from '$lib/server/sessions/dto';
 import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
 import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
+import { createDailyStreakService } from '$lib/server/streak/daily-streak-service';
+import type { DailyStreakIdentity } from '$lib/server/db/repositories/daily-repository';
 
 export type FinishChallengeInput = {
 	sessionId: string;
@@ -71,6 +73,8 @@ export function createFinishChallengeService(
 	dailyRepository: DailyRepository = createDailyRepository(),
 	duelRepository: DuelRepository = createDuelRepository()
 ): FinishChallengeService {
+	const streakService = createDailyStreakService(dailyRepository);
+
 	async function syncDuelParticipantCompletion(
 		sessionId: string,
 		scoreSummary: { totalScore: number; accuracy: number; totalTimeSeconds: number },
@@ -158,9 +162,14 @@ export function createFinishChallengeService(
 	async function syncDailyAttemptCompletion(
 		sessionId: string,
 		scoreSummary: { totalScore: number; accuracy: number; totalTimeSeconds: number }
-	): Promise<string | undefined> {
+	): Promise<{ challengeDate?: string; streakIdentity?: DailyStreakIdentity }> {
 		const attempt = await dailyRepository.findAttemptBySessionId(sessionId);
 		if (attempt) {
+			const streakIdentity: DailyStreakIdentity | undefined = attempt.userId
+				? { userId: attempt.userId }
+				: attempt.guestTokenHash
+					? { guestTokenHash: attempt.guestTokenHash }
+					: undefined;
 			if (attempt.status === 'in_progress') {
 				await dailyRepository.completeAttempt({
 					attemptId: attempt.id,
@@ -176,11 +185,32 @@ export function createFinishChallengeService(
 			) {
 				const daily = await dailyRepository.findDailyChallengeById(attempt.dailyChallengeId);
 				if (daily) {
-					return daily.challengeDate;
+					return { challengeDate: daily.challengeDate, streakIdentity };
 				}
 			}
+			return { streakIdentity };
 		}
-		return undefined;
+		return {};
+	}
+
+	function trackDailyStreak(
+		event: RequestEvent,
+		daily: { challengeDate?: string; streakIdentity?: DailyStreakIdentity },
+		userId: string | null,
+		isGuest: boolean
+	) {
+		if (!daily.challengeDate || !daily.streakIdentity) return;
+		try {
+			void streakService.trackStreakUpdate({
+				identity: daily.streakIdentity,
+				completedDate: daily.challengeDate,
+				distinctId: getOrSetDistinctId(event),
+				userId,
+				isGuest
+			});
+		} catch {
+			/* ignore */
+		}
 	}
 
 	return {
@@ -325,7 +355,11 @@ export function createFinishChallengeService(
 				let challengeDate: string | undefined;
 				let duelPublicId: string | undefined;
 				if (isDaily) {
-					challengeDate = await syncDailyAttemptCompletion(session.id, scoreSummary);
+					const dailySync = await syncDailyAttemptCompletion(session.id, scoreSummary);
+					challengeDate = dailySync.challengeDate;
+					if (!suspicious.isSuspicious) {
+						trackDailyStreak(event, dailySync, profile.id, false);
+					}
 				} else if (isDuel) {
 					duelPublicId = await syncDuelParticipantCompletion(
 						session.id,
@@ -427,7 +461,11 @@ export function createFinishChallengeService(
 				let challengeDate: string | undefined;
 				let duelPublicId: string | undefined;
 				if (isDaily) {
-					challengeDate = await syncDailyAttemptCompletion(session.id, scoreSummary);
+					const dailySync = await syncDailyAttemptCompletion(session.id, scoreSummary);
+					challengeDate = dailySync.challengeDate;
+					if (!suspicious.isSuspicious) {
+						trackDailyStreak(event, dailySync, null, true);
+					}
 				} else if (isDuel) {
 					duelPublicId = await syncDuelParticipantCompletion(
 						session.id,

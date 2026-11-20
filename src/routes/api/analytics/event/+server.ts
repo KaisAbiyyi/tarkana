@@ -3,7 +3,11 @@ import { jsonError, jsonOk, readJsonBody, requireObjectBody } from '$lib/server/
 import { enforceRateLimit } from '$lib/server/security/rate-limit';
 import { getAnalyticsService } from '$lib/server/analytics/analytics-service';
 import { getOrSetDistinctId } from '$lib/server/analytics/distinct-id';
-import { isCanonicalEvent, type CanonicalEventName } from '$lib/shared/analytics/events';
+import {
+	isCanonicalEvent,
+	isServerOnlyEvent,
+	type CanonicalEventName
+} from '$lib/shared/analytics/events';
 import { ValidationError } from '$lib/shared/validation/common';
 
 export const POST: RequestHandler = async (event) => {
@@ -18,6 +22,11 @@ export const POST: RequestHandler = async (event) => {
 			const eventName = data.event;
 			if (typeof eventName !== 'string' || !isCanonicalEvent(eventName)) {
 				throw new ValidationError(`Invalid or non-canonical analytics event: "${eventName}"`);
+			}
+			if (isServerOnlyEvent(eventName)) {
+				throw new ValidationError(
+					`Analytics event "${eventName}" can only be recorded by the server`
+				);
 			}
 
 			return {

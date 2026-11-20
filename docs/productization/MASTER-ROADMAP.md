@@ -55,8 +55,8 @@ Tarkana should become a product that a user can discover, try immediately, retur
 ### Retention
 
 - [x] Daily Challenge with globally deterministic seed/config.
-- [x] Daily streak.
-- [x] Daily challenge history/calendar.
+- [ ] Daily streak. (Backend rules + status API done, ADR-0005; web UI, share grid and Android pending.)
+- [ ] Daily challenge history/calendar. (Not implemented yet; previously mis-marked as done.)
 - [x] Daily leaderboard.
 
 ### Referral and sharing
