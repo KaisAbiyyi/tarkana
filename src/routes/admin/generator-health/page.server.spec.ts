@@ -8,11 +8,12 @@ vi.mock('$lib/server/auth/guards', () => ({
 	requireAdmin: (...args: unknown[]) => mockRequireAdmin(...args)
 }));
 
+import { actions, load } from './+page.server';
+
 describe('Admin Generator Health Server Load & Actions', () => {
 	it('blocks non-admin users from loading the health dashboard', async () => {
 		mockRequireAdmin.mockRejectedValueOnce(forbidden('Admin access required'));
 
-		const { load } = await import('./+page.server');
 		await expect(
 			load({
 				locals: { locale: 'en' }
@@ -23,7 +24,6 @@ describe('Admin Generator Health Server Load & Actions', () => {
 	it('loads dynamic rule inventory and healthy samples for authenticated admin', async () => {
 		mockRequireAdmin.mockResolvedValueOnce({ id: 'admin-1', role: 'admin' });
 
-		const { load } = await import('./+page.server');
 		const result = await load({
 			locals: { locale: 'en' }
 		} as any);
@@ -41,7 +41,6 @@ describe('Admin Generator Health Server Load & Actions', () => {
 	it('rejects seeds longer than 64 characters in diagnose action', async () => {
 		mockRequireAdmin.mockResolvedValueOnce({ id: 'admin-1', role: 'admin' });
 
-		const { actions } = await import('./+page.server');
 		const formData = new FormData();
 		formData.set('ruleType', 'arithmetic_sequence');
 		formData.set('difficulty', 'medium');
@@ -63,7 +62,6 @@ describe('Admin Generator Health Server Load & Actions', () => {
 	it('rejects invalid difficulty band in diagnose action', async () => {
 		mockRequireAdmin.mockResolvedValueOnce({ id: 'admin-1', role: 'admin' });
 
-		const { actions } = await import('./+page.server');
 		const formData = new FormData();
 		formData.set('ruleType', 'arithmetic_sequence');
 		formData.set('difficulty', 'super_extreme');
@@ -85,7 +83,6 @@ describe('Admin Generator Health Server Load & Actions', () => {
 	it('executes live diagnostic and validates structural, semantic, and replay contracts', async () => {
 		mockRequireAdmin.mockResolvedValueOnce({ id: 'admin-1', role: 'admin' });
 
-		const { actions } = await import('./+page.server');
 		const formData = new FormData();
 		formData.set('ruleType', 'arithmetic_sequence');
 		formData.set('difficulty', 'medium');

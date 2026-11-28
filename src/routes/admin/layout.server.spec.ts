@@ -7,10 +7,10 @@ vi.mock('$lib/server/auth/guards', () => ({
 	})
 }));
 
+import { load } from './+layout.server';
+
 describe('admin layout guard', () => {
 	it('returns a SvelteKit 403 response for authenticated non-admin users', async () => {
-		const { load } = await import('./+layout.server');
-
 		await expect(
 			load({ locals: { locale: 'en' } } as Parameters<typeof load>[0])
 		).rejects.toMatchObject({

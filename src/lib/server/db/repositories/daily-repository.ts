@@ -513,8 +513,8 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 						dca.completed_at AS completed_at,
 						ROW_NUMBER() OVER (
 							ORDER BY
-								dca.score DESC,
-								dca.accuracy DESC,
+								dca.score DESC NULLS LAST,
+								dca.accuracy DESC NULLS LAST,
 								dca.total_time_seconds ASC,
 								dca.completed_at ASC,
 								dca.id ASC
@@ -588,8 +588,8 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 						dca.completed_at AS completed_at,
 						ROW_NUMBER() OVER (
 							ORDER BY
-								dca.score DESC,
-								dca.accuracy DESC,
+								dca.score DESC NULLS LAST,
+								dca.accuracy DESC NULLS LAST,
 								dca.total_time_seconds ASC,
 								dca.completed_at ASC,
 								dca.id ASC
@@ -646,8 +646,8 @@ export function createDailyRepository(database: Database = getDb()): DailyReposi
 						dca.completed_at AS completed_at,
 						ROW_NUMBER() OVER (
 							ORDER BY
-								dca.score DESC,
-								dca.accuracy DESC,
+								dca.score DESC NULLS LAST,
+								dca.accuracy DESC NULLS LAST,
 								dca.total_time_seconds ASC,
 								dca.completed_at ASC,
 								dca.id ASC

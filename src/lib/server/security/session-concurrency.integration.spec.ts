@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -31,7 +32,8 @@ describe('Real Database Session Concurrency Integration', () => {
 		try {
 			pool = new pg.Pool({
 				connectionString: dbUrl,
-				connectionTimeoutMillis: 3000
+				max: 8,
+				connectionTimeoutMillis: 5000
 			});
 			const client = await pool.connect();
 			await client.query('SELECT 1');
@@ -61,85 +63,82 @@ describe('Real Database Session Concurrency Integration', () => {
 			return;
 		}
 
-		const testUserId = '00000000-0000-4000-8000-000000000001';
-		const testSessionId = '00000000-0000-4000-8000-000000000002';
+		const testUserId = randomUUID();
+		const testSessionId = randomUUID();
 
-		// Seed a clean profile and active session in real DB
-		await db.delete(sessionAnswers).where(eq(sessionAnswers.userId, testUserId));
-		await db.delete(sessionQuestions).where(eq(sessionQuestions.sessionId, testSessionId));
-		await db.delete(challengeSessions).where(eq(challengeSessions.id, testSessionId));
-		await db.delete(usersProfile).where(eq(usersProfile.id, testUserId));
+		try {
+			await db.insert(usersProfile).values({
+				id: testUserId,
+				displayName: 'ConcurrencyTester',
+				rating: 1200,
+				rank: 'Bronze Mind'
+			});
 
-		await db.insert(usersProfile).values({
-			id: testUserId,
-			displayName: 'ConcurrencyTester',
-			rating: 1200,
-			rank: 'Bronze Mind'
-		});
-
-		await db.insert(challengeSessions).values({
-			id: testSessionId,
-			userId: testUserId,
-			challengeType: 'quick',
-			status: 'in_progress',
-			totalQuestions: 1,
-			ratingBefore: 1200,
-			ratingAfter: 1200,
-			ratingDelta: 0,
-			rankBefore: 'Bronze Mind',
-			rankAfter: 'Bronze Mind'
-		});
-
-		const repository = createSessionRepository(db);
-
-		// Fire two concurrent finalize transactions
-		const [resA, resB] = await Promise.all([
-			repository.completeSessionAndUpdateProfile({
-				sessionId: testSessionId,
+			await db.insert(challengeSessions).values({
+				id: testSessionId,
 				userId: testUserId,
-				totalScore: 100,
-				accuracy: 1,
-				totalTimeSeconds: 30,
-				averageTimeSeconds: 30,
-				ratingAfter: 1225,
-				ratingDelta: 25,
-				rankAfter: 'Bronze Mind',
-				isSuspicious: false,
-				suspiciousReason: null,
-				profileRating: 1225,
-				profileRank: 'Bronze Mind'
-			}),
-			repository.completeSessionAndUpdateProfile({
-				sessionId: testSessionId,
-				userId: testUserId,
-				totalScore: 100,
-				accuracy: 1,
-				totalTimeSeconds: 30,
-				averageTimeSeconds: 30,
-				ratingAfter: 1225,
-				ratingDelta: 25,
-				rankAfter: 'Bronze Mind',
-				isSuspicious: false,
-				suspiciousReason: null,
-				profileRating: 1225,
-				profileRank: 'Bronze Mind'
-			})
-		]);
+				challengeType: 'quick',
+				status: 'in_progress',
+				totalQuestions: 1,
+				ratingBefore: 1200,
+				ratingAfter: 1200,
+				ratingDelta: 0,
+				rankBefore: 'Bronze Mind',
+				rankAfter: 'Bronze Mind'
+			});
 
-		expect(resA.status).toBe('completed');
-		expect(resB.status).toBe('completed');
+			const repository = createSessionRepository(db);
 
-		// Verify final profile in DB was updated exactly once to 1225
-		const [updatedProfile] = await db
-			.select()
-			.from(usersProfile)
-			.where(eq(usersProfile.id, testUserId))
-			.limit(1);
+			// Fire two concurrent finalize transactions
+			const [resA, resB] = await Promise.all([
+				repository.completeSessionAndUpdateProfile({
+					sessionId: testSessionId,
+					userId: testUserId,
+					totalScore: 100,
+					accuracy: 1,
+					totalTimeSeconds: 30,
+					averageTimeSeconds: 30,
+					ratingAfter: 1225,
+					ratingDelta: 25,
+					rankAfter: 'Bronze Mind',
+					isSuspicious: false,
+					suspiciousReason: null,
+					profileRating: 1225,
+					profileRank: 'Bronze Mind'
+				}),
+				repository.completeSessionAndUpdateProfile({
+					sessionId: testSessionId,
+					userId: testUserId,
+					totalScore: 100,
+					accuracy: 1,
+					totalTimeSeconds: 30,
+					averageTimeSeconds: 30,
+					ratingAfter: 1225,
+					ratingDelta: 25,
+					rankAfter: 'Bronze Mind',
+					isSuspicious: false,
+					suspiciousReason: null,
+					profileRating: 1225,
+					profileRank: 'Bronze Mind'
+				})
+			]);
 
-		expect(updatedProfile.rating).toBe(1225);
+			expect(resA.status).toBe('completed');
+			expect(resB.status).toBe('completed');
 
-		// Clean up test data
-		await db.delete(challengeSessions).where(eq(challengeSessions.id, testSessionId));
-		await db.delete(usersProfile).where(eq(usersProfile.id, testUserId));
-	});
+			// Verify final profile in DB was updated exactly once to 1225
+			const [updatedProfile] = await db
+				.select()
+				.from(usersProfile)
+				.where(eq(usersProfile.id, testUserId))
+				.limit(1);
+
+			expect(updatedProfile.rating).toBe(1225);
+		} finally {
+			await db.delete(sessionAnswers).where(eq(sessionAnswers.userId, testUserId));
+			await db.delete(sessionQuestions).where(eq(sessionQuestions.sessionId, testSessionId));
+			await db.delete(challengeSessions).where(eq(challengeSessions.id, testSessionId));
+			await db.delete(usersProfile).where(eq(usersProfile.id, testUserId));
+		}
+	}, 15_000);
 });

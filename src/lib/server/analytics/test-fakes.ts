@@ -197,3 +197,39 @@ export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 		}
 	};
 }
+
+export function createAnalyticsServiceFake() {
+	const repo = createAnalyticsRepositoryFake();
+	return {
+		async track(input: {
+			id?: string;
+			distinctId: string;
+			userId?: string | null;
+			event: CanonicalEventName;
+			properties?: Record<string, unknown>;
+			timestamp?: Date;
+		}) {
+			return repo.insertEvent({
+				id: input.id ?? crypto.randomUUID(),
+				distinctId: input.distinctId,
+				userId: input.userId ?? null,
+				event: input.event,
+				properties: input.properties ?? {},
+				createdAt: input.timestamp ?? new Date()
+			});
+		},
+		async identify(anonymousId: string, userId: string) {
+			if (!anonymousId || !userId) return;
+			await repo.createAlias({ anonymousId, userId, createdAt: new Date() });
+		},
+		async getFunnel(
+			stages: CanonicalEventName[] = ['landing_view', 'challenge_started', 'challenge_completed'],
+			options?: { startDate?: Date; endDate?: Date }
+		) {
+			return repo.computeFunnel(stages, options);
+		},
+		async getRetention(options: { cohortStartDate: Date; cohortEndDate: Date }) {
+			return repo.computeRetention(options);
+		}
+	};
+}
