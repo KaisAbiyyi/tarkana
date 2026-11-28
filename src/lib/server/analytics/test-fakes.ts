@@ -6,6 +6,7 @@ import type {
 	RetentionResult
 } from '$lib/server/db/repositories/analytics-repository';
 import type { CanonicalEventName } from '$lib/shared/analytics/events';
+import type { AnalyticsService } from './analytics-service';
 
 export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 	const events: AnalyticsEvent[] = [];
@@ -198,37 +199,30 @@ export function createAnalyticsRepositoryFake(): AnalyticsRepository {
 	};
 }
 
-export function createAnalyticsServiceFake() {
+export function createAnalyticsServiceFake(): AnalyticsService {
 	const repo = createAnalyticsRepositoryFake();
 	return {
-		async track(input: {
-			id?: string;
-			distinctId: string;
-			userId?: string | null;
-			event: CanonicalEventName;
-			properties?: Record<string, unknown>;
-			timestamp?: Date;
-		}) {
+		async track(input) {
 			return repo.insertEvent({
 				id: input.id ?? crypto.randomUUID(),
 				distinctId: input.distinctId,
 				userId: input.userId ?? null,
 				event: input.event,
-				properties: input.properties ?? {},
+				properties: (input.properties ?? {}) as Record<string, unknown>,
 				createdAt: input.timestamp ?? new Date()
 			});
 		},
-		async identify(anonymousId: string, userId: string) {
+		async identify(anonymousId, userId) {
 			if (!anonymousId || !userId) return;
 			await repo.createAlias({ anonymousId, userId, createdAt: new Date() });
 		},
 		async getFunnel(
-			stages: CanonicalEventName[] = ['landing_view', 'challenge_started', 'challenge_completed'],
-			options?: { startDate?: Date; endDate?: Date }
+			stages = ['landing_view', 'challenge_started', 'challenge_completed'],
+			options
 		) {
 			return repo.computeFunnel(stages, options);
 		},
-		async getRetention(options: { cohortStartDate: Date; cohortEndDate: Date }) {
+		async getRetention(options) {
 			return repo.computeRetention(options);
 		}
 	};

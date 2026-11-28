@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { forbidden } from '$lib/server/errors';
 
 vi.mock('$lib/server/auth/guards', () => ({
 	requireAdmin: vi.fn(async () => {
+		const { forbidden } = await import('$lib/server/errors');
 		throw forbidden('Admin access is required');
 	})
 }));

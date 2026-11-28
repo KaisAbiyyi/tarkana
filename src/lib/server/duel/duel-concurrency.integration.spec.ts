@@ -23,7 +23,6 @@ describe('Real Database Duel Concurrency Integration', () => {
 	let pool: pg.Pool | null = null;
 	let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 	let isDbAvailable = false;
-	let testCategoryId = '';
 
 	beforeAll(async () => {
 		if (!dbUrl) {
@@ -44,26 +43,6 @@ describe('Real Database Duel Concurrency Integration', () => {
 			client.release();
 			db = drizzle(pool, { schema });
 			isDbAvailable = true;
-
-			// Ensure a valid category exists for session_questions FK without colliding across parallel workers
-			const [existingCat] = await db.select({ id: categories.id }).from(categories).limit(1);
-			if (existingCat) {
-				testCategoryId = existingCat.id;
-			} else {
-				await db
-					.insert(categories)
-					.values({
-						name: 'Duel Concurrency Category',
-						slug: 'duel-concurrency-category',
-						description: 'For duel concurrency integration tests'
-					})
-					.onConflictDoNothing({ target: categories.slug });
-				const [resolvedCat] = await db.select({ id: categories.id }).from(categories).limit(1);
-				if (!resolvedCat) {
-					throw new Error('Failed to resolve or insert category for duel concurrency tests');
-				}
-				testCategoryId = resolvedCat.id;
-			}
 		} catch (err: unknown) {
 			console.warn(
 				'Could not connect to test database. Integration test will skip.',
@@ -71,6 +50,8 @@ describe('Real Database Duel Concurrency Integration', () => {
 			);
 			if (pool) await pool.end();
 			pool = null;
+			db = null;
+			isDbAvailable = false;
 		}
 	});
 
@@ -90,10 +71,18 @@ describe('Real Database Duel Concurrency Integration', () => {
 		const creatorUserId = randomUUID();
 		const participantUserId = randomUUID();
 		const creatorSessionId = randomUUID();
+		const testCategoryId = randomUUID();
 		const duelId = randomUUID();
 		const duelPublicId = `duel_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
 
 		try {
+			await db.insert(categories).values({
+				id: testCategoryId,
+				name: 'Duel Concurrency Category',
+				slug: `duel-concurrency-category-${duelId}`,
+				description: 'For duel concurrency integration tests'
+			});
+
 			// 1. Insert creator and participant profiles
 			await db.insert(usersProfile).values([
 				{
@@ -225,10 +214,12 @@ describe('Real Database Duel Concurrency Integration', () => {
 		} finally {
 			await db.delete(duelParticipants).where(eq(duelParticipants.duelId, duelId));
 			await db.delete(challengeDuels).where(eq(challengeDuels.id, duelId));
+			await db.delete(sessionQuestions).where(eq(sessionQuestions.categoryId, testCategoryId));
 			await db.delete(challengeSessions).where(eq(challengeSessions.userId, participantUserId));
 			await db.delete(challengeSessions).where(eq(challengeSessions.id, creatorSessionId));
 			await db.delete(usersProfile).where(eq(usersProfile.id, participantUserId));
 			await db.delete(usersProfile).where(eq(usersProfile.id, creatorUserId));
+			await db.delete(categories).where(eq(categories.id, testCategoryId));
 		}
 	}, 15_000);
 
@@ -242,12 +233,20 @@ describe('Real Database Duel Concurrency Integration', () => {
 		const runId = randomUUID();
 		const creatorUserId = randomUUID();
 		const creatorSessionId = randomUUID();
+		const testCategoryId = randomUUID();
 		const duelId = randomUUID();
 		const duelPublicId = `duel_${runId.replace(/-/g, '').slice(0, 24)}`;
 		const guestToken = `guest_token_concurrency_${runId}`;
 		const guestTokenHash = hashGuestToken(guestToken);
 
 		try {
+			await db.insert(categories).values({
+				id: testCategoryId,
+				name: 'Duel Guest Concurrency Category',
+				slug: `duel-guest-concurrency-category-${duelId}`,
+				description: 'For duel guest concurrency integration tests'
+			});
+
 			// 1. Insert creator profile and session
 			await db.insert(usersProfile).values({
 				id: creatorUserId,
@@ -343,9 +342,11 @@ describe('Real Database Duel Concurrency Integration', () => {
 		} finally {
 			await db.delete(duelParticipants).where(eq(duelParticipants.duelId, duelId));
 			await db.delete(challengeDuels).where(eq(challengeDuels.id, duelId));
+			await db.delete(sessionQuestions).where(eq(sessionQuestions.categoryId, testCategoryId));
 			await db.delete(challengeSessions).where(eq(challengeSessions.guestToken, guestTokenHash));
 			await db.delete(challengeSessions).where(eq(challengeSessions.id, creatorSessionId));
 			await db.delete(usersProfile).where(eq(usersProfile.id, creatorUserId));
+			await db.delete(categories).where(eq(categories.id, testCategoryId));
 		}
 	}, 15_000);
 });

@@ -70,7 +70,6 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 	let pool: pg.Pool | null = null;
 	let db: ReturnType<typeof drizzle<typeof schema>> | null = null;
 	let isDbAvailable = false;
-	let testCategoryId = '';
 
 	beforeAll(async () => {
 		if (!dbUrl) {
@@ -91,26 +90,6 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 			client.release();
 			db = drizzle(pool, { schema });
 			isDbAvailable = true;
-
-			// Ensure a valid category exists for session_questions FK without colliding across parallel workers
-			const [existingCat] = await db.select({ id: categories.id }).from(categories).limit(1);
-			if (existingCat) {
-				testCategoryId = existingCat.id;
-			} else {
-				await db
-					.insert(categories)
-					.values({
-						name: 'Concurrency Test Category',
-						slug: 'concurrency-test-category',
-						description: 'For concurrency integration tests'
-					})
-					.onConflictDoNothing({ target: categories.slug });
-				const [resolvedCat] = await db.select({ id: categories.id }).from(categories).limit(1);
-				if (!resolvedCat) {
-					throw new Error('Failed to resolve or insert category for daily concurrency tests');
-				}
-				testCategoryId = resolvedCat.id;
-			}
 		} catch (err: unknown) {
 			console.warn(
 				'Could not connect to test database. Integration test will skip.',
@@ -118,6 +97,8 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 			);
 			if (pool) await pool.end();
 			pool = null;
+			db = null;
+			isDbAvailable = false;
 		}
 	});
 
@@ -136,11 +117,19 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 
 		const runId = randomUUID();
 		const testUserId = randomUUID();
+		const testCategoryId = randomUUID();
 		const testDailyId = randomUUID();
 		let createdSessionId: string | null = null;
 
 		try {
-			// 1. Insert clean profile and daily challenge snapshot
+			// 1. Insert clean category, profile, and daily challenge snapshot
+			await db.insert(categories).values({
+				id: testCategoryId,
+				name: 'Daily Concurrency Category',
+				slug: `daily-concurrency-category-${runId}`,
+				description: 'For daily concurrency integration tests'
+			});
+
 			await db.insert(usersProfile).values({
 				id: testUserId,
 				displayName: 'DailyConcurrencyTester',
@@ -233,9 +222,11 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 			if (createdSessionId) {
 				await db.delete(sessionQuestions).where(eq(sessionQuestions.sessionId, createdSessionId));
 			}
+			await db.delete(sessionQuestions).where(eq(sessionQuestions.categoryId, testCategoryId));
 			await db.delete(challengeSessions).where(eq(challengeSessions.userId, testUserId));
 			await db.delete(dailyChallenges).where(eq(dailyChallenges.id, testDailyId));
 			await db.delete(usersProfile).where(eq(usersProfile.id, testUserId));
+			await db.delete(categories).where(eq(categories.id, testCategoryId));
 		}
 	}, 15_000);
 
@@ -247,12 +238,20 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 		}
 
 		const runId = randomUUID();
+		const testCategoryId = randomUUID();
 		const testDailyId = randomUUID();
 		const rawGuestToken = `test_guest_token_${runId}`;
 		const guestTokenHash = hashGuestToken(rawGuestToken);
 		let canonicalSessionId: string | null = null;
 
 		try {
+			await db.insert(categories).values({
+				id: testCategoryId,
+				name: 'Daily Guest Concurrency Category',
+				slug: `daily-guest-concurrency-category-${runId}`,
+				description: 'For daily guest concurrency integration tests'
+			});
+
 			const mockSnapshotQuestions = Array.from({ length: 10 }, (_, i) => ({
 				orderIndex: i,
 				categoryId: testCategoryId,
@@ -320,8 +319,10 @@ describe('Real Database Daily Challenge Concurrency Integration', () => {
 				await db.delete(sessionQuestions).where(eq(sessionQuestions.sessionId, canonicalSessionId));
 				await db.delete(challengeSessions).where(eq(challengeSessions.id, canonicalSessionId));
 			}
+			await db.delete(sessionQuestions).where(eq(sessionQuestions.categoryId, testCategoryId));
 			await db.delete(challengeSessions).where(eq(challengeSessions.dailyChallengeId, testDailyId));
 			await db.delete(dailyChallenges).where(eq(dailyChallenges.id, testDailyId));
+			await db.delete(categories).where(eq(categories.id, testCategoryId));
 		}
 	}, 15_000);
 });
