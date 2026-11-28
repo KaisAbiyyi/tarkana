@@ -87,6 +87,24 @@ If two PRs depend on each other:
 
 Do not resolve semantic conflicts by mechanically accepting "ours" or "theirs".
 
+## Active Execution Model — Web-First Sequential Work Packages (28 Nov 2026)
+
+> **Owner Decision (28 Nov 2026):** Active Tarkana execution is now structured as **Web-First Sequential Work Packages (`TARK-WEB-WP01`..`TARK-WEB-WP09`)** with **NO parallel WPs**. Parallel lanes above are suspended for the duration of this serial train. Live status lives in Notion (`Tarkana · Execution Tasks`); canonical plan lives in `docs/productization/2026-11-28-web-work-packages.md` and GitHub Milestone [Web-First Sequential WPs](https://github.com/KaisAbiyyi/tarkana/milestone/1).
+
+| Order | WP ID | Issue / PR | Focus | State (as of 2026-11-28) |
+|---|---|---|---|---|
+| 1 | `TARK-WEB-WP01` | #64 | Web CI unblock (Ubuntu 26.04 / Playwright) & parallel DB test isolation | READY (`02 · Now`) |
+| 2 | `TARK-WEB-WP02` | #65 | Production backend recovery, live health & keepalive verification | BLOCKED (`03 · Up Next`, waits WP01) |
+| 3 | `TARK-WEB-WP03` | #66 | Web observability, endpoint telemetry & synthetic alerting | BACKLOG (waits WP02) |
+| 4 | `TARK-WEB-WP04` | #67 / PR #62 | Daily Streak backend finalization & live preview verification | BACKLOG (waits WP03; PR #62 preserved) |
+| 5 | `TARK-WEB-WP05` | #68 | Daily Streak Web UI | BACKLOG (waits WP04) |
+| 6 | `TARK-WEB-WP06` | #69 | Daily share grid & daily percentile | BACKLOG (waits WP05) |
+| 7 | `TARK-WEB-WP07` | #70 | Daily Challenge history calendar (Web) | BACKLOG (waits WP06) |
+| 8 | `TARK-WEB-WP08` | #71 | Web controlled internal beta | BACKLOG (waits WP07) |
+| 9 | `TARK-WEB-WP09` | #72 | Web activation & retention evidence (D1/D7) | BACKLOG (waits WP08) |
+
+Deferred until Web WP train completes: `TARK-LR-02` (Web–Android compatibility audit), `TARK-LR-06` (Google Play internal release), `TARK-G05` (Android streak parity).
+
 ## Milestone Board & P1 Competitive Freeze
 
 > **Canonical Roadmap Reference**: `docs/productization/MASTER-ROADMAP.md` is the canonical source of milestone numbering and roadmap status.
