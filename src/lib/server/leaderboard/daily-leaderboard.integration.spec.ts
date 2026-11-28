@@ -1,7 +1,8 @@
+import { randomInt, randomUUID } from 'node:crypto';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import pg from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import * as schema from '$lib/server/db/schema';
 import {
 	usersProfile,
@@ -11,6 +12,23 @@ import {
 } from '$lib/server/db/schema';
 import { createDailyRepository } from '$lib/server/db/repositories/daily-repository';
 import { hashGuestToken } from '$lib/server/sessions/guest-token';
+
+function makeUniqueFutureDate(): string {
+	const year = randomInt(2200, 9999);
+	const month = String(randomInt(1, 13)).padStart(2, '0');
+	const day = String(randomInt(1, 29)).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+function isUniqueViolation(err: unknown): boolean {
+	let cur: unknown = err;
+	while (cur && typeof cur === 'object') {
+		const candidate = cur as { code?: unknown; cause?: unknown };
+		if (candidate.code === '23505') return true;
+		cur = candidate.cause;
+	}
+	return false;
+}
 
 describe('Real Database Daily Leaderboard Integration', () => {
 	const dbUrl =
@@ -32,7 +50,8 @@ describe('Real Database Daily Leaderboard Integration', () => {
 		try {
 			pool = new pg.Pool({
 				connectionString: dbUrl,
-				connectionTimeoutMillis: 3000
+				max: 5,
+				connectionTimeoutMillis: 5000
 			});
 			const client = await pool.connect();
 			await client.query('SELECT 1');
@@ -62,402 +81,411 @@ describe('Real Database Daily Leaderboard Integration', () => {
 			return;
 		}
 
-		const testDailyId = '00000000-0000-4000-8000-000000000050';
-		const testDate = '2099-05-01';
+		const runId = randomUUID();
+		const testDailyId = randomUUID();
+		const userIdMap = new Map<number, string>();
+		const sessionIdMap = new Map<number, string>();
+		const attemptIdMap = new Map<number, string>();
 
-		// Clean up previous runs
-		await db
-			.delete(dailyChallengeAttempts)
-			.where(eq(dailyChallengeAttempts.dailyChallengeId, testDailyId));
-		await db.delete(dailyChallenges).where(eq(dailyChallenges.id, testDailyId));
+		const getOrCreateId = (map: Map<number, string>, num: number): string => {
+			let id = map.get(num);
+			if (!id) {
+				id = randomUUID();
+				map.set(num, id);
+			}
+			return id;
+		};
 
-		// Insert Daily Challenge snapshot
-		await db.insert(dailyChallenges).values({
-			id: testDailyId,
-			challengeDate: testDate,
-			configVersion: 1,
-			generatorVersion: 1,
-			seed: 'test_seed_leaderboard',
-			totalQuestions: 10,
-			puzzleSnapshot: []
-		});
+		const makeUserId = (num: number) => getOrCreateId(userIdMap, num);
+		const makeSessionId = (num: number) => getOrCreateId(sessionIdMap, num);
+		const makeAttemptId = (num: number) => getOrCreateId(attemptIdMap, num);
 
-		const makeUserId = (num: number) => `00000000-0000-4000-8000-${String(num).padStart(12, '0')}`;
-		const makeSessionId = (num: number) =>
-			`00000000-0000-4000-8001-${String(num).padStart(12, '0')}`;
-		const makeAttemptId = (num: number) =>
-			`00000000-0000-4000-8002-${String(num).padStart(12, '0')}`;
+		try {
+			// Insert Daily Challenge snapshot using an isolated future date
+			for (let attempt = 0; attempt < 10; attempt++) {
+				const testDate = makeUniqueFutureDate();
+				try {
+					await db.insert(dailyChallenges).values({
+						id: testDailyId,
+						challengeDate: testDate,
+						configVersion: 1,
+						generatorVersion: 1,
+						seed: `test_seed_leaderboard_${runId}`,
+						totalQuestions: 10,
+						puzzleSnapshot: []
+					});
+					break;
+				} catch (err) {
+					if (!isUniqueViolation(err) || attempt === 9) throw err;
+				}
+			}
 
-		// Clean up test users
-		for (let i = 1; i <= 10; i++) {
-			await db.delete(challengeSessions).where(eq(challengeSessions.id, makeSessionId(i)));
-			await db.delete(usersProfile).where(eq(usersProfile.id, makeUserId(i)));
-		}
-
-		// Helper to create profile + session + completed attempt
-		async function createPlayerWithAttempt({
-			num,
-			displayName,
-			score,
-			accuracy,
-			totalTimeSeconds,
-			completedAt,
-			isOfficial = true,
-			isSuspicious = false,
-			status = 'completed' as const
-		}: {
-			num: number;
-			displayName: string;
-			score: number;
-			accuracy: number;
-			totalTimeSeconds: number;
-			completedAt: Date;
-			isOfficial?: boolean;
-			isSuspicious?: boolean;
-			status?: 'completed' | 'in_progress' | 'abandoned';
-		}) {
-			const uId = makeUserId(num);
-			const sId = makeSessionId(num);
-
-			await db!.insert(usersProfile).values({
-				id: uId,
+			// Helper to create profile + session + completed attempt
+			async function createPlayerWithAttempt({
+				num,
 				displayName,
-				rating: 1400,
-				rank: 'Gold Analyst'
-			});
-
-			await db!.insert(challengeSessions).values({
-				id: sId,
-				userId: uId,
-				challengeType: 'daily',
-				status: status === 'completed' ? 'completed' : 'in_progress',
-				totalQuestions: 10,
-				ratingBefore: 1400,
-				ratingAfter: 1400,
-				rankBefore: 'Gold Analyst',
-				rankAfter: 'Gold Analyst',
-				isSuspicious
-			});
-
-			await db!.insert(dailyChallengeAttempts).values({
-				id: makeAttemptId(num),
-				dailyChallengeId: testDailyId,
-				sessionId: sId,
-				userId: uId,
-				distinctId: `dist-${num}`,
-				isOfficial,
-				status,
 				score,
 				accuracy,
 				totalTimeSeconds,
-				completedAt: status === 'completed' ? completedAt : null
+				completedAt,
+				isOfficial = true,
+				isSuspicious = false,
+				status = 'completed' as const
+			}: {
+				num: number;
+				displayName: string;
+				score: number;
+				accuracy: number;
+				totalTimeSeconds: number;
+				completedAt: Date;
+				isOfficial?: boolean;
+				isSuspicious?: boolean;
+				status?: 'completed' | 'in_progress' | 'abandoned';
+			}) {
+				const uId = makeUserId(num);
+				const sId = makeSessionId(num);
+
+				await db!.insert(usersProfile).values({
+					id: uId,
+					displayName,
+					rating: 1400,
+					rank: 'Gold Analyst'
+				});
+
+				await db!.insert(challengeSessions).values({
+					id: sId,
+					userId: uId,
+					challengeType: 'daily',
+					status: status === 'completed' ? 'completed' : 'in_progress',
+					totalQuestions: 10,
+					ratingBefore: 1400,
+					ratingAfter: 1400,
+					rankBefore: 'Gold Analyst',
+					rankAfter: 'Gold Analyst',
+					isSuspicious
+				});
+
+				await db!.insert(dailyChallengeAttempts).values({
+					id: makeAttemptId(num),
+					dailyChallengeId: testDailyId,
+					sessionId: sId,
+					userId: uId,
+					distinctId: `dist-${runId}-${num}`,
+					isOfficial,
+					status,
+					score,
+					accuracy,
+					totalTimeSeconds,
+					completedAt: status === 'completed' ? completedAt : null
+				});
+			}
+
+			// 1. Setup Official Candidates to test Tie-Breaking Hierarchy:
+			// Rule: score DESC → accuracy DESC → totalTimeSeconds ASC → completedAt ASC → id ASC
+			// User E: score 950 -> should be #1
+			await createPlayerWithAttempt({
+				num: 5,
+				displayName: 'UserE_950',
+				score: 950,
+				accuracy: 0.8,
+				totalTimeSeconds: 60,
+				completedAt: new Date('2026-05-01T12:00:00Z')
 			});
+
+			// User B: score 900, accuracy 0.95 -> should beat other 900s (#2)
+			await createPlayerWithAttempt({
+				num: 2,
+				displayName: 'UserB_900_Acc95',
+				score: 900,
+				accuracy: 0.95,
+				totalTimeSeconds: 50,
+				completedAt: new Date('2026-05-01T12:00:00Z')
+			});
+
+			// User C: score 900, accuracy 0.90, time 40 -> beats time 50 (#3)
+			await createPlayerWithAttempt({
+				num: 3,
+				displayName: 'UserC_900_Time40',
+				score: 900,
+				accuracy: 0.9,
+				totalTimeSeconds: 40,
+				completedAt: new Date('2026-05-01T12:00:00Z')
+			});
+
+			// User D: score 900, accuracy 0.90, time 50, completed 09:00 -> beats 10:00 (#4)
+			await createPlayerWithAttempt({
+				num: 4,
+				displayName: 'UserD_900_Time50_Early',
+				score: 900,
+				accuracy: 0.9,
+				totalTimeSeconds: 50,
+				completedAt: new Date('2026-05-01T09:00:00Z')
+			});
+
+			// User A: score 900, accuracy 0.90, time 50, completed 10:00 -> (#5)
+			await createPlayerWithAttempt({
+				num: 1,
+				displayName: 'UserA_900_Time50_Late',
+				score: 900,
+				accuracy: 0.9,
+				totalTimeSeconds: 50,
+				completedAt: new Date('2026-05-01T10:00:00Z')
+			});
+
+			// 2. Setup Exclusions:
+			// User Suspicious (num: 6) -> isSuspicious = true -> MUST BE EXCLUDED
+			await createPlayerWithAttempt({
+				num: 6,
+				displayName: 'User_Cheater',
+				score: 1000,
+				accuracy: 1.0,
+				totalTimeSeconds: 10,
+				completedAt: new Date('2026-05-01T08:00:00Z'),
+				isSuspicious: true
+			});
+
+			// User Unofficial (num: 7) -> isOfficial = false -> MUST BE EXCLUDED
+			await createPlayerWithAttempt({
+				num: 7,
+				displayName: 'User_Unofficial',
+				score: 980,
+				accuracy: 1.0,
+				totalTimeSeconds: 15,
+				completedAt: new Date('2026-05-01T08:00:00Z'),
+				isOfficial: false
+			});
+
+			// User In Progress (num: 8) -> status = 'in_progress' -> MUST BE EXCLUDED
+			await createPlayerWithAttempt({
+				num: 8,
+				displayName: 'User_InProgress',
+				score: 0,
+				accuracy: 0,
+				totalTimeSeconds: 0,
+				completedAt: new Date(),
+				status: 'in_progress'
+			});
+
+			// 3. Setup Guest Attempt:
+			const rawGuestToken = `test-integ-guest-token-${runId}`;
+			const guestHash = hashGuestToken(rawGuestToken);
+			const guestSessionId = makeSessionId(9);
+
+			await db.insert(challengeSessions).values({
+				id: guestSessionId,
+				userId: null,
+				challengeType: 'daily',
+				status: 'completed',
+				totalQuestions: 10,
+				ratingBefore: 0,
+				ratingAfter: 0,
+				rankBefore: 'Unranked',
+				rankAfter: 'Unranked',
+				isSuspicious: false
+			});
+
+			await db.insert(dailyChallengeAttempts).values({
+				id: makeAttemptId(99),
+				dailyChallengeId: testDailyId,
+				sessionId: guestSessionId,
+				userId: null,
+				guestTokenHash: guestHash,
+				distinctId: `guest-dist-${runId}-9`,
+				isOfficial: true,
+				status: 'completed',
+				score: 920, // Guest scored 920! (Between User E: 950 and User B: 900)
+				accuracy: 0.92,
+				totalTimeSeconds: 45,
+				completedAt: new Date('2026-05-01T11:00:00Z')
+			});
+
+			const dailyRepo = createDailyRepository(db);
+
+			// 4. Verify Official Leaderboard & Canonical Tie-Breaking
+			const leaderboard = await dailyRepo.getDailyLeaderboard({
+				dailyChallengeId: testDailyId,
+				limit: 10,
+				offset: 0
+			});
+
+			// Total official participants must be strictly 5 (excluding cheater, unofficial, in-progress, guest)
+			expect(leaderboard.totalParticipants).toBe(5);
+			expect(leaderboard.items).toHaveLength(5);
+
+			// Exact sequence verification:
+			expect(leaderboard.items[0].displayName).toBe('UserE_950');
+			expect(leaderboard.items[0].position).toBe(1);
+
+			expect(leaderboard.items[1].displayName).toBe('UserB_900_Acc95');
+			expect(leaderboard.items[1].position).toBe(2);
+
+			expect(leaderboard.items[2].displayName).toBe('UserC_900_Time40');
+			expect(leaderboard.items[2].position).toBe(3);
+
+			expect(leaderboard.items[3].displayName).toBe('UserD_900_Time50_Early');
+			expect(leaderboard.items[3].position).toBe(4);
+
+			expect(leaderboard.items[4].displayName).toBe('UserA_900_Time50_Late');
+			expect(leaderboard.items[4].position).toBe(5);
+
+			// 5. Verify User Specific Position
+			const userCPos = await dailyRepo.getUserDailyPosition({
+				dailyChallengeId: testDailyId,
+				userId: makeUserId(3)
+			});
+			expect(userCPos).not.toBeNull();
+			expect(userCPos?.position).toBe(3);
+			expect(userCPos?.displayName).toBe('UserC_900_Time40');
+
+			// 6. Verify Around-Me Window
+			const aroundC = await dailyRepo.getAroundMeDailyLeaderboard({
+				dailyChallengeId: testDailyId,
+				userId: makeUserId(3),
+				windowSize: 1
+			});
+			expect(aroundC).toHaveLength(3);
+			expect(aroundC.map((r) => r.position)).toEqual([2, 3, 4]);
+			expect(aroundC.map((r) => r.displayName)).toEqual([
+				'UserB_900_Acc95',
+				'UserC_900_Time40',
+				'UserD_900_Time50_Early'
+			]);
+
+			// 7. Verify Guest Hypothetical Position
+			// Score 920 should hypothetically rank #2 (behind UserE_950, ahead of UserB_900_Acc95)
+			const guestPos = await dailyRepo.getGuestHypotheticalPosition({
+				dailyChallengeId: testDailyId,
+				guestTokenHash: guestHash
+			});
+			expect(guestPos).not.toBeNull();
+			expect(guestPos?.hypotheticalPosition).toBe(2);
+			expect(guestPos?.score).toBe(920);
+
+			// Suspicious guest attempt -> must receive null
+			const suspiciousGuestSessionId = makeSessionId(11);
+			const suspiciousGuestToken = `test-integ-suspicious-guest-${runId}`;
+			const suspiciousGuestHash = hashGuestToken(suspiciousGuestToken);
+			await db.insert(challengeSessions).values({
+				id: suspiciousGuestSessionId,
+				userId: null,
+				challengeType: 'daily',
+				status: 'completed',
+				totalQuestions: 10,
+				ratingBefore: 0,
+				ratingAfter: 0,
+				rankBefore: 'Unranked',
+				rankAfter: 'Unranked',
+				isSuspicious: true
+			});
+			await db.insert(dailyChallengeAttempts).values({
+				id: makeAttemptId(101),
+				dailyChallengeId: testDailyId,
+				sessionId: suspiciousGuestSessionId,
+				userId: null,
+				guestTokenHash: suspiciousGuestHash,
+				distinctId: `guest-dist-${runId}-11`,
+				isOfficial: true,
+				status: 'completed',
+				score: 930,
+				accuracy: 0.93,
+				totalTimeSeconds: 40,
+				completedAt: new Date('2026-05-01T11:00:00Z')
+			});
+			const suspiciousGuestPos = await dailyRepo.getGuestHypotheticalPosition({
+				dailyChallengeId: testDailyId,
+				guestTokenHash: suspiciousGuestHash
+			});
+			expect(suspiciousGuestPos).toBeNull();
+
+			// Unofficial guest attempt -> must receive null
+			const unofficialGuestSessionId = makeSessionId(12);
+			const unofficialGuestToken = `test-integ-unofficial-guest-${runId}`;
+			const unofficialGuestHash = hashGuestToken(unofficialGuestToken);
+			await db.insert(challengeSessions).values({
+				id: unofficialGuestSessionId,
+				userId: null,
+				challengeType: 'daily',
+				status: 'completed',
+				totalQuestions: 10,
+				ratingBefore: 0,
+				ratingAfter: 0,
+				rankBefore: 'Unranked',
+				rankAfter: 'Unranked',
+				isSuspicious: false
+			});
+			await db.insert(dailyChallengeAttempts).values({
+				id: makeAttemptId(102),
+				dailyChallengeId: testDailyId,
+				sessionId: unofficialGuestSessionId,
+				userId: null,
+				guestTokenHash: unofficialGuestHash,
+				distinctId: `guest-dist-${runId}-12`,
+				isOfficial: false,
+				status: 'completed',
+				score: 940,
+				accuracy: 0.94,
+				totalTimeSeconds: 35,
+				completedAt: new Date('2026-05-01T11:00:00Z')
+			});
+			const unofficialGuestPos = await dailyRepo.getGuestHypotheticalPosition({
+				dailyChallengeId: testDailyId,
+				guestTokenHash: unofficialGuestHash
+			});
+			expect(unofficialGuestPos).toBeNull();
+
+			// 8. PostgreSQL Query Plan EXPLAIN Verification
+			// Test inside a transaction so SET LOCAL enable_seqscan takes effect cleanly
+			const explainResult = await db.transaction(async (tx) => {
+				await tx.execute(sql`SET LOCAL enable_seqscan = OFF;`);
+				return tx.execute(sql`
+					EXPLAIN (FORMAT JSON)
+					WITH ranked_attempts AS (
+						SELECT
+							ROW_NUMBER() OVER (
+								ORDER BY
+									dca.score DESC NULLS LAST,
+									dca.accuracy DESC NULLS LAST,
+									dca.total_time_seconds ASC,
+									dca.completed_at ASC,
+									dca.id ASC
+							) AS position,
+							dca.user_id,
+							up.display_name,
+							up.rank AS logic_rank,
+							dca.score,
+							dca.accuracy,
+							dca.total_time_seconds,
+							dca.completed_at
+						FROM daily_challenge_attempts dca
+						INNER JOIN challenge_sessions cs ON cs.id = dca.session_id
+						INNER JOIN users_profile up ON up.id = dca.user_id
+						WHERE dca.daily_challenge_id = ${testDailyId}
+							AND dca.user_id IS NOT NULL
+							AND dca.is_official = true
+							AND dca.status = 'completed'
+							AND cs.is_suspicious = false
+					)
+					SELECT * FROM ranked_attempts LIMIT 10;
+				`);
+			});
+
+			expect(explainResult.rows).toBeDefined();
+			expect(explainResult.rows.length).toBeGreaterThan(0);
+			const explainJson = JSON.stringify(explainResult.rows);
+			expect(explainJson).toContain('daily_attempts_leaderboard_rank_idx');
+		} finally {
+			await db
+				.delete(dailyChallengeAttempts)
+				.where(eq(dailyChallengeAttempts.dailyChallengeId, testDailyId));
+			await db.delete(dailyChallenges).where(eq(dailyChallenges.id, testDailyId));
+			const sessionIds = [...sessionIdMap.values()];
+			if (sessionIds.length > 0) {
+				await db.delete(challengeSessions).where(inArray(challengeSessions.id, sessionIds));
+			}
+			const userIds = [...userIdMap.values()];
+			if (userIds.length > 0) {
+				await db.delete(usersProfile).where(inArray(usersProfile.id, userIds));
+			}
 		}
-
-		// 1. Setup Official Candidates to test Tie-Breaking Hierarchy:
-		// Rule: score DESC → accuracy DESC → totalTimeSeconds ASC → completedAt ASC → id ASC
-		// User E: score 950 -> should be #1
-		await createPlayerWithAttempt({
-			num: 5,
-			displayName: 'UserE_950',
-			score: 950,
-			accuracy: 0.8,
-			totalTimeSeconds: 60,
-			completedAt: new Date('2026-05-01T12:00:00Z')
-		});
-
-		// User B: score 900, accuracy 0.95 -> should beat other 900s (#2)
-		await createPlayerWithAttempt({
-			num: 2,
-			displayName: 'UserB_900_Acc95',
-			score: 900,
-			accuracy: 0.95,
-			totalTimeSeconds: 50,
-			completedAt: new Date('2026-05-01T12:00:00Z')
-		});
-
-		// User C: score 900, accuracy 0.90, time 40 -> beats time 50 (#3)
-		await createPlayerWithAttempt({
-			num: 3,
-			displayName: 'UserC_900_Time40',
-			score: 900,
-			accuracy: 0.9,
-			totalTimeSeconds: 40,
-			completedAt: new Date('2026-05-01T12:00:00Z')
-		});
-
-		// User D: score 900, accuracy 0.90, time 50, completed 09:00 -> beats 10:00 (#4)
-		await createPlayerWithAttempt({
-			num: 4,
-			displayName: 'UserD_900_Time50_Early',
-			score: 900,
-			accuracy: 0.9,
-			totalTimeSeconds: 50,
-			completedAt: new Date('2026-05-01T09:00:00Z')
-		});
-
-		// User A: score 900, accuracy 0.90, time 50, completed 10:00 -> (#5)
-		await createPlayerWithAttempt({
-			num: 1,
-			displayName: 'UserA_900_Time50_Late',
-			score: 900,
-			accuracy: 0.9,
-			totalTimeSeconds: 50,
-			completedAt: new Date('2026-05-01T10:00:00Z')
-		});
-
-		// 2. Setup Exclusions:
-		// User Suspicious (num: 6) -> isSuspicious = true -> MUST BE EXCLUDED
-		await createPlayerWithAttempt({
-			num: 6,
-			displayName: 'User_Cheater',
-			score: 1000,
-			accuracy: 1.0,
-			totalTimeSeconds: 10,
-			completedAt: new Date('2026-05-01T08:00:00Z'),
-			isSuspicious: true
-		});
-
-		// User Unofficial (num: 7) -> isOfficial = false -> MUST BE EXCLUDED
-		await createPlayerWithAttempt({
-			num: 7,
-			displayName: 'User_Unofficial',
-			score: 980,
-			accuracy: 1.0,
-			totalTimeSeconds: 15,
-			completedAt: new Date('2026-05-01T08:00:00Z'),
-			isOfficial: false
-		});
-
-		// User In Progress (num: 8) -> status = 'in_progress' -> MUST BE EXCLUDED
-		await createPlayerWithAttempt({
-			num: 8,
-			displayName: 'User_InProgress',
-			score: 0,
-			accuracy: 0,
-			totalTimeSeconds: 0,
-			completedAt: new Date(),
-			status: 'in_progress'
-		});
-
-		// 3. Setup Guest Attempt:
-		const rawGuestToken = 'test-integ-guest-token-12345';
-		const guestHash = hashGuestToken(rawGuestToken);
-		const guestSessionId = makeSessionId(9);
-
-		await db.insert(challengeSessions).values({
-			id: guestSessionId,
-			userId: null,
-			challengeType: 'daily',
-			status: 'completed',
-			totalQuestions: 10,
-			ratingBefore: 0,
-			ratingAfter: 0,
-			rankBefore: 'Unranked',
-			rankAfter: 'Unranked',
-			isSuspicious: false
-		});
-
-		await db.insert(dailyChallengeAttempts).values({
-			id: makeAttemptId(99),
-			dailyChallengeId: testDailyId,
-			sessionId: guestSessionId,
-			userId: null,
-			guestTokenHash: guestHash,
-			distinctId: 'guest-dist-9',
-			isOfficial: true,
-			status: 'completed',
-			score: 920, // Guest scored 920! (Between User E: 950 and User B: 900)
-			accuracy: 0.92,
-			totalTimeSeconds: 45,
-			completedAt: new Date('2026-05-01T11:00:00Z')
-		});
-
-		const dailyRepo = createDailyRepository(db);
-
-		// 4. Verify Official Leaderboard & Canonical Tie-Breaking
-		const leaderboard = await dailyRepo.getDailyLeaderboard({
-			dailyChallengeId: testDailyId,
-			limit: 10,
-			offset: 0
-		});
-
-		// Total official participants must be strictly 5 (excluding cheater, unofficial, in-progress, guest)
-		expect(leaderboard.totalParticipants).toBe(5);
-		expect(leaderboard.items).toHaveLength(5);
-
-		// Exact sequence verification:
-		expect(leaderboard.items[0].displayName).toBe('UserE_950');
-		expect(leaderboard.items[0].position).toBe(1);
-
-		expect(leaderboard.items[1].displayName).toBe('UserB_900_Acc95');
-		expect(leaderboard.items[1].position).toBe(2);
-
-		expect(leaderboard.items[2].displayName).toBe('UserC_900_Time40');
-		expect(leaderboard.items[2].position).toBe(3);
-
-		expect(leaderboard.items[3].displayName).toBe('UserD_900_Time50_Early');
-		expect(leaderboard.items[3].position).toBe(4);
-
-		expect(leaderboard.items[4].displayName).toBe('UserA_900_Time50_Late');
-		expect(leaderboard.items[4].position).toBe(5);
-
-		// 5. Verify User Specific Position
-		const userCPos = await dailyRepo.getUserDailyPosition({
-			dailyChallengeId: testDailyId,
-			userId: makeUserId(3)
-		});
-		expect(userCPos).not.toBeNull();
-		expect(userCPos?.position).toBe(3);
-		expect(userCPos?.displayName).toBe('UserC_900_Time40');
-
-		// 6. Verify Around-Me Window
-		const aroundC = await dailyRepo.getAroundMeDailyLeaderboard({
-			dailyChallengeId: testDailyId,
-			userId: makeUserId(3),
-			windowSize: 1
-		});
-		expect(aroundC).toHaveLength(3);
-		expect(aroundC.map((r) => r.position)).toEqual([2, 3, 4]);
-		expect(aroundC.map((r) => r.displayName)).toEqual([
-			'UserB_900_Acc95',
-			'UserC_900_Time40',
-			'UserD_900_Time50_Early'
-		]);
-
-		// 7. Verify Guest Hypothetical Position
-		// Score 920 should hypothetically rank #2 (behind UserE_950, ahead of UserB_900_Acc95)
-		const guestPos = await dailyRepo.getGuestHypotheticalPosition({
-			dailyChallengeId: testDailyId,
-			guestTokenHash: guestHash
-		});
-		expect(guestPos).not.toBeNull();
-		expect(guestPos?.hypotheticalPosition).toBe(2);
-		expect(guestPos?.score).toBe(920);
-
-		// Suspicious guest attempt -> must receive null
-		const suspiciousGuestSessionId = makeSessionId(11);
-		const suspiciousGuestToken = 'test-integ-suspicious-guest';
-		const suspiciousGuestHash = hashGuestToken(suspiciousGuestToken);
-		await db.insert(challengeSessions).values({
-			id: suspiciousGuestSessionId,
-			userId: null,
-			challengeType: 'daily',
-			status: 'completed',
-			totalQuestions: 10,
-			ratingBefore: 0,
-			ratingAfter: 0,
-			rankBefore: 'Unranked',
-			rankAfter: 'Unranked',
-			isSuspicious: true
-		});
-		await db.insert(dailyChallengeAttempts).values({
-			id: makeAttemptId(101),
-			dailyChallengeId: testDailyId,
-			sessionId: suspiciousGuestSessionId,
-			userId: null,
-			guestTokenHash: suspiciousGuestHash,
-			distinctId: 'guest-dist-11',
-			isOfficial: true,
-			status: 'completed',
-			score: 930,
-			accuracy: 0.93,
-			totalTimeSeconds: 40,
-			completedAt: new Date('2026-05-01T11:00:00Z')
-		});
-		const suspiciousGuestPos = await dailyRepo.getGuestHypotheticalPosition({
-			dailyChallengeId: testDailyId,
-			guestTokenHash: suspiciousGuestHash
-		});
-		expect(suspiciousGuestPos).toBeNull();
-
-		// Unofficial guest attempt -> must receive null
-		const unofficialGuestSessionId = makeSessionId(12);
-		const unofficialGuestToken = 'test-integ-unofficial-guest';
-		const unofficialGuestHash = hashGuestToken(unofficialGuestToken);
-		await db.insert(challengeSessions).values({
-			id: unofficialGuestSessionId,
-			userId: null,
-			challengeType: 'daily',
-			status: 'completed',
-			totalQuestions: 10,
-			ratingBefore: 0,
-			ratingAfter: 0,
-			rankBefore: 'Unranked',
-			rankAfter: 'Unranked',
-			isSuspicious: false
-		});
-		await db.insert(dailyChallengeAttempts).values({
-			id: makeAttemptId(102),
-			dailyChallengeId: testDailyId,
-			sessionId: unofficialGuestSessionId,
-			userId: null,
-			guestTokenHash: unofficialGuestHash,
-			distinctId: 'guest-dist-12',
-			isOfficial: false,
-			status: 'completed',
-			score: 940,
-			accuracy: 0.94,
-			totalTimeSeconds: 35,
-			completedAt: new Date('2026-05-01T11:00:00Z')
-		});
-		const unofficialGuestPos = await dailyRepo.getGuestHypotheticalPosition({
-			dailyChallengeId: testDailyId,
-			guestTokenHash: unofficialGuestHash
-		});
-		expect(unofficialGuestPos).toBeNull();
-
-		// 8. PostgreSQL Query Plan EXPLAIN Verification
-		// Test with sequential scan disabled to assert index utilization and alignment
-		await db.execute(sql`SET LOCAL enable_seqscan = OFF;`);
-		const explainResult = await db.execute(sql`
-			EXPLAIN (FORMAT JSON)
-			WITH ranked_attempts AS (
-				SELECT
-					ROW_NUMBER() OVER (
-						ORDER BY
-							dca.score DESC,
-							dca.accuracy DESC,
-							dca.total_time_seconds ASC,
-							dca.completed_at ASC,
-							dca.id ASC
-					) AS position,
-					dca.user_id,
-					up.display_name,
-					up.rank AS logic_rank,
-					dca.score,
-					dca.accuracy,
-					dca.total_time_seconds,
-					dca.completed_at
-				FROM daily_challenge_attempts dca
-				INNER JOIN challenge_sessions cs ON cs.id = dca.session_id
-				INNER JOIN users_profile up ON up.id = dca.user_id
-				WHERE dca.daily_challenge_id = ${testDailyId}
-					AND dca.user_id IS NOT NULL
-					AND dca.is_official = true
-					AND dca.status = 'completed'
-					AND cs.is_suspicious = false
-			)
-			SELECT * FROM ranked_attempts LIMIT 10;
-		`);
-		await db.execute(sql`SET LOCAL enable_seqscan = ON;`);
-
-		expect(explainResult.rows).toBeDefined();
-		expect(explainResult.rows.length).toBeGreaterThan(0);
-		const explainJson = JSON.stringify(explainResult.rows);
-		expect(explainJson).toContain('daily_attempts_leaderboard_rank_idx');
-
-		// Clean up after test
-		await db
-			.delete(dailyChallengeAttempts)
-			.where(eq(dailyChallengeAttempts.dailyChallengeId, testDailyId));
-		await db.delete(dailyChallenges).where(eq(dailyChallenges.id, testDailyId));
-		for (let i = 1; i <= 12; i++) {
-			await db.delete(challengeSessions).where(eq(challengeSessions.id, makeSessionId(i)));
-			await db.delete(usersProfile).where(eq(usersProfile.id, makeUserId(i)));
-		}
-		await db.delete(challengeSessions).where(eq(challengeSessions.id, guestSessionId));
-		await db.delete(challengeSessions).where(eq(challengeSessions.id, suspiciousGuestSessionId));
-		await db.delete(challengeSessions).where(eq(challengeSessions.id, unofficialGuestSessionId));
-	});
+	}, 15_000);
 });

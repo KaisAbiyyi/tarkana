@@ -1,5 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { RequestEvent } from '@sveltejs/kit';
+
+vi.mock('$lib/server/analytics/analytics-service', async () => {
+	const { createAnalyticsServiceFake } = await import('$lib/server/analytics/test-fakes');
+	const fake = createAnalyticsServiceFake();
+	return { getAnalyticsService: () => fake };
+});
 import {
 	DAILY_CHALLENGE_CONFIG_VERSION,
 	DAILY_CHALLENGE_GENERATOR_VERSION,

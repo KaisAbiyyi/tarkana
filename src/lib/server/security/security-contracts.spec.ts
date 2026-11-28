@@ -1,5 +1,11 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import { toActiveQuestionDto } from '$lib/server/sessions/dto';
+
+vi.mock('$lib/server/analytics/analytics-service', async () => {
+	const { createAnalyticsServiceFake } = await import('$lib/server/analytics/test-fakes');
+	const fake = createAnalyticsServiceFake();
+	return { getAnalyticsService: () => fake };
+});
 import { createFinishChallengeService } from '$lib/server/sessions/finish-challenge-service';
 import {
 	checkRateLimit,

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import * as shareServiceModule from '$lib/server/share/share-service';
 import { notFound } from '$lib/server/errors';
+import { load } from './+page.server';
 
 describe('/share/[publicId] page.server.ts load', () => {
 	beforeEach(() => {
@@ -33,7 +34,6 @@ describe('/share/[publicId] page.server.ts load', () => {
 			revokeShare: vi.fn()
 		});
 
-		const { load } = await import('./+page.server');
 		const result = await load({
 			params: { publicId: 'shr_abc123' },
 			url: new URL('https://tarkana.app/share/shr_abc123'),
@@ -56,7 +56,6 @@ describe('/share/[publicId] page.server.ts load', () => {
 			revokeShare: vi.fn()
 		});
 
-		const { load } = await import('./+page.server');
 		await load({
 			params: { publicId: 'shr_xyz789.png' },
 			url: new URL('https://tarkana.app/share/shr_xyz789.png'),
@@ -73,7 +72,6 @@ describe('/share/[publicId] page.server.ts load', () => {
 			revokeShare: vi.fn()
 		});
 
-		const { load } = await import('./+page.server');
 		await expect(
 			load({
 				params: { publicId: 'shr_missing' },

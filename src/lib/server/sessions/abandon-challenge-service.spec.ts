@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createAbandonChallengeService } from './abandon-challenge-service';
+
+vi.mock('$lib/server/analytics/analytics-service', async () => {
+	const { createAnalyticsServiceFake } = await import('$lib/server/analytics/test-fakes');
+	const fake = createAnalyticsServiceFake();
+	return { getAnalyticsService: () => fake };
+});
 import { createProfileRepositoryFake, createProfile } from '$lib/server/test/fakes';
 import { createSessionRepositoryFake, createChallengeSession } from './test-fakes';
 

@@ -1,16 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
-import { forbidden } from '$lib/server/errors';
 
 vi.mock('$lib/server/auth/guards', () => ({
 	requireAdmin: vi.fn(async () => {
+		const { forbidden } = await import('$lib/server/errors');
 		throw forbidden('Admin access is required');
 	})
 }));
 
+import { load } from './+layout.server';
+
 describe('admin layout guard', () => {
 	it('returns a SvelteKit 403 response for authenticated non-admin users', async () => {
-		const { load } = await import('./+layout.server');
-
 		await expect(
 			load({ locals: { locale: 'en' } } as Parameters<typeof load>[0])
 		).rejects.toMatchObject({
