@@ -3,10 +3,22 @@ name: Keep Supabase Awake
 on:
   schedule:
     - cron: "0 1 * * *"
+  workflow_dispatch:
+
+permissions: {}
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase
-        run: curl -s https://nlhqorniufcdbyzuoqgq.supabase.co/functions/v1/health-check
+      - name: Ping Supabase Edge Health Check
+        run: |
+          response=$(curl -fsS --retry 2 --retry-delay 5 --max-time 30 \
+            https://nlhqorniufcdbyzuoqgq.supabase.co/functions/v1/health-check)
+          echo "$response" | grep -q '"status":"ok"'
+
+      - name: Verify Production Web Health
+        run: |
+          response=$(curl -fsS --retry 2 --retry-delay 5 --max-time 30 \
+            https://tarkana.vercel.app/api/health)
+          echo "$response" | grep -q '"database":"reachable"'
